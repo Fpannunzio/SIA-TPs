@@ -35,7 +35,7 @@ class GameRenderer:
         self.states = states
         init_state = self.states[0]
 
-        self.player = Player(init_state.player)
+        self.player = Player(init_state.player_pos)
         self.level = Level(init_state.level_map)
 
         self.board = pygame.Surface((self.level.width, self.level.height))
@@ -43,7 +43,7 @@ class GameRenderer:
     def render(self):
         for state in self.states:
             self.update_screen(state)
-            print(state.target_remaining, state.boxes)
+            print(state.targets_remaining, state.boxes)
             time.sleep(1)
 
     def update_screen(self, state: State):
@@ -51,7 +51,7 @@ class GameRenderer:
         pygame.draw.rect(self.window, viz_constants.WHITE, (0, 0, viz_constants.WINDOW_WIDTH, viz_constants.WINDOW_HEIGHT))
 
         self.level.render(self.board, self.textures, state)
-        self.player.update_pos(state.player)
+        self.player.update_pos(state.player_pos)
         self.player.render(self.board, self.textures)
 
         pox_x_board = (viz_constants.WINDOW_WIDTH / 2) - (self.board.get_width() / 2)

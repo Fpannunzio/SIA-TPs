@@ -28,7 +28,7 @@ def bfs(init_state: State) -> List[State]:
             final_list = []
             solution(final_list, state)
             for state in final_list:
-                print(state.player)
+                print(state.player_pos)
             return final_list
         
         for direction in directions:
