@@ -1,6 +1,6 @@
-XXXXXXX
-X     X
-X    .X
-X  *@ X
-X     X
-XXXXXXX
+XXXXXXX  XXXXXXXX
+X. *  X  X    . X
+X    .XXXX      X
+X  *@   *       X
+X               X
+XXXXXXXXXXXXXXXXX

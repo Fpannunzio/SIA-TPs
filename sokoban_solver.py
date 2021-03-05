@@ -1,6 +1,7 @@
 from typing import List, Tuple, Union
 
 from dfs import dfs
+from bfs import bfs
 from visualization.game_renderer import GameRenderer
 import sys
 
@@ -73,7 +74,7 @@ def load_initial_state(level_name: str) -> State:
 
         _normalize_level_map(level_map, max_width)
 
-    return State(level_map, player_pos, box_pos_list)
+    return State(level_map, player_pos, box_pos_list, target_count)
 
 
 def _normalize_level_map(level_map: List[List[TileType]], max_width: int) -> None:
@@ -91,7 +92,7 @@ def solve_sokoban(strategy: str, init_state: State) -> List[State]:
         return dfs(init_state)
 
     elif strategy == 'BFS':
-        pass  # TODO: bfs(init_state)
+        return bfs(init_state)
 
     elif strategy == 'IDDFS':
         pass  # TODO: iddfs(init_state)
@@ -105,6 +106,6 @@ if __name__ == "__main__":
     argv = sys.argv
 
     level_name_arg: str = (argv[1] if len(argv) >= 2 else "level.txt")
-    strategy_arg: str = (argv[2] if len(argv) >= 3 else "DFS")
+    strategy_arg: str = (argv[2] if len(argv) >= 3 else "BFS")
 
     main(level_name_arg, strategy_arg)

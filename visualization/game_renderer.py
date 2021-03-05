@@ -43,7 +43,8 @@ class GameRenderer:
     def render(self):
         for state in self.states:
             self.update_screen(state)
-            time.sleep(0.5)
+            print(state.target_remaining, state.boxes)
+            time.sleep(1)
 
     def update_screen(self, state: State):
         pygame.draw.rect(self.board, viz_constants.WHITE, (0, 0, self.level.width * viz_constants.SPRITESIZE, self.level.height * viz_constants.SPRITESIZE))
