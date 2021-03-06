@@ -17,6 +17,8 @@ def main(level_name: str, strategy: str):
     # Solve Sokoban using selected strategy
     states: List[State] = solve_sokoban(strategy, initial_state)
 
+    print('Solution found in %d steps' % len(states))
+
     # Render Solution
     GameRenderer(states).render()
 
