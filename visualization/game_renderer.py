@@ -3,10 +3,10 @@ from typing import List
 
 import pygame
 import visualization._viz_constants as viz_constants
-from visualization._level import Level
-from visualization._player import Player
+from visualization._level_renderer import LevelRenderer
+from visualization._player_renderer import PlayerRenderer
 from state import State
-from tile_type import TileType
+from map import Tile
 
 
 class GameRenderer:
@@ -14,11 +14,11 @@ class GameRenderer:
     @staticmethod
     def _load_textures():
         return {
-            TileType.WALL: pygame.image.load('assets/images/wall.png').convert_alpha(),
-            TileType.BOX: pygame.image.load('assets/images/box.png').convert_alpha(),
-            TileType.TARGET: pygame.image.load('assets/images/target.png').convert_alpha(),
-            TileType.TARGET_FILLED: pygame.image.load('assets/images/valid_box.png').convert_alpha(),
-            TileType.PLAYER: pygame.image.load('assets/images/player_sprites.png').convert_alpha()
+            Tile.WALL: pygame.image.load('assets/images/wall.png').convert_alpha(),
+            Tile.BOX: pygame.image.load('assets/images/box.png').convert_alpha(),
+            Tile.TARGET: pygame.image.load('assets/images/target.png').convert_alpha(),
+            Tile.TARGET_FILLED: pygame.image.load('assets/images/valid_box.png').convert_alpha(),
+            Tile.PLAYER: pygame.image.load('assets/images/player_sprites.png').convert_alpha()
         }
 
     def __init__(self, states: List[State]):
@@ -35,8 +35,8 @@ class GameRenderer:
         self.states = states
         init_state = self.states[0]
 
-        self.player = Player(init_state.player_pos)
-        self.level = Level(init_state.level_map)
+        self.player = PlayerRenderer(init_state.player_pos)
+        self.level = LevelRenderer(init_state.level_map.map)
 
         self.board = pygame.Surface((self.level.width, self.level.height))
 
