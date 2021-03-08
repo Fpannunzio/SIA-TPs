@@ -1,53 +1,72 @@
-from typing import List, Callable
+from time import perf_counter
+from typing import List, Callable, Dict
 
-from dfs import dfs
-from bfs import bfs
+from strategies.dfs import dfs
+from strategies.bfs import bfs
+from strategy_stats import StrategyStats
 from visualization.game_renderer import GameRenderer
 import sys
 
 from state import State
 from _level_loader import load_initial_state
 
+# Declare available strategies
+strategy_map: Dict[str, Callable[[State, StrategyStats], List[State]]] = {
+    'DFS': dfs,
+    'BFS': bfs,
+    # 'IDDFS': iddfs,
+    # 'GREEDY': greedy,
+    # 'A*': a_star,
+}
+
 
 # TODO: Add __repr__ to everything
-def main(level_name: str, strategy: str):
+def main(level_name: str, strategy_name: str, render: bool = True):
 
     # Load initial state from level file selected
     initial_state: State = load_initial_state(level_name)
 
-    # Solve Sokoban using selected strategy
-    states: List[State] = solve_sokoban(strategy, initial_state)
+    # Create selected strategy stats holder
+    strategy_stats: StrategyStats = StrategyStats(strategy_name, level_name)
 
-    print(f'Solution found in {len(states)} steps')
+    # Solve Sokoban using selected strategy
+    states: List[State] = solve_sokoban(strategy_name, initial_state, strategy_stats)
+
+    # Print selected strategy stats
+    strategy_stats.print_stats()
 
     # Render Solution
-    GameRenderer(states).render()
+    if render:
+        GameRenderer(states).render()
 
 
-# TODO: Replace with dictionary
-def solve_sokoban(strategy_name: str, init_state: State) -> List[State]:
-    strategy: Callable[[State], List[State]]
+def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats) -> List[State]:
 
-    if strategy_name == 'DFS':
-        strategy = dfs
+    if strategy_name not in strategy_map:
+        raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')
 
-    elif strategy_name == 'BFS':
-        strategy = bfs
+    start: float = perf_counter()
+    states: List[State] = strategy_map[strategy_name](init_state, strategy_stats)
+    end: float = perf_counter()
 
-    # elif strategy_name == 'IDDFS':
-    #     pass  # TODO: iddfs(init_state)
+    strategy_stats.set_runtime(start, end)
+    strategy_stats.set_solution_move_count(len(states))
 
-    else:
-        raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: [BFS, DFS, IDDFS]')
-
-    return strategy(init_state)
+    return states
 
 
-# Usage: python3 Sokoban [level_name] [solve_strategy]
+# Usage: python3 sokoban_solver.py [OPTIONS] [level_name] [solve_strategy]
 if __name__ == "__main__":
     argv = sys.argv
 
-    level_name_arg: str = (argv[1] if len(argv) >= 2 else "level.txt")
-    strategy_arg: str = (argv[2] if len(argv) >= 3 else "BFS")
+    # Handle option --no-render
+    render: bool = False
+    try:
+        argv.remove('--no-render')
+    except ValueError:
+        render = True
 
-    main(level_name_arg, strategy_arg)
+    level_name_arg: str = (argv[1] if len(argv) >= 2 else "level.txt")
+    strategy_arg: str = (argv[2] if len(argv) >= 3 else "DFS")
+
+    main(level_name_arg, strategy_arg, render)

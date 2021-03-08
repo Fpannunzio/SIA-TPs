@@ -43,7 +43,6 @@ class GameRenderer:
     def render(self):
         for state in self.states:
             self.update_screen(state)
-            print(state.targets_remaining, state.boxes)
             time.sleep(0.25)
 
     def update_screen(self, state: State):

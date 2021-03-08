@@ -1,4 +1,4 @@
-from typing import List, Union, Set
+from typing import List, Set, Optional
 
 from map import Tile, Position, Map
 from state import State
@@ -6,7 +6,7 @@ from state import State
 
 def load_initial_state(level_name: str) -> State:
     level_map: List[List[Tile]] = []
-    player_pos: Union[Position, None] = None
+    player_pos: Optional[Position] = None
     box_positions: Set[Position] = set()
     target_count: int = 0
     max_width: int = 0

@@ -55,8 +55,8 @@ class State:
 
         return new_state
 
-    # We assume valid input and state. That's why this function is private
-    # State: player just moved to a box tile and the box could be moved in that direction.
+    # We assume valid input and state
+    # State: player just moved to a box tile and the box could be moved in that direction
     #
     # This method should only be called when a new State is being created. This is because self.boxed is
     # mutated after construction. If this is not honored, the class would cease to be immutable
