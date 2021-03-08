@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List, Deque, Set
+from typing import List, Deque, Set, Iterator
 
 from node import Node
 from state import State
@@ -21,7 +21,7 @@ def bfs(init_state: State, strategy_stats: StrategyStats) -> List[State]:
         if current_node.has_won():
             return current_node.get_state_list()
 
-        new_nodes: List[Node] = list(filter(lambda node: node.state not in visited_states, current_node.expand()))
+        new_nodes: Iterator[Node] = filter(lambda node: node.state not in visited_states, current_node.expand())
 
         for node in new_nodes:
             visited_states.add(node.state)
