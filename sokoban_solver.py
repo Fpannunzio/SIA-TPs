@@ -20,7 +20,6 @@ strategy_map: Dict[str, Callable[[State, StrategyStats], List[State]]] = {
 }
 
 
-# TODO: Add __repr__ to everything
 def main(level_name: str, strategy_name: str, render: bool = True):
 
     # Load initial state from level file selected
@@ -67,6 +66,6 @@ if __name__ == "__main__":
         render = True
 
     level_name_arg: str = (argv[1] if len(argv) >= 2 else "level.txt")
-    strategy_arg: str = (argv[2] if len(argv) >= 3 else "DFS")
+    strategy_arg: str = (argv[2] if len(argv) >= 3 else "BFS")
 
     main(level_name_arg, strategy_arg, render)

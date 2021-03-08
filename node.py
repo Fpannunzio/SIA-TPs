@@ -29,3 +29,6 @@ class Node:
             self.parent._build_state_list_rec(state_list)
 
         state_list.append(self.state)
+
+    def __repr__(self) -> str:
+        return f'Node(state={repr(self.state)}, parent_id={id(self.parent)})'

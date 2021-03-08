@@ -104,6 +104,10 @@ class State:
     def has_lost(self) -> bool:
         return self.lost
 
+    # Level stays the same across states
+    def copy(self):
+        return State(self.level_map, self.player_pos, self.boxes.copy(), self.targets_remaining)
+
     def __eq__(self, value) -> bool:
         return isinstance(value, State) and\
                self.level_map == value.level_map and\
@@ -113,6 +117,6 @@ class State:
     def __hash__(self) -> int:
         return hash((self.player_pos, self.boxes))
 
-    # Level stays the same across states
-    def copy(self):
-        return State(self.level_map, self.player_pos, self.boxes.copy(), self.targets_remaining)
+    def __repr__(self) -> str:
+        return f'State(player_pos={repr(self.player_pos)}, boxes={repr(self.boxes)},' \
+               f' targets_remaining={repr(self.targets_remaining)}, has_lost={repr(self.lost)})'

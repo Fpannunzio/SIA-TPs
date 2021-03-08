@@ -22,7 +22,7 @@ class StrategyStats:
 
     def print_stats(self) -> None:
         self.validate()
-        print('-' *50)
+        print('-' * 50)
         print(self)
 
     def validate(self) -> None:
@@ -39,8 +39,9 @@ class StrategyStats:
                f'Max simultaneous nodes stored: {self.max_nodes_stored}\n'
 
     def __repr__(self) -> str:
-        return f'StrategyStats({repr(self.strategy_name)}, {repr(self.level_name)}, {repr(self.runtime)}, ' \
-               f'{repr(self.move_count)}, {repr(self.exploded_node_count)}, {repr(self.max_nodes_stored)}'
+        return f'StrategyStats(strategy_name={repr(self.strategy_name)}, level_name={repr(self.level_name)}, ' \
+               f'runtime={repr(self.runtime)}, move_count={repr(self.move_count)}, ' \
+               f'exploded_node_count={repr(self.exploded_node_count)}, max_nodes_stored={repr(self.max_nodes_stored)})'
 
     def set_runtime(self, start: float, end: float) -> None:
         self.runtime = end - start
