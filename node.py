@@ -1,4 +1,5 @@
-from typing import List, Iterator, Optional
+from collections import deque
+from typing import List, Iterator, Optional, Deque, Collection
 
 from state import State
 
@@ -8,6 +9,7 @@ class Node:
     def __init__(self, state: State, parent: Optional['Node']):
         self.state: State = state
         self.parent = parent
+        self.depth = (parent.depth + 1 if parent else 0)
 
     def has_won(self) -> bool:
         return self.state.has_won()

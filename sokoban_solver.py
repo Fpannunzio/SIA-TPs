@@ -3,6 +3,8 @@ from typing import List, Callable, Dict, Iterable, Collection
 
 from strategies.dfs import dfs
 from strategies.bfs import bfs
+from strategies.iddfs import iddfs
+from strategies.iddfs_dup_states import iddfs_dup
 from strategy_stats import StrategyStats
 from visualization.game_renderer import GameRenderer
 import sys
@@ -14,7 +16,8 @@ from _level_loader import load_initial_state
 strategy_map: Dict[str, Callable[[State, StrategyStats], Collection[State]]] = {
     'DFS': dfs,
     'BFS': bfs,
-    # 'IDDFS': iddfs,
+    'IDDFS': iddfs,
+    'IDDFS_DUP': iddfs_dup,
     # 'GREEDY': greedy,
     # 'A*': a_star,
 }
