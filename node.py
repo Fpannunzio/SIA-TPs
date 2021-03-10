@@ -12,10 +12,15 @@ class Node:
     def has_won(self) -> bool:
         return self.state.has_won()
 
-    def get_state_list(self) -> List[State]:
-        state_list: List[State] = []
-        self._build_state_list_rec(state_list)
-        return state_list
+    def get_state_list(self) -> Collection[State]:
+        state_queue: Deque[State] = deque()
+        current_node: Node = self
+
+        while current_node:
+            state_queue.appendleft(current_node.state)
+            current_node = current_node.parent
+
+        return state_queue
 
     def expand(self) -> Iterator['Node']:
         expanded_states_iter: Iterator[State] = map(self.state.move_player, self.state.get_valid_player_moves())

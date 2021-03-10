@@ -1,5 +1,5 @@
 from time import perf_counter
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Iterable, Collection
 
 from strategies.dfs import dfs
 from strategies.bfs import bfs
@@ -11,7 +11,7 @@ from state import State
 from _level_loader import load_initial_state
 
 # Declare available strategies
-strategy_map: Dict[str, Callable[[State, StrategyStats], List[State]]] = {
+strategy_map: Dict[str, Callable[[State, StrategyStats], Collection[State]]] = {
     'DFS': dfs,
     'BFS': bfs,
     # 'IDDFS': iddfs,
@@ -29,7 +29,7 @@ def main(level_name: str, strategy_name: str, render: bool = True):
     strategy_stats: StrategyStats = StrategyStats(strategy_name, level_name)
 
     # Solve Sokoban using selected strategy
-    states: List[State] = solve_sokoban(strategy_name, initial_state, strategy_stats)
+    states: Collection[State] = solve_sokoban(strategy_name, initial_state, strategy_stats)
 
     # Print selected strategy stats
     strategy_stats.print_stats()
@@ -39,13 +39,13 @@ def main(level_name: str, strategy_name: str, render: bool = True):
         GameRenderer(states).render()
 
 
-def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats) -> List[State]:
+def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats) -> Collection[State]:
 
     if strategy_name not in strategy_map:
         raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')
 
     start: float = perf_counter()
-    states: List[State] = strategy_map[strategy_name](init_state, strategy_stats)
+    states: Collection[State] = strategy_map[strategy_name](init_state, strategy_stats)
     end: float = perf_counter()
 
     strategy_stats.set_runtime(start, end)

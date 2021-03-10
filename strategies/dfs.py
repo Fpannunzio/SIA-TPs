@@ -1,12 +1,12 @@
 from collections import deque
-from typing import List, Deque, Set, Iterator
+from typing import List, Deque, Set, Iterator, Collection
 
 from node import Node
 from state import State
 from strategy_stats import StrategyStats
 
 
-def dfs(init_state: State, strategy_stats: StrategyStats) -> List[State]:
+def dfs(init_state: State, strategy_stats: StrategyStats) -> Collection[State]:
     
     root = Node(init_state, None)
 

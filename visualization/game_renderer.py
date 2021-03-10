@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import List, Collection
 
 import pygame
 import visualization._viz_constants as viz_constants
@@ -21,7 +21,7 @@ class GameRenderer:
             Tile.PLAYER: pygame.image.load('assets/images/player_sprites.png').convert_alpha()
         }
 
-    def __init__(self, states: List[State]):
+    def __init__(self, states: Collection[State]):
 
         if len(states) == 0:
             raise RuntimeError('State list must have at least one state to correctly render Sokoban')
@@ -43,7 +43,7 @@ class GameRenderer:
     def render(self):
         for state in self.states:
             self.update_screen(state)
-            time.sleep(0.25)
+            time.sleep(0.1)
 
     def update_screen(self, state: State):
         pygame.draw.rect(self.board, viz_constants.WHITE, (0, 0, self.level.width * viz_constants.SPRITESIZE, self.level.height * viz_constants.SPRITESIZE))
