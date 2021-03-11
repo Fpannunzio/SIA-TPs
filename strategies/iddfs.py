@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque, Set, Iterator, Collection, Tuple, Dict, Any
+from typing import Deque, Set, Iterator, Collection, Tuple, Dict, Any, Optional
 
 from node import Node
 from state import State
@@ -16,11 +16,10 @@ def purge_parent_stack(depth: int, parent_nodes: Deque[Node], ancestors: Set[Sta
             ancestors.remove(parent_to_be_removed.state)
 
 
-def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Dict[str, Any]) -> Collection[State]:
-    if not strategy_params or 'step' not in strategy_params:
-        step: int = 10  # default step
-    else:
-        step = strategy_params['step']
+def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Optional[Dict[str, Any]]) -> Collection[State]:
+
+    filter_lost_states: bool = (strategy_params.get('filter_lost_states', True) if strategy_params else True)
+    step: int = (strategy_params.get('filter_lost_states', 10) if strategy_params else 10)  # Default Step 10
 
     root: Node = Node(init_state, None)
 
@@ -57,7 +56,7 @@ def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Dic
 
                 purge_parent_stack(current_node.depth, parent_nodes, ancestors)
 
-                new_nodes_iter: Iterator[Node] = filter(lambda node: node.state not in ancestors, current_node.expand())
+                new_nodes_iter: Iterator[Node] = filter(lambda node: node.state not in ancestors, current_node.expand(filter_lost_states))
 
                 has_children: bool = False
 

@@ -1,5 +1,5 @@
 from time import perf_counter
-from typing import Callable, Dict, Collection, Any
+from typing import Callable, Dict, Collection, Any, Optional
 
 from config_loader import Config
 from strategies.dfs import dfs
@@ -14,7 +14,7 @@ from state import State
 from _level_loader import load_initial_state
 
 # Declare available strategies
-strategy_map: Dict[str, Callable[[State, StrategyStats, Dict[str, Any]], Collection[State]]] = {
+strategy_map: Dict[str, Callable[[State, StrategyStats, Optional[Dict[str, Any]]], Collection[State]]] = {
     'DFS': dfs,
     'BFS': bfs,
     'IDDFS': iddfs,
@@ -47,7 +47,7 @@ def main(config_file: str):
 
 
 def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats,
-                  strategy_params: Dict[str, Any]) -> Collection[State]:
+                  strategy_params: Optional[Dict[str, Any]]) -> Collection[State]:
 
     if strategy_name not in strategy_map:
         raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')

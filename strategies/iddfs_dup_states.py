@@ -1,16 +1,15 @@
 from collections import deque
-from typing import Deque, Set, Iterator, Collection, Dict, Any
+from typing import Deque, Set, Iterator, Collection, Dict, Any, Optional
 
 from node import Node
 from state import State
 from strategy_stats import StrategyStats
 
 
-def iddfs_dup(init_state: State, strategy_stats: StrategyStats, strategy_params: Dict[str, Any]) -> Collection[State]:
-    if not strategy_params or 'step' not in strategy_params:
-        step: int = 10  # default step
-    else:
-        step = strategy_params['step']
+def iddfs_dup(init_state: State, strategy_stats: StrategyStats, strategy_params: Optional[Dict[str, Any]]) -> Collection[State]:
+
+    filter_lost_states: bool = (strategy_params.get('filter_lost_states', True) if strategy_params else True)
+    step: int = (strategy_params.get('filter_lost_states', 10) if strategy_params else 10)  # Default Step 10
 
     root: Node = Node(init_state, None)
 
@@ -43,7 +42,7 @@ def iddfs_dup(init_state: State, strategy_stats: StrategyStats, strategy_params:
                 if current_node.has_won():
                     return current_node.get_state_list()
 
-                new_nodes_iter: Iterator[Node] = filter(lambda node: node.state not in visited_states, current_node.expand())
+                new_nodes_iter: Iterator[Node] = filter(lambda node: node.state not in visited_states, current_node.expand(filter_lost_states))
 
                 for new_node in new_nodes_iter:
                     visited_states.add(new_node.state)

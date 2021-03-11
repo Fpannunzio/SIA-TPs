@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import yaml
 
@@ -23,8 +23,8 @@ class Config:
 
         self.level: str = args['level']
         self.strategy: str = args['strategy']['name']
-        self.strategy_params: Dict[str, Any] = args['strategy']['params'] if 'params' in args['strategy'] else None
-        self.render: bool = (args['render'] if 'render' in args else True)
+        self.strategy_params: Optional[Dict[str, Any]] = args['strategy'].get('params', None)
+        self.render: bool = args.get('render', True)
 
     def __repr__(self) -> str:
         return f'Level: {self.level}. ' \
