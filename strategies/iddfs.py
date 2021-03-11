@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List, Deque, Set, Iterator, Collection, NamedTuple, Tuple, Optional
+from typing import List, Deque, Set, Iterator, Collection, NamedTuple, Tuple, Optional, Dict
 
 from node import Node
 from state import State
@@ -16,8 +16,11 @@ def purge_parent_stack(depth: int, parent_nodes: Deque[Node], ancestors: Set[Sta
             ancestors.remove(parent_to_be_removed.state)
 
 
-def iddfs(init_state: State, strategy_stats: StrategyStats) -> Collection[State]:
-    step = 4
+def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Dict[str, str]) -> Collection[State]:
+    if not strategy_params or 'step' not in strategy_params:
+        step = 10  # default step
+    else:
+        step = int(strategy_params['step'])
 
     root: Node = Node(init_state, None)
 
@@ -70,6 +73,7 @@ def iddfs(init_state: State, strategy_stats: StrategyStats) -> Collection[State]
             else:
                 edge_nodes.append((current_node, ancestors.copy()))
 
-        strategy_stats.set_current_nodes_stored(666)
+            strategy_stats.set_current_nodes_stored(len(stack))
+
 
     return [init_state]

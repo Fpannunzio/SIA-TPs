@@ -1,0 +1,7 @@
+---
+level: 'level.txt'
+strategy:
+  name: 'IDDFS'
+  params:
+    step: '5'
+...

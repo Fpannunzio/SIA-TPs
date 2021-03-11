@@ -1,6 +1,7 @@
 from time import perf_counter
-from typing import List, Callable, Dict, Iterable, Collection
+from typing import Callable, Dict, Collection
 
+from config_loader import Config
 from strategies.dfs import dfs
 from strategies.bfs import bfs
 from strategies.iddfs import iddfs
@@ -13,7 +14,7 @@ from state import State
 from _level_loader import load_initial_state
 
 # Declare available strategies
-strategy_map: Dict[str, Callable[[State, StrategyStats], Collection[State]]] = {
+strategy_map: Dict[str, Callable[[State, StrategyStats, Dict[str, str]], Collection[State]]] = {
     'DFS': dfs,
     'BFS': bfs,
     'IDDFS': iddfs,
@@ -23,16 +24,18 @@ strategy_map: Dict[str, Callable[[State, StrategyStats], Collection[State]]] = {
 }
 
 
-def main(level_name: str, strategy_name: str, render: bool = True):
+def main(render: bool = True):
+
+    config: Config = Config()
 
     # Load initial state from level file selected
-    initial_state: State = load_initial_state(level_name)
+    initial_state: State = load_initial_state(config.level)
 
     # Create selected strategy stats holder
-    strategy_stats: StrategyStats = StrategyStats(strategy_name, level_name)
+    strategy_stats: StrategyStats = StrategyStats(config.strategy, config.level)
 
     # Solve Sokoban using selected strategy
-    states: Collection[State] = solve_sokoban(strategy_name, initial_state, strategy_stats)
+    states: Collection[State] = solve_sokoban(config.strategy, initial_state, strategy_stats, config.strategy_params)
 
     # Print selected strategy stats
     strategy_stats.print_stats()
@@ -42,13 +45,14 @@ def main(level_name: str, strategy_name: str, render: bool = True):
         GameRenderer(states).render()
 
 
-def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats) -> Collection[State]:
+def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats,
+                  strategy_params: Dict[str, str]) -> Collection[State]:
 
     if strategy_name not in strategy_map:
         raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')
 
     start: float = perf_counter()
-    states: Collection[State] = strategy_map[strategy_name](init_state, strategy_stats)
+    states: Collection[State] = strategy_map[strategy_name](init_state, strategy_stats, strategy_params)
     end: float = perf_counter()
 
     strategy_stats.set_runtime(start, end)
@@ -68,7 +72,4 @@ if __name__ == "__main__":
     except ValueError:
         render = True
 
-    level_name_arg: str = (argv[1] if len(argv) >= 2 else "level.txt")
-    strategy_arg: str = (argv[2] if len(argv) >= 3 else "BFS")
-
-    main(level_name_arg, strategy_arg, render)
+    main(render)

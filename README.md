@@ -11,3 +11,7 @@ To run this game you'll need python3 and pygame installed
 
 ### How to run
 ```python3 Sokoban.py```
+
+## Dependencies
+
+pip install pygame pyyaml

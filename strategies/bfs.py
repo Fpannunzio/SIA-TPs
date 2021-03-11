@@ -1,12 +1,12 @@
 from collections import deque
-from typing import List, Deque, Set, Iterator, Collection
+from typing import List, Deque, Set, Iterator, Collection, Dict
 
 from node import Node
 from state import State
 from strategy_stats import StrategyStats
 
 
-def bfs(init_state: State, strategy_stats: StrategyStats) -> Collection[State]:
+def bfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Dict[str, str]) -> Collection[State]:
     root = Node(init_state, None)
 
     visited_states: Set[State] = set()

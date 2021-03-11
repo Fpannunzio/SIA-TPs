@@ -1,13 +1,16 @@
 from collections import deque
-from typing import List, Deque, Set, Iterator, Collection, NamedTuple, Tuple, Optional
+from typing import List, Deque, Set, Iterator, Collection, NamedTuple, Tuple, Optional, Dict
 
 from node import Node
 from state import State
 from strategy_stats import StrategyStats
 
 
-def iddfs_dup(init_state: State, strategy_stats: StrategyStats) -> Collection[State]:
-    step = 4
+def iddfs_dup(init_state: State, strategy_stats: StrategyStats, strategy_params: Dict[str, str]) -> Collection[State]:
+    if not strategy_params or 'step' not in strategy_params:
+        step = 10  # default step
+    else:
+        step = int(strategy_params['step'])
 
     root: Node = Node(init_state, None)
 
