@@ -1,5 +1,5 @@
 from time import perf_counter
-from typing import Callable, Dict, Collection
+from typing import Callable, Dict, Collection, Any
 
 from config_loader import Config
 from strategies.dfs import dfs
@@ -14,7 +14,7 @@ from state import State
 from _level_loader import load_initial_state
 
 # Declare available strategies
-strategy_map: Dict[str, Callable[[State, StrategyStats, Dict[str, str]], Collection[State]]] = {
+strategy_map: Dict[str, Callable[[State, StrategyStats, Dict[str, Any]], Collection[State]]] = {
     'DFS': dfs,
     'BFS': bfs,
     'IDDFS': iddfs,
@@ -24,9 +24,10 @@ strategy_map: Dict[str, Callable[[State, StrategyStats, Dict[str, str]], Collect
 }
 
 
-def main(render: bool = True):
+def main(config_file: str):
 
-    config: Config = Config()
+    # Load Config from config.yaml
+    config: Config = Config(config_file)
 
     # Load initial state from level file selected
     initial_state: State = load_initial_state(config.level)
@@ -41,12 +42,12 @@ def main(render: bool = True):
     strategy_stats.print_stats()
 
     # Render Solution
-    if render:
+    if config.render:
         GameRenderer(states).render()
 
 
 def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats,
-                  strategy_params: Dict[str, str]) -> Collection[State]:
+                  strategy_params: Dict[str, Any]) -> Collection[State]:
 
     if strategy_name not in strategy_map:
         raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')
@@ -61,15 +62,13 @@ def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: Strateg
     return states
 
 
-# Usage: python3 sokoban_solver.py [OPTIONS] [level_name] [solve_strategy]
+# Usage: python3 sokoban_solver.py [config_file]
 if __name__ == "__main__":
     argv = sys.argv
 
-    # Handle option --no-render
-    render: bool = False
-    try:
-        argv.remove('--no-render')
-    except ValueError:
-        render = True
+    config_file: str = 'config.yaml'
 
-    main(render)
+    if len(argv) > 1:
+        config_file = argv[1]
+
+    main(config_file)

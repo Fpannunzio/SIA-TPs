@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Optional, Any
 
 
 class StrategyStats:
 
     @staticmethod
-    def _validate_property(prop: Optional, error_str: str) -> None:
+    def _validate_property(prop: Optional[Any], error_str: str) -> None:
         if prop is None:
             raise ValueError(error_str)
 

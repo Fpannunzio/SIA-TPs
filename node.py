@@ -8,15 +8,15 @@ class Node:
 
     def __init__(self, state: State, parent: Optional['Node']):
         self.state: State = state
-        self.parent = parent
-        self.depth = (parent.depth + 1 if parent else 0)
+        self.parent: Optional[Node] = parent
+        self.depth: int = (parent.depth + 1 if parent else 0)
 
     def has_won(self) -> bool:
         return self.state.has_won()
 
     def get_state_list(self) -> Collection[State]:
         state_queue: Deque[State] = deque()
-        current_node: Node = self
+        current_node: Optional[Node] = self
 
         while current_node:
             state_queue.appendleft(current_node.state)

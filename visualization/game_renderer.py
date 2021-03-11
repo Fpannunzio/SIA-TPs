@@ -1,5 +1,5 @@
 import time
-from typing import List, Collection
+from typing import Collection
 
 import pygame
 import visualization._viz_constants as viz_constants
@@ -33,7 +33,7 @@ class GameRenderer:
         self.textures = self._load_textures()
 
         self.states = states
-        init_state = self.states[0]
+        init_state = next(iter(self.states))
 
         self.player = PlayerRenderer(init_state.player_pos)
         self.level = LevelRenderer(init_state.level_map.map)

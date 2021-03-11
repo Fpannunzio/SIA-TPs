@@ -1,7 +1,10 @@
 ---
-level: 'level.txt'
+level: level.txt
 strategy:
-  name: 'IDDFS'
+#  name: DFS
+#  name: BFS
+  name: IDDFS
   params:
-    step: '5'
+    step: 5
+render: false
 ...
