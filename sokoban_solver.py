@@ -1,11 +1,10 @@
 from time import perf_counter
-from typing import Callable, Dict, Collection, Any, Optional
+from typing import Callable, Dict, Collection
 
-from config_loader import Config
+from config_loader import Config, StrategyParams
 from strategies.dfs import dfs
 from strategies.bfs import bfs
 from strategies.iddfs import iddfs
-from strategies.iddfs_dup_states import iddfs_dup
 from strategies.greedy import greedy
 from strategy_stats import StrategyStats
 from visualization.game_renderer import GameRenderer
@@ -15,11 +14,10 @@ from state import State
 from _level_loader import load_initial_state
 
 # Declare available strategies
-strategy_map: Dict[str, Callable[[State, StrategyStats, Optional[Dict[str, Any]]], Collection[State]]] = {
+strategy_map: Dict[str, Callable[[State, StrategyStats, StrategyParams], Collection[State]]] = {
     'DFS': dfs,
     'BFS': bfs,
     'IDDFS': iddfs,
-    'IDDFS_DUP': iddfs_dup,
     'GREEDY': greedy,
     # 'A*': a_star,
 }
@@ -34,7 +32,7 @@ def main(config_file: str):
     initial_state: State = load_initial_state(config.level)
 
     # Create selected strategy stats holder
-    strategy_stats: StrategyStats = StrategyStats(config.strategy, config.level)
+    strategy_stats: StrategyStats = StrategyStats(config)
 
     # Solve Sokoban using selected strategy
     states: Collection[State] = solve_sokoban(config.strategy, initial_state, strategy_stats, config.strategy_params)
@@ -48,7 +46,7 @@ def main(config_file: str):
 
 
 def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: StrategyStats,
-                  strategy_params: Optional[Dict[str, Any]]) -> Collection[State]:
+                  strategy_params: StrategyParams) -> Collection[State]:
 
     if strategy_name not in strategy_map:
         raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')

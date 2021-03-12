@@ -2,6 +2,8 @@ from typing import Dict, Any, Optional
 
 import yaml
 
+StrategyParams = Optional[Dict[str, Any]]
+
 
 class Config:
 
@@ -23,10 +25,10 @@ class Config:
 
         self.level: str = args['level']
         self.strategy: str = args['strategy']['name']
-        self.strategy_params: Optional[Dict[str, Any]] = args['strategy'].get('params', None)
+        self.strategy_params: StrategyParams = args['strategy'].get('params', None)
         self.render: bool = args.get('render', True)
 
     def __repr__(self) -> str:
-        return f'Level: {self.level}. ' \
-               f'Strategy: {self.strategy}. ' \
-               f'Strategy Params: {self.strategy_params}'
+        return f'Level: {repr(self.level)}. ' \
+               f'Strategy: {repr(self.strategy)}. ' \
+               f'Strategy Params: {repr(self.strategy_params)}'
