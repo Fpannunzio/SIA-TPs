@@ -8,6 +8,7 @@ def load_initial_state(level_name: str) -> State:
     level_map: List[List[Tile]] = []
     player_pos: Optional[Position] = None
     box_positions: Set[Position] = set()
+    targets: Set[Position] = set()
     target_count: int = 0
     max_width: int = 0
 
@@ -38,6 +39,7 @@ def load_initial_state(level_name: str) -> State:
                     tile = Tile.AIR
 
                 elif tile == Tile.TARGET:
+                    targets.add(Position(x, y))
                     target_count += 1
 
                 elif tile == Tile.TARGET_FILLED:
@@ -60,7 +62,7 @@ def load_initial_state(level_name: str) -> State:
 
         _normalize_level_map(level_map, max_width)
 
-    return State(Map(level_map), player_pos, frozenset(box_positions), target_count)
+    return State(Map(level_map, targets), player_pos, frozenset(box_positions), target_count)
 
 
 def _normalize_level_map(level_map: List[List[Tile]], max_width: int) -> None:

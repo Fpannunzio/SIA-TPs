@@ -1,0 +1,12 @@
+---
+level: level3.txt
+strategy:
+#  name: DFS
+#  name: BFS
+#  name: IDDFS_DUP
+  name: GREEDY
+  params:
+    step: 5  # Only valid for IDDFS strategy
+    filter_lost_states: true  # Only valid for uninformed strategies (DFS, BFS, IDDFS) - Default true
+render: true
+...
