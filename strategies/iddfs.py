@@ -1,23 +1,13 @@
 from collections import deque
-from typing import Deque, Set, Iterator, Collection, Tuple, Dict, Any, Optional
+from typing import Deque, Set, Iterator, Collection, Dict, Any, Optional
 
 from node import Node
 from state import State
 from strategy_stats import StrategyStats
 
 
-# Sacar del set de ancestros todos aquellos estados que no forman parte del camino al estado actual.
-# Teniendo en cuenta que se recorre el arbol de forma prefija, basta con analizar la profundidad
-# de los nodos para saber si pueden ser sacados.
-def purge_parent_stack(depth: int, parent_nodes: Deque[Node], ancestors: Set[State]):
-    if parent_nodes:
-        while parent_nodes[-1].depth >= depth:
-            parent_to_be_removed: Node = parent_nodes.pop()
-            ancestors.remove(parent_to_be_removed.state)
-
-
-def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Optional[Dict[str, Any]]) -> Collection[State]:
-
+def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Optional[Dict[str, Any]]) -> \
+        Collection[State]:
     filter_lost_states: bool = (strategy_params.get('filter_lost_states', True) if strategy_params else True)
     step: int = (strategy_params.get('filter_lost_states', 10) if strategy_params else 10)  # Default Step 10
 
@@ -26,22 +16,19 @@ def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Opt
     stack: Deque[Node] = deque()
 
     # Nodos frontera que fueron cortados por limite de profundidad y van a ser utilziados
-    # para empezar a busacar cuando se investigue la profundidad siguiente. Ademas, tienen un set
-    # con todos los estados anteriores asi mismo, utilizado para evitar repetir estados y caer en ciclos
-    edge_nodes: Deque[Tuple[Node, Set[State]]] = deque()
-    edge_nodes.append((root, set()))
+    # para empezar a busacar cuando se investigue la profundidad siguiente.
+    edge_nodes: Deque[Node] = deque()
+    edge_nodes.append(root)
+
+    visited_states: Dict[State, int] = dict()
+    visited_states[root.state] = 0
 
     while edge_nodes:
 
-        edge_node: Node
-        ancestors: Set[State]
-
-        (edge_node, ancestors) = edge_nodes.popleft()
+        edge_node: Node = edge_nodes.popleft()
 
         # Profundidad aumenta en funcion de un paso fijo.
         max_depth: int = edge_node.depth + step
-
-        parent_nodes: Deque[Node] = deque()
 
         stack.append(edge_node)
 
@@ -54,23 +41,19 @@ def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Opt
                 if current_node.has_won():
                     return current_node.get_state_list()
 
-                purge_parent_stack(current_node.depth, parent_nodes, ancestors)
-
-                new_nodes_iter: Iterator[Node] = filter(lambda node: node.state not in ancestors, current_node.expand(filter_lost_states))
-
-                has_children: bool = False
+                new_nodes_iter: Iterator[Node] = filter(lambda node:
+                                                        node.state not in visited_states.keys() or node.depth <
+                                                        visited_states[node.state],
+                                                        current_node.expand(filter_lost_states))
 
                 for new_node in new_nodes_iter:
-                    has_children = True
+                    visited_states[new_node.state] = new_node.depth
                     stack.append(new_node)
 
-                if has_children:
-                    parent_nodes.append(current_node)
-                    ancestors.add(current_node.state)
-                    strategy_stats.inc_exploded_node_count()
+                strategy_stats.inc_exploded_node_count()
 
             else:
-                edge_nodes.append((current_node, ancestors.copy()))
+                edge_nodes.append(current_node)
 
             strategy_stats.set_current_nodes_stored(len(stack))
 
