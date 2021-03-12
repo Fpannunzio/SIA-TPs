@@ -8,7 +8,7 @@ class StrategyStats:
     @staticmethod
     def _validate_property(prop: Optional[Any], error_str: str) -> None:
         if prop is None:
-            raise ValueError(error_str)
+            raise RuntimeError(error_str)
 
     def __init__(self, config: Config) -> None:
 
@@ -61,7 +61,7 @@ class StrategyStats:
 
     def dec_leaf_node_count(self) -> None:
         if not self.leaf_node_count or self.leaf_node_count == 0:
-            raise ValueError(f'Leaf count cannot be -1')
+            raise RuntimeError(f'Leaf count cannot be -1')
 
         self.leaf_node_count = (self.leaf_node_count + 1 if self.leaf_node_count else 1)
 

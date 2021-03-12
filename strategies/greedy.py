@@ -1,26 +1,18 @@
-from typing import Set, Iterator, Collection, Dict, Any, Optional, List
+from typing import Set, Iterator, Collection, Dict, Any, Optional, List, Callable
 
 from config_loader import StrategyParams
+from heuristics import get_heuristic_from_strategy_params
 from node import InformedNode
 from state import State
 from strategy_stats import StrategyStats
 import heapq
 
 
-def manhattan_distance(current_node: InformedNode) -> int:
-    heuristic = 0
-    for target in current_node.state.level_map.targets:
-        distances: Set[int] = set()
-        for box in current_node.state.boxes:
-            distances.add(abs(target.x - box.x) + abs(target.y - box.y))
-        heuristic += min(distances)
-
-    return heuristic
-
-
 def greedy(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
 
-    root: InformedNode = InformedNode(init_state, None, manhattan_distance)
+    heuristic: Callable[[InformedNode], int] = get_heuristic_from_strategy_params(strategy_params)
+
+    root: InformedNode = InformedNode(init_state, None, heuristic)
 
     visited_states: Set[State] = set()
     visited_states.add(root.state)

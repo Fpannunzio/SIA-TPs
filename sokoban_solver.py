@@ -49,7 +49,7 @@ def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: Strateg
                   strategy_params: StrategyParams) -> Collection[State]:
 
     if strategy_name not in strategy_map:
-        raise RuntimeError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')
+        raise ValueError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')
 
     start: float = perf_counter()
     states: Collection[State] = strategy_map[strategy_name](init_state, strategy_stats, strategy_params)
@@ -61,13 +61,23 @@ def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: Strateg
     return states
 
 
-# Usage: python3 sokoban_solver.py [config_file]
+# Usage: python3 sokoban_solver.py [config_file_path]
 if __name__ == "__main__":
     argv = sys.argv
 
     config_file: str = 'config.yaml'
-
     if len(argv) > 1:
         config_file = argv[1]
 
-    main(config_file)
+    try:
+        main(config_file)
+
+    except ValueError as e:
+        print('-' * 50)
+        print(f'There was an error found in the configuration file {config_file} or in the level file selected:')
+        print(e)
+
+    except RuntimeError as e:
+        print('-' * 50)
+        print('An unexpected error was encountered. Please inform the developers about this issue.')
+        raise e
