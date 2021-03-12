@@ -5,8 +5,6 @@ from config_loader import Config
 from strategies.dfs import dfs
 from strategies.bfs import bfs
 from strategies.iddfs import iddfs
-from strategies.iddfs_dup_states import iddfs_dup
-from strategies.greedy import greedy
 from strategy_stats import StrategyStats
 from visualization.game_renderer import GameRenderer
 import sys
@@ -19,8 +17,7 @@ strategy_map: Dict[str, Callable[[State, StrategyStats, Optional[Dict[str, Any]]
     'DFS': dfs,
     'BFS': bfs,
     'IDDFS': iddfs,
-    'IDDFS_DUP': iddfs_dup,
-    'GREEDY': greedy,
+    # 'GREEDY': greedy,
     # 'A*': a_star,
 }
 
