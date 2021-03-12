@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Set
 
 Position = NamedTuple('Position', [('x', int), ('y', int)])
 
@@ -18,8 +18,9 @@ class Tile(Enum):
 
 class Map:
 
-    def __init__(self, map: List[List[Tile]]) -> None:
+    def __init__(self, map: List[List[Tile]], targets: Set[Position]) -> None:
         self.map = map
+        self.targets = targets
 
     def get_tile(self, pos: Position):
 
