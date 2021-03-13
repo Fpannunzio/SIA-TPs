@@ -25,11 +25,11 @@ def load_initial_state(level_name: str) -> State:
                 try:
                     tile = Tile(rows[y][x])
                 except ValueError:
-                    raise RuntimeError(f'Invalid character {rows[y][x]}. Only {list(Tile)} allowed')
+                    raise ValueError(f'Invalid character {rows[y][x]}. Only {list(Tile)} allowed')
 
                 if tile == Tile.PLAYER:
                     if player_pos:
-                        raise RuntimeError('Two players were found on map. Only one allowed')
+                        raise ValueError('Two players were found on map. Only one allowed')
                     else:
                         player_pos = Position(x, y)
                         tile = Tile.AIR
@@ -52,13 +52,13 @@ def load_initial_state(level_name: str) -> State:
             level_map.append(level_row)
 
         if not player_pos:
-            raise RuntimeError(f'No player found on map. Please include a {Tile.PLAYER.value} character')
+            raise ValueError(f'No player found on map. Please include a {Tile.PLAYER.value} character')
 
         if len(box_positions) == 0:
-            raise RuntimeError(f'No boxes included. Please use the {Tile.BOX.value} character')
+            raise ValueError(f'No boxes included. Please use the {Tile.BOX.value} character')
 
         if len(box_positions) != target_count:
-            raise RuntimeError('Box target count and box count differ. Please make them equal')
+            raise ValueError('Box target count and box count differ. Please make them equal')
 
         _normalize_level_map(level_map, max_width)
 
