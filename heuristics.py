@@ -2,6 +2,7 @@ from typing import Callable, Dict
 
 from config_loader import StrategyParams
 from node import InformedNode
+import math
 
 # TODO: Agregar dos heuristicas mas y definir los nombres de todas
 
@@ -18,8 +19,22 @@ def target_near_box_heuristic(current_node: InformedNode) -> int:
     return total_distance
 
 
+def euclidean_distance_heuristic(current_node: InformedNode) -> int:
+    total_distance: int = 0
+    for target in current_node.state.level_map.targets:
+        total_distance += min(math.sqrt((target.x - box.x)**2 + (target.y - box.y)**2) for box in current_node.state.boxes)
+
+    return total_distance
+
+
+def open_goal_heuristic(current_node: InformedNode) -> int:
+    return current_node.state.targets_remaining
+
+
 heuristic_map: Dict[str, Callable[[InformedNode], int]] = {
     'target_near_box': target_near_box_heuristic,
+    'euclidean_distance': euclidean_distance_heuristic,
+    'open_goal': open_goal_heuristic
 }
 
 

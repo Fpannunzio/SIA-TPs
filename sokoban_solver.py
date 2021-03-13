@@ -6,6 +6,7 @@ from strategies.dfs import dfs
 from strategies.bfs import bfs
 from strategies.iddfs import iddfs
 from strategies.greedy import greedy
+from strategies.a_star import a_star
 from strategy_stats import StrategyStats
 from visualization.game_renderer import GameRenderer
 import sys
@@ -19,7 +20,7 @@ strategy_map: Dict[str, Callable[[State, StrategyStats, StrategyParams], Collect
     'BFS': bfs,
     'IDDFS': iddfs,
     'GREEDY': greedy,
-    # 'A*': a_star,
+    'A*': a_star,
 }
 
 
