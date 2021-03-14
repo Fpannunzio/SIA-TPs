@@ -8,6 +8,7 @@ from strategies.iddfs import iddfs
 from strategies.greedy import greedy
 from strategies.a_star import a_star
 from strategy_stats import StrategyStats
+from strategies.ida import ida
 from visualization.game_renderer import GameRenderer
 import sys
 
@@ -21,6 +22,7 @@ strategy_map: Dict[str, Callable[[State, StrategyStats, StrategyParams], Collect
     'IDDFS': iddfs,
     'GREEDY': greedy,
     'A*': a_star,
+    'IDA': ida
 }
 
 

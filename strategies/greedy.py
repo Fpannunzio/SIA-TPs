@@ -9,7 +9,6 @@ import heapq
 
 
 def greedy(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
-
     heuristic: Callable[[InformedNode], int] = get_heuristic_from_strategy_params(strategy_params)
 
     root: InformedNode = InformedNode(init_state, None, heuristic)
@@ -28,7 +27,8 @@ def greedy(init_state: State, strategy_stats: StrategyStats, strategy_params: St
         if current_node.has_won():
             return current_node.get_state_list()
 
-        new_nodes_iter: Iterator[InformedNode] = filter(lambda node: node.state not in visited_states, current_node.expand())
+        new_nodes_iter: Iterator[InformedNode] = filter(lambda node: node.state not in visited_states,
+                                                        current_node.expand())
         has_children: bool = False
 
         for node in new_nodes_iter:
