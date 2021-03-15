@@ -46,7 +46,7 @@ class StrategyStats:
         if not self.has_won:
             ret += f'Warning: This level had no solution\n'
 
-        ret += f'Total Runtime: {self.runtime} seconds\n' \
+        ret += f'Total runtime: {self.runtime} seconds\n' \
                f'Total moves (solution depth = total cost): {self.move_count}\n' \
                f'Total exploded nodes: {self.exploded_node_count}\n' \
                f'Total leaf nodes: {self.leaf_node_count}'
