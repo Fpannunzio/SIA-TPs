@@ -31,13 +31,13 @@ Para ejecutar el programa no es necesario hacer ningun tipo de compilacion, bast
 
 Para esto se debera correr `python sokoban_solver.py`. 
 
-A menos que se indique lo contrario, se buscara en la raiz del proyecto el archivo `config.yaml` donde debera estar toda la informacion de [configuracion](#config). 
+A menos que se indique lo contrario, se buscara en la raiz del proyecto el archivo `config.yaml` donde debera estar toda la informacion de [configuracion](#configuracion). 
 
 En caso de querer almacenar el archivo de configuracion en otro ubicacion o con otro nombre se debera proveer el path del mismo como argumento de ejecucion `python sokoban_solver.py <path>`.
 
 Una vez finalizado se abrira de forma automatica una ventana mostrando el juego y la secuencias de pasos correspondiente a la solucion.
 
-### Configuracion {#config}
+### Configuracion
 
 La configuracion de ejecucion es realizada via un archivo de tipo [YAML][yaml] el cual debera contener la siguiente informacion.
 
