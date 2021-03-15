@@ -81,6 +81,10 @@ if __name__ == "__main__":
         print(f'There was an error found in the configuration file {config_file} or in the level file selected:')
         print(e)
 
+    except FileNotFoundError as e:
+        print('-' * 50)
+        print(f'Config file or level file {e.filename} was not found')
+
     except RuntimeError as e:
         print('-' * 50)
         print('An unexpected error was encountered. Please inform the developers about this issue.')
