@@ -5,10 +5,10 @@ Position = NamedTuple('Position', [('x', int), ('y', int)])
 
 
 class Tile(Enum):
-    WALL = 'X'
-    BOX = '*'
+    WALL = '#'
+    BOX = '$'
     TARGET = '.'
-    TARGET_FILLED = '+'
+    TARGET_FILLED = '*'
     AIR = ' '
     PLAYER = '@'
 
