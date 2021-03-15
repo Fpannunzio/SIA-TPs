@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque, Set, Iterator, Collection, Dict, Any, Optional
+from typing import Deque, Set, Iterator, Collection, Dict
 
 from config_loader import StrategyParams
 from node import Node
@@ -62,4 +62,4 @@ def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Str
 
             strategy_stats.inc_exploded_node_count()
 
-    return [init_state]
+    return []

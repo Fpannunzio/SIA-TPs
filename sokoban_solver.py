@@ -44,7 +44,7 @@ def main(config_file: str):
     strategy_stats.print_stats()
 
     # Render Solution
-    if config.render:
+    if states and config.render:
         GameRenderer(states).render()
 
 
@@ -60,6 +60,7 @@ def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: Strateg
 
     strategy_stats.set_runtime(start, end)
     strategy_stats.set_solution_move_count(len(states))
+    strategy_stats.set_has_won(bool(states))
 
     return states
 

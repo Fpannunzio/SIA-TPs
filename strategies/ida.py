@@ -60,4 +60,4 @@ def ida(init_state: State, strategy_stats: StrategyStats, strategy_params: Strat
 
             strategy_stats.inc_exploded_node_count()
 
-    return [init_state]
+    return []
