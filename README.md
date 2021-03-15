@@ -1,6 +1,6 @@
 # Sokoban Solver
 
-Sokoban Solver es un programa implementado en Python3 para resolver niveles del juego [Sokoban][sokoban] utilizando los siguientes algoritmos de busqueda.
+Sokoban Solver es un programa implementado en Python3 para resolver niveles del juego [Sokoban](https://en.wikipedia.org/wiki/Sokoban) utilizando los siguientes algoritmos de busqueda.
 
 - Desinformados
   - BFS - Breadth First Search
@@ -39,12 +39,12 @@ Una vez finalizado se abrira de forma automatica una ventana mostrando el juego 
 
 ### Configuracion
 
-La configuracion de ejecucion es realizada via un archivo de tipo [YAML][yaml] el cual debera contener la siguiente informacion.
+La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https://yaml.org/) el cual debera contener la siguiente informacion.
 
 - `level: <path_to_level>`
   - **Requerido**.
   - El path es relativo a `assets/levels`. 
-  - El archivo tiene que estar en ["notacion estandar"][sokoban_notation] de Sokoban.
+  - El archivo tiene que estar en ["notacion estandar"](https://docs.ansible.com/ansible/2.3/YAMLSyntax.html) de Sokoban.
 - `strategy: `
   - `name: <strategy_name>`
     - **Requerido**
@@ -93,9 +93,4 @@ El resultado de la ejecucion es impreso por salida estandar una vez finalizada l
 
 ## Reconocimientos
 
-Tanto la inspiracion para la logica del juego como los assets visuales utilizados provienen de la implementacion de [Sokoban de Gemkodor][sokoban_assets]
-
-[sokoban]: (https://en.wikipedia.org/wiki/Sokoban)
-[yaml]: (https://yaml.org/)
-[sokoban_notation]: (https://docs.ansible.com/ansible/2.3/YAMLSyntax.html)
-[sokoban_assets]: (https://github.com/Gemkodor/sokoban)
+Tanto la inspiracion para la logica del juego como los assets visuales utilizados provienen de la implementacion de [Sokoban de Gemkodor](https://github.com/Gemkodor/sokoban)
