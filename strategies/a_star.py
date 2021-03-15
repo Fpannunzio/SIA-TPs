@@ -1,4 +1,4 @@
-from typing import Set, Iterator, Collection, Dict, Any, Optional, List, Callable
+from typing import Set, Iterator, Collection, List, Callable
 
 from config_loader import StrategyParams
 from heuristics import get_heuristic_from_strategy_params
@@ -8,13 +8,13 @@ from strategy_stats import StrategyStats
 import heapq
 
 
-def astar_wrapper(heuristic: Callable[[InformedNode], int]) -> Callable[[InformedNode], int]:
+def weighted_heuristic(heuristic: Callable[[InformedNode], int]) -> Callable[[InformedNode], int]:
     return lambda node: heuristic(node) + node.depth
 
 
 def a_star(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
 
-    heuristic: Callable[[InformedNode], int] = astar_wrapper(get_heuristic_from_strategy_params(strategy_params))
+    heuristic: Callable[[InformedNode], int] = weighted_heuristic(get_heuristic_from_strategy_params(strategy_params))
 
     root: InformedNode = InformedNode(init_state, None, heuristic)
 
@@ -32,7 +32,8 @@ def a_star(init_state: State, strategy_stats: StrategyStats, strategy_params: St
         if current_node.has_won():
             return current_node.get_state_list()
 
-        new_nodes_iter: Iterator[InformedNode] = filter(lambda node: node.state not in visited_states, current_node.expand())
+        new_nodes_iter: Iterator[InformedNode] = filter(lambda node: node.state not in visited_states,
+                                                        current_node.expand())
         has_children: bool = False
 
         for node in new_nodes_iter:

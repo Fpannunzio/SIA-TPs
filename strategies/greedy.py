@@ -1,4 +1,4 @@
-from typing import Set, Iterator, Collection, Dict, Any, Optional, List, Callable
+from typing import Set, Iterator, Collection, List, Callable
 
 from config_loader import StrategyParams
 from heuristics import get_heuristic_from_strategy_params
@@ -9,6 +9,7 @@ import heapq
 
 
 def greedy(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
+
     heuristic: Callable[[InformedNode], int] = get_heuristic_from_strategy_params(strategy_params)
 
     root: InformedNode = InformedNode(init_state, None, heuristic)

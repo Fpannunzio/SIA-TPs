@@ -35,33 +35,31 @@ def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: Str
         strategy_stats.inc_leaf_node_count()
 
         while stack:
-
             current_node: Node = stack.pop()
 
-            if current_node.depth <= max_depth:  # TODO(tobi): No es < ??
-
-                if current_node.has_won():
-                    return current_node.get_state_list()
-
-                new_nodes_iter: Iterator[Node] = \
-                    filter(
-                        lambda node: node.state not in visited_states_depth_dict.keys() or node.depth < visited_states_depth_dict[node.state],
-                        current_node.expand(filter_lost_states)
-                    )
-                has_children: bool = False
-
-                for new_node in new_nodes_iter:
-                    visited_states_depth_dict[new_node.state] = new_node.depth
-                    stack.append(new_node)
-                    strategy_stats.inc_leaf_node_count()
-                    has_children = True
-
-                if has_children:
-                    strategy_stats.dec_leaf_node_count()
-
-                strategy_stats.inc_exploded_node_count()
-
-            else:
+            if current_node.depth >= max_depth:
                 edge_nodes.append(current_node)
+                continue
+
+            if current_node.has_won():
+                return current_node.get_state_list()
+
+            new_nodes_iter: Iterator[Node] = \
+                filter(
+                    lambda node: node.state not in visited_states_depth_dict.keys() or node.depth < visited_states_depth_dict[node.state],
+                    current_node.expand(filter_lost_states)
+                )
+            has_children: bool = False
+
+            for new_node in new_nodes_iter:
+                visited_states_depth_dict[new_node.state] = new_node.depth
+                stack.append(new_node)
+                strategy_stats.inc_leaf_node_count()
+                has_children = True
+
+            if has_children:
+                strategy_stats.dec_leaf_node_count()
+
+            strategy_stats.inc_exploded_node_count()
 
     return [init_state]
