@@ -39,7 +39,7 @@ def target_box_dist_plus_open_goal_heuristic(current_node: InformedNode) -> int:
 
 heuristic_map: Dict[str, Callable[[InformedNode], int]] = {
     'target_box_dist': manhattan_distance_target_box_heuristic,
-    'player_box_dist': manhattan_distance_target_box_heuristic,
+    'player_box_dist': manhattan_distance_player_box_heuristic,
     'open_goal': open_goal_heuristic,
     'target_box_dist_plus_open_goal': target_box_dist_plus_open_goal_heuristic,
     'player_box_dist_plus_open_goal': player_box_dist_plus_open_goal_heuristic,  # The best!!!
