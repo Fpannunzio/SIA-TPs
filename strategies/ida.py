@@ -3,21 +3,17 @@ from typing import Set, Iterator, Collection, List, Callable, Deque
 
 from config_loader import StrategyParams
 from heuristics import get_heuristic_from_strategy_params
-from node import InformedNode
+from node import InformedNode, CostInformedNode
 from state import State
 from strategy_stats import StrategyStats
 import heapq
 
 
-def weighted_heuristic(heuristic: Callable[[InformedNode], int]) -> Callable[[InformedNode], int]:
-    return lambda node: heuristic(node) + node.depth
-
-
 def ida(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
 
-    heuristic: Callable[[InformedNode], int] = weighted_heuristic(get_heuristic_from_strategy_params(strategy_params))
+    heuristic: Callable[[InformedNode], int] = get_heuristic_from_strategy_params(strategy_params)
 
-    root: InformedNode = InformedNode(init_state, None, heuristic)
+    root: InformedNode = CostInformedNode(init_state, None, heuristic)
 
     visited_states: Set[State] = set()
     visited_states.add(root.state)
@@ -29,7 +25,7 @@ def ida(init_state: State, strategy_stats: StrategyStats, strategy_params: Strat
 
         limit_node: InformedNode = heapq.heappop(edge_nodes)
 
-        limit: int = limit_node.heuristic_val
+        limit: int = limit_node.get_heuristic_val()
 
         stack: Deque[InformedNode] = deque()
         stack.append(limit_node)

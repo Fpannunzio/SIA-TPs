@@ -1,6 +1,6 @@
 from collections import deque
 from functools import total_ordering
-from typing import List, Iterator, Optional, Deque, Collection, Callable
+from typing import Iterator, Optional, Deque, Collection, Callable
 
 from state import State
 
@@ -49,7 +49,11 @@ class InformedNode(Node):
 
         winnable_states_iter = filter(lambda state: not state.has_lost(), expanded_states_iter)
 
-        return map(lambda state: InformedNode(state, self, self.heuristic_func), winnable_states_iter)
+        # Crea un nodo del mismo tipo que el nodo actual
+        return map(lambda state: type(self)(state, self, self.heuristic_func), winnable_states_iter)
+
+    def get_heuristic_val(self):
+        return self.heuristic_val
 
     # This class is design to be ordered only around the heuristic definition provided, independent of the state
     def __eq__(self, o: object) -> bool:
@@ -64,3 +68,29 @@ class InformedNode(Node):
     @total_ordering
     def __lt__(self, other: 'InformedNode') -> bool:
         return self.heuristic_val < other.heuristic_val
+
+
+# Clase que implementa un ordenamiento tanto por heuristica como por costo, dandole mas importancia a este ultimo.
+# Usado en todos los algoritmos de la clase A*
+class CostInformedNode(InformedNode):
+
+    def get_heuristic_val(self):
+        return self.heuristic_val + self.depth
+
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, CostInformedNode):
+            return False
+
+        return self.depth == o.depth and self.get_heuristic_val() == o.get_heuristic_val()
+
+    def __hash__(self) -> int:
+        return hash((self.heuristic_val, self.depth))
+
+    @total_ordering
+    def __lt__(self, other: 'CostInformedNode') -> bool:
+        eq_heu_val: bool = self.get_heuristic_val() == other.get_heuristic_val()
+
+        if eq_heu_val:
+            return self.depth < other.depth
+        else:
+            return self.get_heuristic_val() < other.get_heuristic_val()
