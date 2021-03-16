@@ -1,8 +1,17 @@
-from typing import Callable, Dict
+import itertools
+from typing import Callable, Dict, List, Tuple, Iterable, FrozenSet
 
 from config_loader import StrategyParams
 from map import Position
 from node import InformedNode
+
+
+def manhattan_distance(pos1: Position, pos2: Position) -> int:
+    return abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y)
+
+
+def manhattan_distance_sum(iter1: Iterable[Position], iter2: Iterable[Position]):
+    return sum(manhattan_distance(two_pos[0], two_pos[1]) for two_pos in zip(iter1, iter2))
 
 
 # Minimiza la suma de las distancias entre un target y la caja mas cercana.
@@ -12,14 +21,36 @@ from node import InformedNode
 def manhattan_distance_target_box_heuristic(current_node: InformedNode) -> int:
     total_distance: int = 0
     for target in current_node.state.level_map.targets:
-        total_distance += min(abs(target.x - box.x) + abs(target.y - box.y) for box in current_node.state.boxes)
+        total_distance += min(manhattan_distance(target, box) for box in current_node.state.boxes)
 
     return total_distance
 
 
+# For manhattan_distance_unique_target_box_heuristic
+unique_target_box_dist_cache: Dict[FrozenSet[Position], int] = {}
+
+
+def manhattan_distance_unique_target_box_heuristic(current_node: InformedNode) -> int:
+    frozen_boxes: FrozenSet[Position] = frozenset(current_node.state.boxes)
+    if frozen_boxes in unique_target_box_dist_cache:
+        return unique_target_box_dist_cache[frozen_boxes]
+
+    targets: List[Position] = list(current_node.state.level_map.targets)
+
+    # Distancia imposiblemente grande
+    min_dist: int = len(current_node.state.level_map.map) * len(current_node.state.level_map.map[0])
+
+    for boxes in itertools.permutations(frozen_boxes):
+        min_dist = min(min_dist, manhattan_distance_sum(targets, boxes))
+
+    unique_target_box_dist_cache[frozen_boxes] = min_dist
+
+    return min_dist
+
+
 def manhattan_distance_player_box_heuristic(current_node: InformedNode) -> int:
     player_pos: Position = current_node.state.player_pos
-    return min(abs(player_pos.x - box.x) + abs(player_pos.y - box.y) for box in current_node.state.boxes)
+    return min(manhattan_distance(player_pos, box) for box in current_node.state.boxes)
 
 
 def open_goal_heuristic(current_node: InformedNode) -> int:
@@ -34,7 +65,8 @@ heuristic_map: Dict[str, Callable[[InformedNode], int]] = {
     'target_box_dist': manhattan_distance_target_box_heuristic,
     'player_box_dist': manhattan_distance_player_box_heuristic,
     'open_goal': open_goal_heuristic,
-    'player_box_dist_plus_open_goal': player_box_dist_plus_open_goal_heuristic,  # The best!!!
+    'player_box_dist_plus_open_goal': player_box_dist_plus_open_goal_heuristic,
+    'unique_target_box_dist': manhattan_distance_unique_target_box_heuristic
 }
 
 
