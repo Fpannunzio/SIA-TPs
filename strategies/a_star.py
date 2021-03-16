@@ -10,7 +10,7 @@ import heapq
 
 def a_star(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
 
-    heuristic: Callable[[InformedNode], int] = get_heuristic_from_strategy_params(strategy_params)
+    heuristic: Callable[[State], int] = get_heuristic_from_strategy_params(strategy_params)
 
     root: InformedNode = CostInformedNode(init_state, None, heuristic)
 

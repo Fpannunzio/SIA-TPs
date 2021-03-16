@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque, Set, Iterator, Collection, Dict
+from typing import Deque, Iterator, Collection, Dict
 
 from config_loader import StrategyParams
 from node import Node

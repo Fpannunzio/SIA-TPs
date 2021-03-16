@@ -1,9 +1,9 @@
 import itertools
-from typing import Callable, Dict, List, Tuple, Iterable, FrozenSet
+from typing import Callable, Dict, List, Iterable, FrozenSet
 
 from config_loader import StrategyParams
 from map import Position
-from node import InformedNode
+from state import State
 
 
 def manhattan_distance(pos1: Position, pos2: Position) -> int:
@@ -18,10 +18,10 @@ def manhattan_distance_sum(iter1: Iterable[Position], iter2: Iterable[Position])
 # Busca que t.odo target tenga una caja cerca
 # La distancia usada es la Distancia Manhattan
 # Es admisible pues se asume que no hay paredes, es decir, el mejor caso posible
-def manhattan_distance_target_box_heuristic(current_node: InformedNode) -> int:
+def manhattan_distance_target_box_heuristic(state: State) -> int:
     total_distance: int = 0
-    for target in current_node.state.level_map.targets:
-        total_distance += min(manhattan_distance(target, box) for box in current_node.state.boxes)
+    for target in state.level_map.targets:
+        total_distance += min(manhattan_distance(target, box) for box in state.boxes)
 
     return total_distance
 
@@ -30,15 +30,15 @@ def manhattan_distance_target_box_heuristic(current_node: InformedNode) -> int:
 unique_target_box_dist_cache: Dict[FrozenSet[Position], int] = {}
 
 
-def manhattan_distance_unique_target_box_heuristic(current_node: InformedNode) -> int:
-    frozen_boxes: FrozenSet[Position] = frozenset(current_node.state.boxes)
+def manhattan_distance_unique_target_box_heuristic(state: State) -> int:
+    frozen_boxes: FrozenSet[Position] = frozenset(state.boxes)
     if frozen_boxes in unique_target_box_dist_cache:
         return unique_target_box_dist_cache[frozen_boxes]
 
-    targets: List[Position] = list(current_node.state.level_map.targets)
+    targets: List[Position] = list(state.level_map.targets)
 
     # Distancia imposiblemente grande
-    min_dist: int = len(current_node.state.level_map.map) * len(current_node.state.level_map.map[0])
+    min_dist: int = len(state.level_map.map) * len(state.level_map.map[0])
 
     for boxes in itertools.permutations(frozen_boxes):
         min_dist = min(min_dist, manhattan_distance_sum(targets, boxes))
@@ -48,20 +48,20 @@ def manhattan_distance_unique_target_box_heuristic(current_node: InformedNode) -
     return min_dist
 
 
-def manhattan_distance_player_box_heuristic(current_node: InformedNode) -> int:
-    player_pos: Position = current_node.state.player_pos
-    return min(manhattan_distance(player_pos, box) for box in current_node.state.boxes)
+def manhattan_distance_player_box_heuristic(state: State) -> int:
+    player_pos: Position = state.player_pos
+    return min(manhattan_distance(player_pos, box) for box in state.boxes)
 
 
-def open_goal_heuristic(current_node: InformedNode) -> int:
-    return current_node.state.targets_remaining
+def open_goal_heuristic(state: State) -> int:
+    return state.targets_remaining
 
 
-def player_box_dist_plus_open_goal_heuristic(current_node: InformedNode) -> int:
-    return manhattan_distance_player_box_heuristic(current_node) + open_goal_heuristic(current_node)
+def player_box_dist_plus_open_goal_heuristic(state: State) -> int:
+    return manhattan_distance_player_box_heuristic(state) + open_goal_heuristic(state)
 
 
-heuristic_map: Dict[str, Callable[[InformedNode], int]] = {
+heuristic_map: Dict[str, Callable[[State], int]] = {
     'target_box_dist': manhattan_distance_target_box_heuristic,
     'player_box_dist': manhattan_distance_player_box_heuristic,
     'open_goal': open_goal_heuristic,
@@ -70,14 +70,14 @@ heuristic_map: Dict[str, Callable[[InformedNode], int]] = {
 }
 
 
-def get_heuristic(heuristic_name: str) -> Callable[[InformedNode], int]:
+def get_heuristic(heuristic_name: str) -> Callable[[State], int]:
     if heuristic_name not in heuristic_map:
         raise ValueError(f'Invalid heuristic {heuristic_name}. Currently supported: {heuristic_map.keys()}')
 
     return heuristic_map[heuristic_name]
 
 
-def get_heuristic_from_strategy_params(strategy_params: StrategyParams) -> Callable[[InformedNode], int]:
+def get_heuristic_from_strategy_params(strategy_params: StrategyParams) -> Callable[[State], int]:
     if not strategy_params or 'heuristic' not in strategy_params:
         raise ValueError(f'A heuristic was not provided. For any informed strategy, include heuristic name in config'
                          f' (strategy: params: heuristic: heuristic_name)')

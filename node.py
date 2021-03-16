@@ -39,10 +39,10 @@ class Node:
 
 class InformedNode(Node):
 
-    def __init__(self, state: State, parent: Optional['InformedNode'], heuristic_func: Callable[['InformedNode'], int]):
+    def __init__(self, state: State, parent: Optional['InformedNode'], heuristic_func: Callable[[State], int]):
         super().__init__(state, parent)
         self.heuristic_func = heuristic_func
-        self.heuristic_val: int = self.heuristic_func(self)
+        self.heuristic_val: int = self.heuristic_func(self.state)
 
     def expand(self, filter_lost_states: bool = True) -> Iterator['InformedNode']:
         expanded_states_iter: Iterator[State] = map(self.state.move_player, self.state.get_valid_player_moves())
