@@ -55,12 +55,14 @@ def solve_sokoban(strategy_name: str, init_state: State, strategy_stats: Strateg
         raise ValueError(f'Invalid strategy {strategy_name}. Currently supported: {strategy_map.keys()}')
 
     start: float = perf_counter()
-    states: Collection[State] = strategy_map[strategy_name](init_state, strategy_stats, strategy_params)
+    states: Collection[State] = strategy_map[strategy_name](init_state, strategy_stats, strategy_params)  # Calculate Solution
     end: float = perf_counter()
 
     strategy_stats.set_runtime(start, end)
     strategy_stats.set_solution_move_count(len(states))
     strategy_stats.set_has_won(bool(states))
+    if not states:
+        strategy_stats.set_boundary_node_count(0)
 
     return states
 

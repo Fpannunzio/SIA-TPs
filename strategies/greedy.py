@@ -19,27 +19,21 @@ def greedy(init_state: State, strategy_stats: StrategyStats, strategy_params: St
 
     priority_queue: List[InformedNode] = [root]
     heapq.heapify(priority_queue)
-    strategy_stats.inc_leaf_node_count()
 
     while priority_queue:
 
         current_node: InformedNode = heapq.heappop(priority_queue)
 
         if current_node.has_won():
+            strategy_stats.set_boundary_node_count(len(priority_queue))
             return current_node.get_state_list()
 
         new_nodes_iter: Iterator[InformedNode] = filter(lambda node: node.state not in visited_states,
                                                         current_node.expand())
-        has_children: bool = False
 
         for node in new_nodes_iter:
             visited_states.add(node.state)
             heapq.heappush(priority_queue, node)
-            strategy_stats.inc_leaf_node_count()
-            has_children = True
-
-        if has_children:
-            strategy_stats.dec_leaf_node_count()
 
         strategy_stats.inc_exploded_node_count()
 

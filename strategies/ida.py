@@ -24,7 +24,6 @@ def ida(init_state: State, strategy_stats: StrategyStats, strategy_params: Strat
 
     edge_nodes: List[InformedNode] = [root]
     heapq.heapify(edge_nodes)
-    strategy_stats.inc_leaf_node_count()
 
     while edge_nodes:
 
@@ -39,6 +38,7 @@ def ida(init_state: State, strategy_stats: StrategyStats, strategy_params: Strat
             current_node: InformedNode = stack.pop()
 
             if current_node.has_won():
+                strategy_stats.set_boundary_node_count(len(stack) + len(edge_nodes))
                 return current_node.get_state_list()
 
             if current_node.heuristic_val > limit:
@@ -47,16 +47,10 @@ def ida(init_state: State, strategy_stats: StrategyStats, strategy_params: Strat
 
             new_nodes_iter: Iterator[InformedNode] = filter(lambda node: node.state not in visited_states,
                                                             current_node.expand())
-            has_children: bool = False
 
             for node in new_nodes_iter:
                 visited_states.add(node.state)
                 stack.append(node)
-                strategy_stats.inc_leaf_node_count()
-                has_children = True
-
-            if has_children:
-                strategy_stats.dec_leaf_node_count()
 
             strategy_stats.inc_exploded_node_count()
 
