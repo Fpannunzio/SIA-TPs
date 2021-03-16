@@ -3,9 +3,6 @@ from typing import Callable, Dict
 from config_loader import StrategyParams
 from map import Position
 from node import InformedNode
-import math
-
-# TODO: Agregar dos heuristicas mas y definir los nombres de todas
 
 
 # Minimiza la suma de las distancias entre un target y la caja mas cercana.
@@ -33,15 +30,10 @@ def player_box_dist_plus_open_goal_heuristic(current_node: InformedNode) -> int:
     return manhattan_distance_player_box_heuristic(current_node) + open_goal_heuristic(current_node)
 
 
-def target_box_dist_plus_open_goal_heuristic(current_node: InformedNode) -> int:
-    return manhattan_distance_target_box_heuristic(current_node) + open_goal_heuristic(current_node)
-
-
 heuristic_map: Dict[str, Callable[[InformedNode], int]] = {
     'target_box_dist': manhattan_distance_target_box_heuristic,
     'player_box_dist': manhattan_distance_player_box_heuristic,
     'open_goal': open_goal_heuristic,
-    'target_box_dist_plus_open_goal': target_box_dist_plus_open_goal_heuristic,
     'player_box_dist_plus_open_goal': player_box_dist_plus_open_goal_heuristic,  # The best!!!
 }
 

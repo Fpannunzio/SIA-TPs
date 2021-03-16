@@ -13,9 +13,9 @@ Sokoban Solver es un programa implementado en Python3 para resolver niveles del 
 
 ## Autores
 
-- [Brandy Tobias](https://github.com/tobiasbrandy)
-- [Pannunzio Faustino](https://github.com/Fpannunzio)
-- [Sagues Ignacio](https://github.com/isagues)
+- [Brandy, Tobias](https://github.com/tobiasbrandy)
+- [Pannunzio, Faustino](https://github.com/Fpannunzio)
+- [Sagues, Ignacio](https://github.com/isagues)
 
 ## Dependencias
 
@@ -57,7 +57,7 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
       - El valor por defecto es `10`.
     - `filter_lost_states: bool`
       - Aplica solo a los algoritmos desinformados (`BFS`, `DFS`, `IDDFS`).
-      - Permite filtrar aquellos estados en los cuales es imposible ganar ya que una caja fue movida a una esquina.
+      - Permite filtrar aquellos estados en los cuales es imposible ganar ya que una caja fue movida a una esquina de paredes.
       - El valor por defecto es `True`.
     - `heuristic: <heuristic_name>`
       - Aplica solo a los algoritmos informados (`GREEDY`, `A*`, `IDA`). **Requerido** en estos casos.
@@ -66,7 +66,6 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
         - `player_box_dist`: Manhattan Distance entre el jugador y su caja mas cercana.
         - `open_goal`: Cantidad de targets por completar.
         - `target_box_dist_plus_open_goal`: Suma entre `target_box_dist` y `open_goal`.
-        - `player_box_dist_plus_open_goal`: Suma entre `player_box_dist` y `open_goal`.
 - `render: bool`
   - Indica si se debera mostrar la solucion una vez que sea alcanzada.
   - Por defecto es `True`
@@ -91,6 +90,8 @@ El resultado de la ejecucion es impreso por salida estandar una vez finalizada l
 - `Total exploded nodes`: Cantidad de nodos que fueron analizados y expandidos para poder analizar a sus hijos.
 - `Total leaf nodes`: Cantidad de nodos hoja al finalizar la ejecucion.
 
+Ademas, se informa si el nivel seleccionado no posee solucion.
+
 ## Reconocimientos
 
-Tanto la inspiracion para la logica del juego como los assets visuales utilizados provienen de la implementacion de [Sokoban de Gemkodor](https://github.com/Gemkodor/sokoban)
+Tanto la inspiracion para la logica de rendering de la solucion, como los assets visuales utilizados provienen de la implementacion de [Sokoban de Gemkodor](https://github.com/Gemkodor/sokoban)
