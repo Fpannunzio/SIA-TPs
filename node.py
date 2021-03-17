@@ -65,6 +65,10 @@ class InformedNode(Node):
     def __hash__(self) -> int:
         return hash(self.heuristic_val)
 
+    def __repr__(self) -> str:
+        return f'InformedNode(heuristic={repr(self.get_heuristic_val())}, state={repr(self.state)},' \
+               f' parent_id={id(self.parent)})'
+
     @total_ordering
     def __lt__(self, other: 'InformedNode') -> bool:
         return self.heuristic_val < other.heuristic_val

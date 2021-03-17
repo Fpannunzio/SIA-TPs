@@ -37,7 +37,7 @@ def ida(init_state: State, strategy_stats: StrategyStats, strategy_params: Strat
                 strategy_stats.set_boundary_node_count(len(stack) + len(edge_nodes))
                 return current_node.get_state_list()
 
-            if current_node.heuristic_val > limit:
+            if current_node.get_heuristic_val() > limit:
                 heapq.heappush(edge_nodes, current_node)
                 continue
 
