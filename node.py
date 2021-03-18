@@ -74,7 +74,7 @@ class InformedNode(Node):
         return self.heuristic_val < other.heuristic_val
 
 
-# Clase que implementa un ordenamiento tanto por heuristica como por costo, dandole mas importancia a este ultimo.
+# Clase que implementa un ordenamiento tanto por heuristica como por costo.
 # Usado en todos los algoritmos de la clase A*
 class CostInformedNode(InformedNode):
 
@@ -95,6 +95,6 @@ class CostInformedNode(InformedNode):
         eq_heu_val: bool = self.get_heuristic_val() == other.get_heuristic_val()
 
         if eq_heu_val:
-            return self.depth < other.depth
+            return self.heuristic_val < other.heuristic_val
         else:
             return self.get_heuristic_val() < other.get_heuristic_val()
