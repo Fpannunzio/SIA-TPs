@@ -62,15 +62,15 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
     - `heuristic: <heuristic_name>`
       - Aplica solo a los algoritmos informados (`GREEDY`, `A*`, `IDA`). **Requerido** en estos casos.
       - Indica que heuristica sera utilizada. Valores posibles:
-        - `target_box_dist`: Manhattan Distance minima entre las cajas y los targets.
-        - `player_box_dist`: Manhattan Distance entre el jugador y su caja mas cercana.
-        - `open_goal`: Cantidad de targets por completar.
-        - `target_box_dist_plus_open_goal`: Suma entre `target_box_dist` y `open_goal`.
+        - `open_goal`: Cantidad de targets vacios restantes.
+        - `player_box_dist`: Distancia entre el jugador y la caja mas cercana.
+        - `target_box_dist`: Suma de la distancias los targets y la caja mas cercana.
+        - `unique_target_box_dist`: Igual que `target_box_dist`, pero teniendo en cuenta que una caja solo se puede emparejar con un target.
 - `render: bool`
   - Indica si se debera mostrar la solucion una vez que sea alcanzada.
   - Por defecto es `True`
 
-Ejemplo de configuracion
+Ejemplos de configuracion
 
 ```yaml
 level: level1.txt
@@ -79,6 +79,14 @@ strategy:
   params:
     step: 25
     filter_lost_states: true
+```
+```yaml
+level: level3.txt
+strategy:
+  name: IDA
+  params:
+    heuristic: unique_target_box_dist
+render: false
 ```
 
 ### Resultado
