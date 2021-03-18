@@ -96,7 +96,7 @@ El resultado de la ejecucion es impreso por salida estandar una vez finalizada l
 - `Total runtime`: Tiempo que se tardo en correr el algoritmo.
 - `Total moves`: Cantidad de pasos que contiene la solucion encontrada. Teniendo en cuesta que es un problema de costo uniforme, tambien indica el costo de la solucion.
 - `Total exploded nodes`: Cantidad de nodos que fueron analizados y expandidos para poder analizar a sus hijos.
-- `Total leaf nodes`: Cantidad de nodos hoja al finalizar la ejecucion.
+- `Total boundary nodes`: Cantidad de nodos frontera al finalizar la ejecucion.
 
 Ademas, se informa si el nivel seleccionado no posee solucion.
 
