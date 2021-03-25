@@ -38,19 +38,27 @@ class ItemSet:
         self.chestpieces: Item = chestpieces
 
     def get_total_strength(self):
-        pass
+        return self.sum_items_total('strength')
 
     def get_total_agility(self):
-        pass
+        return self.sum_items_total('agility')
 
     def get_total_experience(self):
-        pass
+        return self.sum_items_total('experience')
 
     def get_total_endurance(self):
-        pass
+        return self.sum_items_total('endurance')
 
     def get_total_vitality(self):
-        pass
+        return self.sum_items_total('vitality')
+
+    def sum_items_total(self, attribute: str):
+        accum: float = 0
+
+        for item_type in ItemType:
+            accum += getattr(getattr(self, item_type.value), attribute)
+
+        return accum
 
 
 class ItemRepository:
@@ -104,7 +112,8 @@ class ItemRepositories:
     def __init__(self, config: Config) -> None:
         supported_item_types: List[str] = [item_type.value for item_type in ItemType]
         if not all(item_type in config.item_files for item_type in supported_item_types):
-            raise ValueError(f'There are arguments missing. Make sure all item types files {supported_item_types} are present')
+            raise ValueError(
+                f'There are arguments missing. Make sure all item types files {supported_item_types} are present')
 
         self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapon.value])
         self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boot.value])
