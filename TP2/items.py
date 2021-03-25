@@ -37,19 +37,19 @@ class ItemSet:
         self.gauntlets: Item = gauntlets
         self.chestpieces: Item = chestpieces
 
-    def get_total_strength(self, item_id: int):
+    def get_total_strength(self):
         pass
 
-    def get_total_agility(self, item_id: int):
+    def get_total_agility(self):
         pass
 
-    def get_total_experience(self, item_id: int):
+    def get_total_experience(self):
         pass
 
-    def get_total_endurance(self, item_id: int):
+    def get_total_endurance(self):
         pass
 
-    def get_total_vitality(self, item_id: int):
+    def get_total_vitality(self):
         pass
 
 
