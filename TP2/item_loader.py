@@ -28,7 +28,7 @@ class ItemRepository:
 
         # TODO: na_values is for testing only
         # TODO: Handle tsv not found error
-        item_df: DataFrame = pd.read_csv(item_file_path, sep='\t', index_col=0, na_values=20)
+        item_df: DataFrame = pd.read_csv(item_file_path, sep='\t', index_col=0, nrows=20)
         self.items: ndarray = item_df.values
 
         attrs_list: List[str] = list(item_df.columns.values)
@@ -42,4 +42,3 @@ class ItemRepository:
 
         except ValueError:
             raise ValueError(f'Items tsv must include Fu, Ag, Ex, Re and Vi headers')
-
