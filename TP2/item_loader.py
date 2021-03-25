@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List
 
 import pandas as pd
@@ -7,19 +8,34 @@ from pandas import DataFrame
 from TP2.config_loader import Config
 
 
-class Items:
+class ItemType(Enum):
+    weapon = 'weapon'
+    boots = 'boots'
+    helmets = 'helmets'
+    gauntlets = 'gauntlets'
+    chestpieces = 'chestpieces'
 
-    def __init__(self, config: Config) -> None:
-        required_items: List[str] = ['weapons', 'boots', 'helmets', 'gauntlets', 'chestpieces']
 
-        if not all(item_type in config.item_files for item_type in required_items):
-            raise ValueError(f'There are arguments missing. Make sure all item types files {required_items} are present')
+class Item:
 
-        self.weapons: ItemRepository = ItemRepository(config.item_files[required_items[0]])
-        self.boots: ItemRepository = ItemRepository(config.item_files[required_items[1]])
-        self.helmets: ItemRepository = ItemRepository(config.item_files[required_items[2]])
-        self.gauntlets: ItemRepository = ItemRepository(config.item_files[required_items[3]])
-        self.chestpieces: ItemRepository = ItemRepository(config.item_files[required_items[4]])
+    def __init__(self, item_type: ItemType, strength: float, agility: float,
+                 experience: float, endurance: float, vitality: float) -> None:
+        self.type: ItemType = item_type
+        self.strength = strength
+        self.agility = agility
+        self.experience = experience
+        self.endurance = endurance
+        self.vitality = vitality
+
+
+class ItemSet:
+
+    def __init__(self, weapon: Item, boots: Item, helmets: Item, gauntlets: Item, chestpieces: Item) -> None:
+        self.weapon: Item = weapon
+        self.boots: Item = boots
+        self.helmets: Item = helmets
+        self.gauntlets: Item = gauntlets
+        self.chestpieces: Item = chestpieces
 
 
 class ItemRepository:
@@ -34,11 +50,49 @@ class ItemRepository:
         attrs_list: List[str] = list(item_df.columns.values)
 
         try:
-            self.fuerza_pos: int = attrs_list.index('Fu')
-            self.agilidad_pos: int = attrs_list.index('Ag')
-            self.pericia_pos: int = attrs_list.index('Ex')
-            self.resistencia_pos: int = attrs_list.index('Re')
-            self.vida_pos: int = attrs_list.index('Vi')
+            self.strength_pos: int = attrs_list.index('Fu')
+            self.agility_pos: int = attrs_list.index('Ag')
+            self.experience_pos: int = attrs_list.index('Ex')
+            self.endurance_pos: int = attrs_list.index('Re')
+            self.vitality_pos: int = attrs_list.index('Vi')
 
         except ValueError:
             raise ValueError(f'Items tsv must include Fu, Ag, Ex, Re and Vi headers')
+
+    def get_item(self, item_id: int):
+        return Item(
+            self.get_strength(item_id),
+            self.get_agility(item_id),
+            self.get_experience(item_id),
+            self.get_endurance(item_id),
+            self.get_vitality(item_id)
+        )
+
+    def get_strength(self, item_id: int):
+        return self.items[item_id][self.strength_pos]
+
+    def get_agility(self, item_id: int):
+        return self.items[item_id][self.agility_pos]
+
+    def get_experience(self, item_id: int):
+        return self.items[item_id][self.experience_pos]
+
+    def get_endurance(self, item_id: int):
+        return self.items[item_id][self.endurance_pos]
+
+    def get_vitality(self, item_id: int):
+        return self.items[item_id][self.vitality_pos]
+
+
+class ItemRepositories:
+
+    def __init__(self, config: Config) -> None:
+        supported_item_types: List[str] = [item_type.value for item_type in ItemType]
+        if not all(item_type in config.item_files for item_type in supported_item_types):
+            raise ValueError(f'There are arguments missing. Make sure all item types files {supported_item_types} are present')
+
+        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapon.value])
+        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boot.value])
+        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value])
+        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlet.value])
+        self.chestpieces: ItemRepository = ItemRepository(config.item_files[ItemType.chestpiece.value])
