@@ -1,4 +1,6 @@
 from enum import Enum
+from functools import reduce
+from operator import add
 from typing import List
 
 import pandas as pd
@@ -52,13 +54,8 @@ class ItemSet:
     def get_total_vitality(self):
         return self.sum_items_total('vitality')
 
-    def sum_items_total(self, attribute: str):
-        accum: float = 0
-
-        for item_type in ItemType:
-            accum += getattr(getattr(self, item_type.value), attribute)
-
-        return accum
+    def sum_items_total(self, attribute: str) -> float:
+        return reduce(add, map(lambda item_type: getattr(getattr(self, item_type.value), attribute), ItemType), 0)
 
 
 class ItemRepository:
