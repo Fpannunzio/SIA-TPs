@@ -60,12 +60,13 @@ class ItemSet:
 
 class ItemRepository:
 
-    def __init__(self, item_file_path: str) -> None:
+    def __init__(self, item_file_path: str, item_type: ItemType) -> None:
 
         # TODO: na_values is for testing only
         # TODO: Handle tsv not found error
         item_df: DataFrame = pd.read_csv(item_file_path, sep='\t', index_col=0, nrows=20)
         self.items: ndarray = item_df.values
+        self.type = item_type
 
         attrs_list: List[str] = list(item_df.columns.values)
 
@@ -79,14 +80,18 @@ class ItemRepository:
         except ValueError:
             raise ValueError(f'Items tsv must include Fu, Ag, Ex, Re and Vi headers')
 
-    def get_item(self, item_id: int):
+    def get_item(self, item_id: int) -> Item:
         return Item(
+            self.type,
             self.get_strength(item_id),
             self.get_agility(item_id),
             self.get_experience(item_id),
             self.get_endurance(item_id),
             self.get_vitality(item_id)
         )
+
+    def get_random_item(self) -> Item:
+        return self.get_item(np.random.Generator.integers(0, self.items.size - 1))
 
     def get_strength(self, item_id: int):
         return self.items[item_id][self.strength_pos]
@@ -112,8 +117,17 @@ class ItemRepositories:
             raise ValueError(
                 f'There are arguments missing. Make sure all item types files {supported_item_types} are present')
 
-        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapon.value])
-        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boot.value])
-        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value])
-        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlet.value])
-        self.chestpieces: ItemRepository = ItemRepository(config.item_files[ItemType.chestpiece.value])
+        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapon.value], ItemType.weapon)
+        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boot.value], ItemType.weapon)
+        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value], ItemType.weapon)
+        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlet.value], ItemType.weapon)
+        self.chestpieces: ItemRepository = ItemRepository(config.item_files[ItemType.chestpiece.value], ItemType.weapon)
+
+    def generate_random_set(self) -> ItemSet:
+        return ItemSet(
+            self.weapons.get_random_item(),
+            self.boots.get_random_item(),
+            self.helmets.get_random_item(),
+            self.gauntlets.get_random_item(),
+            self.chestpieces.get_random_item()
+        )
