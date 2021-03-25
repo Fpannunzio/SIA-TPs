@@ -2,7 +2,7 @@ from enum import Enum
 from math import tanh
 from typing import Optional, Dict, Callable
 
-from TP2.item_loader import ItemSet
+from TP2.items import ItemSet
 
 
 class CharacterType(Enum):

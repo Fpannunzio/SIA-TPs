@@ -1,7 +1,7 @@
 import sys
 
 from TP2.config_loader import Config
-from TP2.item_loader import ItemRepositories
+from TP2.items import ItemRepositories
 
 
 def main(config_file: str):
@@ -10,7 +10,7 @@ def main(config_file: str):
     config: Config = Config(config_file)
 
     # Load Items from .tsv Files
-    items: ItemRepositories = ItemRepositories(config)
+    item_repositories: ItemRepositories = ItemRepositories(config)
 
 
 # Usage: python3 rpg_character_optimizer.py [config_file_path]
