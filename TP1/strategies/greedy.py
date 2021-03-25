@@ -1,18 +1,18 @@
 from typing import Set, Iterator, Collection, List, Callable
 
-from config_loader import StrategyParams
-from heuristics import get_heuristic_from_strategy_params
-from node import InformedNode, CostInformedNode
-from state import State
-from strategy_stats import StrategyStats
+from TP1.config_loader import StrategyParams
+from TP1.heuristics import get_heuristic_from_strategy_params
+from TP1.node import InformedNode
+from TP1.state import State
+from TP1.strategy_stats import StrategyStats
 import heapq
 
 
-def a_star(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
+def greedy(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:
 
     heuristic: Callable[[State], int] = get_heuristic_from_strategy_params(strategy_params)
 
-    root: InformedNode = CostInformedNode(init_state, None, heuristic)
+    root: InformedNode = InformedNode(init_state, None, heuristic)
 
     visited_states: Set[State] = set()
     visited_states.add(root.state)

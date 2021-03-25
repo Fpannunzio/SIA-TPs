@@ -1,9 +1,7 @@
-from typing import Tuple
-
 import pygame
-import visualization._viz_constants as viz_constants
+from TP1 import visualization as viz_constants
 
-from map import Tile, Position
+from TP1.map import Tile, Position
 
 
 class PlayerRenderer:

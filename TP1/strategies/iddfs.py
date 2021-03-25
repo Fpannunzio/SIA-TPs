@@ -1,10 +1,10 @@
 from collections import deque
 from typing import Deque, Iterator, Collection, Dict
 
-from config_loader import StrategyParams
-from node import Node
-from state import State
-from strategy_stats import StrategyStats
+from TP1.config_loader import StrategyParams
+from TP1.node import Node
+from TP1.state import State
+from TP1.strategy_stats import StrategyStats
 
 
 def iddfs(init_state: State, strategy_stats: StrategyStats, strategy_params: StrategyParams) -> Collection[State]:

@@ -2,11 +2,11 @@ import time
 from typing import Collection
 
 import pygame
-import visualization._viz_constants as viz_constants
-from visualization._level_renderer import LevelRenderer
-from visualization._player_renderer import PlayerRenderer
-from state import State
-from map import Tile
+from TP1 import visualization as viz_constants
+from TP1.visualization._level_renderer import LevelRenderer
+from TP1.visualization import PlayerRenderer
+from TP1.state import State
+from TP1.map import Tile
 
 
 class GameRenderer:

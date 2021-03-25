@@ -1,9 +1,9 @@
 from typing import List
 
 import pygame
-import visualization._viz_constants as viz_constants
-from state import State
-from map import Tile
+from TP1 import visualization as viz_constants
+from TP1.state import State
+from TP1.map import Tile
 
 
 class LevelRenderer:
