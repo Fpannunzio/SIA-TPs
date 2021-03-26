@@ -12,6 +12,8 @@ def main(config_file: str):
     # Load Items from .tsv Files
     item_repositories: ItemRepositories = ItemRepositories(config)
 
+    # Start simulation
+
 
 # Usage: python3 rpg_character_optimizer.py [config_file_path]
 if __name__ == "__main__":
