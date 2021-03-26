@@ -1,5 +1,5 @@
 from collections import Collection
-from typing import Callable, Tuple
+from typing import Tuple
 
 import numpy as np
 
@@ -7,6 +7,7 @@ from TP2.character import CharacterType, Character
 from TP2.config_loader import Config
 from TP2.crossover import Crossover, get_crossover_impl
 from TP2.items import ItemRepositories
+from TP2.mutation import Mutation, get_mutation_impl
 from TP2.parent_selection import ParentSelection, get_parent_selection_impl
 
 
@@ -35,6 +36,7 @@ class Engine:
 
         parent_selection: ParentSelection = get_parent_selection_impl(self.config)
         crossover: Crossover = get_crossover_impl(self.config)
+        mutation: Mutation = get_mutation_impl(self.config)
 
         #TODO real condition
         condition = True
@@ -45,6 +47,6 @@ class Engine:
 
             children: Collection[Tuple[Character, Character]] = crossover(parents)
 
-            # Mutacion
+            mutation(children, self.item_repositories, self.config.mutation_params)
 
             # Seleccion

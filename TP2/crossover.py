@@ -54,10 +54,10 @@ def single_point_swap(couple: Tuple[Character, Character]) -> Tuple[Character, C
         child1.append(get_gen(couple[parent], i))
         child2.append(get_gen(couple[1 - parent], i))
 
-    itemSet1: ItemSet = ItemSet(child1[1], child1[2], child1[3], child1[4], child1[5])
-    itemSet2: ItemSet = ItemSet(child2[1], child2[2], child2[3], child2[4], child2[5])
+    item_set_1: ItemSet = ItemSet(child1[1], child1[2], child1[3], child1[4], child1[5])
+    item_set_2: ItemSet = ItemSet(child2[1], child2[2], child2[3], child2[4], child2[5])
 
-    return Character(character_type, child1[0], itemSet1), Character(character_type, child2[0], itemSet2)
+    return Character(character_type, child1[0], item_set_1), Character(character_type, child2[0], item_set_2)
 
 def child_creation(couple: Tuple[Character, Character], parent_sequence: Iterator[int]) -> Tuple[Character, Character]:
 
