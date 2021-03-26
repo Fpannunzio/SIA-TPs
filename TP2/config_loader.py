@@ -2,7 +2,6 @@ from typing import Dict, Any, Optional
 
 import yaml
 
-MutationParams = Optional[Dict[str, Any]]
 
 class Config:
 
@@ -22,8 +21,11 @@ class Config:
         if 'item_files' not in args:
             raise ValueError(f'There are arguments missing. Make sure "item_files" is present')
 
-        self.item_files: Dict[str, Any] = args['item_files']
+        if 'gen_size' not in args:
+            raise ValueError(f'There are arguments missing. Make sure "gen_size" is present')
 
+        self.item_files: Dict[str, Any] = args['item_files']
+        self.gen_size: int = args['gen_size']
 
     # def __repr__(self) -> str:
     #     return f'Level: {repr(self.level)}. ' \

@@ -2,6 +2,8 @@ from enum import Enum
 from math import tanh
 from typing import Optional, Dict, Callable
 
+import numpy as np
+
 from TP2.items import ItemSet
 
 
@@ -21,6 +23,10 @@ character_type_fitness_calculator_dict: Dict[CharacterType, Callable[[float, flo
 
 
 class Character:
+
+    @staticmethod
+    def generate_random_height() -> float:
+        return np.random.Generator.uniform(1.3, 2)
 
     def __init__(self, character_type: CharacterType, height: float, items: ItemSet) -> None:
         self.type = character_type

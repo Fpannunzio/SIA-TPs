@@ -1,5 +1,5 @@
 from collections import Collection
-from typing import Tuple
+from typing import Tuple, Callable, Dict, Any
 
 import numpy as np
 
@@ -8,14 +8,11 @@ from TP2.config_loader import Config
 from TP2.crossover import Crossover, get_crossover_impl
 from TP2.items import ItemRepositories
 from TP2.mutation import Mutation, get_mutation_impl
-from TP2.parent_selection import ParentSelection, get_parent_selection_impl
+from TP2.couple_selection import ParentSelection, get_couple_selection_impl
+from TP2.selection import combinated_selection
 
 
 class Engine:
-
-    @staticmethod
-    def generate_random_height() -> float:
-        return np.random.Generator.uniform(1.3, 2)
 
     def __init__(self, config: Config, item_repositories: ItemRepositories) -> None:
         self.item_repositories = item_repositories
@@ -28,25 +25,35 @@ class Engine:
         population_type: CharacterType = CharacterType(self.population_type)  # TODO: handle cast error
 
         return np.array(
-            [Character(population_type, Engine.generate_random_height(), self.item_repositories.generate_random_set())
+            [Character(population_type, Character.generate_random_height(), self.item_repositories.generate_random_set())
              for i in range(population_size)])
 
     def resolve_simulation(self) -> Collection[Character]:
         current_gen: Collection[Character] = self.generate_base_population()
 
-        parent_selection: ParentSelection = get_parent_selection_impl(self.config)
+        parent_selection: Callable[[Collection[Character]], Collection[Character]] = combinated_selection(self.config)
+        couple_selection: ParentSelection = get_couple_selection_impl(self.config)
         crossover: Crossover = get_crossover_impl(self.config)
         mutation: Mutation = get_mutation_impl(self.config)
 
-        #TODO real condition
-        condition = True
+        mutation_params: Dict[str, Any] = {
+            'probability': 0.5,
+        }
 
-        while condition:
+        # #TODO real condition
+        # condition = True
+        #
+        # while condition:
 
-            parents: Collection[Tuple[Character, Character]] = parent_selection(current_gen)
+        parents: Collection[Character] = parent_selection(current_gen)
 
-            children: Collection[Tuple[Character, Character]] = crossover(parents)
+        parents_couples: Collection[Tuple[Character, Character]] = couple_selection(parents)
 
-            mutation(children, self.item_repositories, self.config.mutation_params)
+        children: Collection[Character] = crossover(parents_couples)
 
-            # Seleccion
+        #TODO sacar mutation params de config
+        mutation(children, self.item_repositories, mutation_params)
+
+        print(children)
+
+        return []

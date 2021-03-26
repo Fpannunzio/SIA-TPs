@@ -8,7 +8,7 @@ import random
 ParentSelection = Callable[[Collection[Character], int], Collection[Tuple[Character, Character]]]
 
 
-def get_parent_selection_impl(config: Config) -> ParentSelection:
+def get_couple_selection_impl(config: Config) -> ParentSelection:
     # TODO por ahora solo esta random coupling
     return parent_selection_impl_dict['random_coupling']
 

@@ -117,11 +117,11 @@ class ItemRepositories:
             raise ValueError(
                 f'There are arguments missing. Make sure all item types files {supported_item_types} are present')
 
-        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapon.value], ItemType.weapon)
-        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boot.value], ItemType.weapon)
-        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value], ItemType.weapon)
-        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlet.value], ItemType.weapon)
-        self.chestpieces: ItemRepository = ItemRepository(config.item_files[ItemType.chestpiece.value], ItemType.weapon)
+        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapons.value], ItemType.weapons)
+        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boot.value], ItemType.weapons)
+        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value], ItemType.weapons)
+        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlet.value], ItemType.weapons)
+        self.chestpieces: ItemRepository = ItemRepository(config.item_files[ItemType.chestpiece.value], ItemType.weapons)
 
     def generate_random_set(self) -> ItemSet:
         return ItemSet(

@@ -1,6 +1,8 @@
 import sys
 
 from TP2.config_loader import Config
+from TP2.engine import Engine
+
 from TP2.items import ItemRepositories
 
 
@@ -13,6 +15,9 @@ def main(config_file: str):
     item_repositories: ItemRepositories = ItemRepositories(config)
 
     # Start simulation
+    engine: Engine = Engine(config, item_repositories)
+
+    engine.resolve_simulation()
 
 
 # Usage: python3 rpg_character_optimizer.py [config_file_path]

@@ -1,16 +1,12 @@
 from typing import Callable, Collection, List, Dict, Union, Any
 
 from TP2.character import Character
-from TP2.config_loader import Config, MutationParams
+from TP2.config_loader import Config
 import random
 
-from TP2.engine import Engine
 from TP2.items import Item, ItemRepositories, ItemRepository
 
-Mutation = Callable[[Collection[Character], ItemRepositories, MutationParams], None]
-
-CompleteMutation = Callable[
-    [Collection[Character], ItemRepositories, float], None]
+Mutation = Callable[[Collection[Character], ItemRepositories, Dict[str, Any]], None]
 
 gen_setters: Dict[str, Callable[[Character, Union[float, Item]], None]] = {
     'height': lambda character, value: setattr(character, 'height', value),
@@ -39,9 +35,9 @@ def get_mutation_impl(config: Config) -> Mutation:
     return mutation_impl_dict['complete']
 
 
-def single_gen_mutation(children: Collection[Character], items: ItemRepositories, probability: float, item_type: str):
+def single_gen_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
     for character in children:
-        single_gen_mutation_swap(character, items, probability, item_type)
+        single_gen_mutation_swap(character, items, mutation_params['probability'], mutation_params['item_type'])
 
 
 def single_gen_mutation_swap(character: Character, items: ItemRepositories, probability: float, item_type: str):
@@ -49,9 +45,9 @@ def single_gen_mutation_swap(character: Character, items: ItemRepositories, prob
         gen_setters[item_type](character, items_accessors[item_type](items).get_random_item())
 
 
-def limited_mutation(children: Collection[Character], items: ItemRepositories, probability: float, mutable_genes: int):
+def limited_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
     for character in children:
-        limited_mutation_swap(character, items, probability, mutable_genes)
+        limited_mutation_swap(character, items, mutation_params['probability'], mutation_params['mutable_genes'])
 
 
 def limited_mutation_swap(character, items, probability, mutable_genes):
@@ -59,9 +55,9 @@ def limited_mutation_swap(character, items, probability, mutable_genes):
     multiple_mutation_swap(character, items, probability, random_genes)
 
 
-def uniform_mutation(children: Collection[Character], items: ItemRepositories, probability: float):
+def uniform_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
     for character in children:
-        multiple_mutation_swap(character, items, probability, gen_names)
+        multiple_mutation_swap(character, items, mutation_params['probability'], gen_names)
 
 
 def multiple_mutation_swap(character: Character, items: ItemRepositories, probability: float, genes: Collection[str]):
@@ -73,14 +69,14 @@ def multiple_mutation_swap(character: Character, items: ItemRepositories, probab
                 gen_setters[gen](character, items_accessors[gen](items).get_random_item())
 
 
-def complete_mutation(children: Collection[Character], items: ItemRepositories, probability):
+def complete_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
     for character in children:
-        complete_mutation_swap(character, items, probability)
+        complete_mutation_swap(character, items, mutation_params['probability'])
 
 
 def complete_mutation_swap(character: Character, items: ItemRepositories, probability: float):
     if random.random() < probability:
-        character.height = Engine.generate_random_height()
+        character.height = Character.generate_random_height()
         character.items = items.generate_random_set()
 
 
