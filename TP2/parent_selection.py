@@ -1,3 +1,4 @@
+import math
 from typing import Callable, Collection, Tuple, List, Dict
 
 from TP2.character import Character
@@ -16,7 +17,7 @@ def random_coupling(parents: Collection[Character], reproduction_factor: int) ->
         Collection[Tuple[Character, Character]]:
     parents = list(parents)
 
-    return [random_couple_from_population(parents) for _ in range(reproduction_factor)]
+    return [random_couple_from_population(parents) for _ in range(math.floor(reproduction_factor / 2))]
 
 
 def random_couple_from_population(population: List[Character]) -> Tuple[Character, Character]:
