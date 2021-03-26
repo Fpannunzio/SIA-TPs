@@ -1,76 +1,86 @@
+import itertools
+import random
 from typing import Callable, Collection, Tuple, List, Dict, Union, Iterator, NamedTuple
+
+import numpy as np
 
 from TP2.character import Character, CharacterType
 from TP2.config_loader import Config
-import random
-
 from TP2.items import Item, ItemSet
 
-Crossover = Callable[[Collection[Tuple[Character, Character]]], Collection[Tuple[Character, Character]]]
-
-Gene = NamedTuple('Gene', [('accessor', Callable[[Character], Union[float, Item]]), ('name', str)])
-
-gen_accessors: List[Callable[[Character], Union[float, Item]]] = [
-    lambda character: character.height,
-    lambda character: character.items.weapon,
-    lambda character: character.items.boots,
-    lambda character: character.items.helmets,
-    lambda character: character.items.gauntlets,
-    lambda character: character.items.chestpieces
-]
-
-gen_names: List[str] = [
-    'height', 'weapon', 'boots', 'helmets', 'gauntlets', 'chestpieces'
-]
+Crossover = Callable[[Collection[Tuple[Character, Character]]], Collection[Character]]
+ParentSeqGenerator = Callable[[int], Iterator[int]]
 
 
-def get_gen(character: Character, index: int) -> Union[float, Item]:
-    return gen_accessors[index](character)
+gene_getters: Dict[str, Callable[[Character], Union[float, Item]]] = {
+    'height': lambda character: character.height,
+    'weapon': lambda character: character.items.weapon,
+    'boots': lambda character: character.items.boots,
+    'helmets': lambda character: character.items.helmets,
+    'gauntlets': lambda character: character.items.gauntlets,
+    'chestpieces': lambda character: character.items.chestpieces
+}
+
+gene_names: Collection[str] = sorted(gene_getters.keys())
+
+
+def get_gen(character: Character, gene: str) -> Union[float, Item]:
+    return gene_getters[gene](character)
 
 
 def get_crossover_impl(config: Config) -> Crossover:
-    # TODO por ahora solo esta random coupling
-    return crossover_impl_dict['single_point']
+    # TODO valor hardcodeado
+    def parent_seq_gen(): return parent_seq_dict['single_point'](len(gene_names))
+
+    flatten = itertools.chain.from_iterable
+
+    return lambda parents: list(flatten(map(lambda couple: child_creation(couple, parent_seq_gen), parents)))
 
 
-def single_point(parents: Collection[Tuple[Character, Character]]) -> Collection[Tuple[Character, Character]]:
-    return list(map(single_point_swap, parents))
+def child_creation(couple: Tuple[Character, Character], parent_seq_gen: Callable[[], Iterator[int]]) -> List[Character]:
+    children_genes: Tuple[Dict[str, Union[float, Item]], Dict[str, Union[float, Item]]] = {}, {}
+
+    parent_sequence: Iterator[int] = parent_seq_gen()
+
+    for gene in gene_names:
+        parent = next(parent_sequence)
+        children_genes[0][gene] = get_gen(couple[parent], gene)
+        children_genes[1][gene] = get_gen(couple[1 - parent], gene)
+
+    children_item_sets: Tuple[ItemSet, ItemSet] = \
+        item_set_from_gene_map(children_genes[0]), item_set_from_gene_map(children_genes[1])
+
+    children_type: CharacterType = couple[0].type
+
+    return [Character(children_type, children_genes[0]['height'], children_item_sets[0]),
+            Character(children_type, children_genes[1]['height'], children_item_sets[1])]
 
 
-def single_point_swap(couple: Tuple[Character, Character]) -> Tuple[Character, Character]:
-    p: int = random.randrange(len(gen_accessors) - 2)  # la ultima opcion es equivalente a duplicar los padres
+def item_set_from_gene_map(gene_map: Dict[str, Union[float, Item]]) -> ItemSet:
+    return ItemSet(gene_map['weapon'], gene_map['boots'], gene_map['helmets'],
+                   gene_map['gauntlets'], gene_map['chestpieces'])
 
-    character_type: CharacterType = couple[0].type
 
-    child1: List[Union[float, Item]] = []
-    child2: List[Union[float, Item]] = []
-
-    for i in range(len(gen_accessors)):
-        parent: int = 0
-
-        if i > p:
-            parent = 1
-
-        child1.append(get_gen(couple[parent], i))
-        child2.append(get_gen(couple[1 - parent], i))
-
-    item_set_1: ItemSet = ItemSet(child1[1], child1[2], child1[3], child1[4], child1[5])
-    item_set_2: ItemSet = ItemSet(child2[1], child2[2], child2[3], child2[4], child2[5])
-
-    return Character(character_type, child1[0], item_set_1), Character(character_type, child2[0], item_set_2)
-
-def child_creation(couple: Tuple[Character, Character], parent_sequence: Iterator[int]) -> Tuple[Character, Character]:
-
-    children_dicts: Tuple[Dict[str, Union[float, Item]]] = ({}, {})
-
-    for parent in parent_sequence:
-        children_dicts[0][]
-
-crossover_impl_dict: Dict[str, Crossover] = {
-    'single_point': single_point,
-}
+def get_k_point_parent_seq(gene_count: int, k: int) -> Iterator[int]:
+    p = np.array(random.sample(range(gene_count + 1), k)).sort()  # [0, gene_count + 1)
+    return map(lambda i: np.searchsorted(p, i, side='right') % 2, range(gene_count))
 
 
 def get_single_point_parent_seq(gene_count: int) -> Iterator[int]:
-    p: int = random.randrange(gene_count - 1)
-    return map(lambda i: 0 if i <= p else 1, range(gene_count))
+    return get_k_point_parent_seq(gene_count, 1)
+
+
+def get_two_point_parent_seq(gene_count: int) -> Iterator[int]:
+    return get_k_point_parent_seq(gene_count, 2)
+
+
+def uniform_parent_seq(gene_count: int) -> Iterator[int]:
+    return map(lambda i: random.randint(0, 1), range(gene_count))
+
+
+parent_seq_dict: Dict[str, ParentSeqGenerator] = {
+    'single_point': get_single_point_parent_seq,
+    'two_point': get_two_point_parent_seq,
+    # 'annular': get_two_point_parent_seq, EXISTE???
+    'uniform': uniform_parent_seq,
+}
