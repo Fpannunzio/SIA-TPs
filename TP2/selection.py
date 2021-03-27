@@ -8,15 +8,26 @@ from TP2.config_loader import Config
 import random
 
 Selection = Callable[[List[Character], int], List[Character]]
+SizedSelection = Callable[[List[Character], int], List[Character]]
 
 
-def combinated_selection(config: Config) -> Callable[[Collection[Character]], Collection[Character]]:
+def get_parent_selection(config: Config) -> Callable[[Collection[Character]], Collection[Character]]:
     # TODO sacarlo del config
     first_selection_method: Selection = get_selection_method('elite_selection')
     second_selection_method: Selection = get_selection_method('uniform_roulette_selection')
     a_value: float = 0.7  # config.a_value
-    return lambda parents: first_selection_method(parents, math.ceil(a_value * config.gen_size)) + second_selection_method(
+    return lambda parents: first_selection_method(parents,
+                                                  math.ceil(a_value * config.gen_size)) + second_selection_method(
         parents, math.floor((1 - a_value) * config.gen_size))
+
+
+def get_survivor_selection(config: Config) -> Selection:
+    # TODO sacarlo del config
+    first_selection_method: Selection = get_selection_method('elite_selection')
+    second_selection_method: Selection = get_selection_method('uniform_roulette_selection')
+    b_value: float = 0.7  # config.b_value
+    return lambda parents, size: first_selection_method(parents, math.ceil(b_value * size)) + second_selection_method(
+        parents, math.floor((1 - b_value) * size))
 
 
 def elite_selection(initial_parents: List[Character], amount: int) -> Collection[Character]:
