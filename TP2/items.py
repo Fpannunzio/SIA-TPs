@@ -40,19 +40,19 @@ class ItemSet:
         self.gauntlets: Item = gauntlets
         self.chest_piece: Item = chest_piece
 
-    def get_total_strength(self):
+    def get_total_strength(self) -> float:
         return self.sum_items_total('strength')
 
-    def get_total_agility(self):
+    def get_total_agility(self) -> float:
         return self.sum_items_total('agility')
 
-    def get_total_experience(self):
+    def get_total_experience(self) -> float:
         return self.sum_items_total('experience')
 
-    def get_total_endurance(self):
+    def get_total_endurance(self) -> float:
         return self.sum_items_total('endurance')
 
-    def get_total_vitality(self):
+    def get_total_vitality(self) -> float:
         return self.sum_items_total('vitality')
 
     def sum_items_total(self, attribute: str) -> float:
@@ -94,19 +94,19 @@ class ItemRepository:
     def get_random_item(self) -> Item:
         return self.get_item(np.random.random_integers(0, np.size(self.items, 0) - 1))
 
-    def get_strength(self, item_id: int):
+    def get_strength(self, item_id: int) -> float:
         return self.items[item_id][self.strength_pos]
 
-    def get_agility(self, item_id: int):
+    def get_agility(self, item_id: int) -> float:
         return self.items[item_id][self.agility_pos]
 
-    def get_experience(self, item_id: int):
+    def get_experience(self, item_id: int) -> float:
         return self.items[item_id][self.experience_pos]
 
-    def get_endurance(self, item_id: int):
+    def get_endurance(self, item_id: int) -> float:
         return self.items[item_id][self.endurance_pos]
 
-    def get_vitality(self, item_id: int):
+    def get_vitality(self, item_id: int) -> float:
         return self.items[item_id][self.vitality_pos]
 
 
