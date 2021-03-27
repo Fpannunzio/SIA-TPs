@@ -16,17 +16,16 @@ class Engine:
 
     def __init__(self, config: Config, item_repositories: ItemRepositories) -> None:
         self.item_repositories = item_repositories
-        self.population_type: CharacterType = CharacterType(config.character_type)  # TODO: handle cast error
-        self.population_size: int = config.population_size
+        self.population_type: CharacterType = CharacterType[config.character_class]  # TODO: handle cast error
+        self.population_size: int = config.gen_size
         self.config = config
 
     def generate_base_population(self) -> Collection[Character]:
         population_size: int = self.population_size
         population_type: CharacterType = CharacterType(self.population_type)  # TODO: handle cast error
 
-        return np.array(
-            [Character(population_type, Character.generate_random_height(), self.item_repositories.generate_random_set())
-             for i in range(population_size)])
+        return [Character(population_type, Character.generate_random_height(), self.item_repositories.generate_random_set())
+             for i in range(population_size)]
 
     def resolve_simulation(self) -> Collection[Character]:
         current_gen: Collection[Character] = self.generate_base_population()
@@ -47,13 +46,13 @@ class Engine:
 
         parents: Collection[Character] = parent_selection(current_gen)
 
-        parents_couples: Collection[Tuple[Character, Character]] = couple_selection(parents)
+        # TODO el reproduction factor debiera salir de config
+        parents_couples: Collection[Tuple[Character, Character]] = couple_selection(parents, 160)
 
         children: Collection[Character] = crossover(parents_couples)
 
         #TODO sacar mutation params de config
         mutation(children, self.item_repositories, mutation_params)
 
-        print(children)
 
         return []

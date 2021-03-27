@@ -20,7 +20,7 @@ def combinated_selection(config: Config) -> Callable[[Collection[Character]], Co
 
 
 def elite_selection(initial_parents: List[Character], amount: int) -> Collection[Character]:
-    sorted(initial_parents, key=lambda c1, c2: c1.calculate_fitness() < c2.calculate_fitness())
+    sorted(initial_parents, key=lambda c: c.get_fitness())
     return initial_parents[:amount]
 
 
@@ -30,12 +30,12 @@ def random_roulette_selection(initial_parents: List[Character], amount) -> List[
 
 
 def uniform_roulette_selection(initial_parents: List[Character], amount) -> List[Character]:
-    uniform_numbers: Collection[float] = [np.random.Generator.uniform(0, 1.0) for _ in range(amount)]
+    uniform_numbers: Collection[float] = [np.random.uniform(0, 1.0) for _ in range(amount)]
     return roulette_selection(initial_parents, uniform_numbers)
 
 
 def roulette_selection(initial_parents: List[Character], random_numbers: Collection[float]) -> List[Character]:
-    fitness_list = np.array(map(Character.get_fitness, initial_parents))
+    fitness_list = np.fromiter(map(Character.get_fitness, initial_parents), float)
     accumulated_sum = np.cumsum(fitness_list / fitness_list.sum())
 
     new_parents: List[Character] = []

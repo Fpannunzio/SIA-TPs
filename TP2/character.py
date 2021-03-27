@@ -1,5 +1,6 @@
 from enum import Enum
 from math import tanh
+from random import random
 from typing import Optional, Dict, Callable
 
 import numpy as np
@@ -26,7 +27,7 @@ class Character:
 
     @staticmethod
     def generate_random_height() -> float:
-        return np.random.Generator.uniform(1.3, 2)
+        return np.random.uniform(1.3, 2)
 
     def __init__(self, character_type: CharacterType, height: float, items: ItemSet) -> None:
         self.type = character_type
@@ -35,10 +36,10 @@ class Character:
         self.fitness_cache: Optional[float] = None
 
     def get_atm(self):
-        return 0.7 - (3*self.height - 5)*4 + (3*self.height - 5)*2 + self.height/4
+        return 0.7 - (3*self.height - 5)**4 + (3*self.height - 5)**2 + self.height/4
 
     def get_dem(self):
-        return 1.9 + (2.5*self.height - 4.16)**4 - (2.5*self.height - 4.16)*2 - 3*self.height/10
+        return 1.9 + (2.5*self.height - 4.16)**4 - (2.5*self.height - 4.16)**2 - 3*self.height/10
 
     def get_strength(self):
         return 100*tanh(0.01*self.items.get_total_strength())

@@ -12,17 +12,17 @@ gen_setters: Dict[str, Callable[[Character, Union[float, Item]], None]] = {
     'height': lambda character, value: setattr(character, 'height', value),
     'weapon': lambda character, value: setattr(character, 'weapon', value),
     'boots': lambda character, value: setattr(character, 'boots', value),
-    'helmets': lambda character, value: setattr(character, 'helmets', value),
+    'helmet': lambda character, value: setattr(character, 'helmet', value),
     'gauntlets': lambda character, value: setattr(character, 'gauntlets', value),
-    'chestpieces': lambda character, value: setattr(character, 'chestpieces', value)
+    'chest_piece': lambda character, value: setattr(character, 'chest_piece', value)
 }
 
 items_accessors: Dict[str, Callable[[ItemRepositories], ItemRepository]] = {
-    'weapon': lambda items: items.weapons,
+    'weapon': lambda items: items.weapon,
     'boots': lambda items: items.boots,
-    'helmets': lambda items: items.helmets,
+    'helmet': lambda items: items.helmet,
     'gauntlets': lambda items: items.gauntlets,
-    'chestpieces': lambda items: items.chestpieces
+    'chest_piece': lambda items: items.chest_piece
 }
 
 gen_names: List[str] = [

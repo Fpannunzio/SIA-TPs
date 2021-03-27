@@ -3,6 +3,7 @@ from functools import reduce
 from operator import add
 from typing import List
 
+import numpy as np
 import pandas as pd
 from numpy import ndarray
 from pandas import DataFrame
@@ -13,9 +14,9 @@ from TP2.config_loader import Config
 class ItemType(Enum):
     weapon = 'weapon'
     boots = 'boots'
-    helmets = 'helmets'
+    helmet = 'helmet'
     gauntlets = 'gauntlets'
-    chestpieces = 'chestpieces'
+    chest_piece = 'chest_piece'
 
 
 class Item:
@@ -32,12 +33,12 @@ class Item:
 
 class ItemSet:
 
-    def __init__(self, weapon: Item, boots: Item, helmets: Item, gauntlets: Item, chestpieces: Item) -> None:
+    def __init__(self, weapon: Item, boots: Item, helmet: Item, gauntlets: Item, chest_piece: Item) -> None:
         self.weapon: Item = weapon
         self.boots: Item = boots
-        self.helmets: Item = helmets
+        self.helmet: Item = helmet
         self.gauntlets: Item = gauntlets
-        self.chestpieces: Item = chestpieces
+        self.chest_piece: Item = chest_piece
 
     def get_total_strength(self):
         return self.sum_items_total('strength')
@@ -91,7 +92,7 @@ class ItemRepository:
         )
 
     def get_random_item(self) -> Item:
-        return self.get_item(np.random.Generator.integers(0, self.items.size - 1))
+        return self.get_item(np.random.random_integers(0, np.size(self.items, 0) - 1))
 
     def get_strength(self, item_id: int):
         return self.items[item_id][self.strength_pos]
@@ -117,11 +118,11 @@ class ItemRepositories:
             raise ValueError(
                 f'There are arguments missing. Make sure all item types files {supported_item_types} are present')
 
-        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapons.value], ItemType.weapons)
-        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boot.value], ItemType.weapons)
-        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value], ItemType.weapons)
-        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlet.value], ItemType.weapons)
-        self.chestpieces: ItemRepository = ItemRepository(config.item_files[ItemType.chestpiece.value], ItemType.weapons)
+        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapon.value], ItemType.weapon)
+        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boots.value], ItemType.boots)
+        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value], ItemType.helmet)
+        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlets.value], ItemType.gauntlets)
+        self.chest_pieces: ItemRepository = ItemRepository(config.item_files[ItemType.chest_piece.value], ItemType.chest_piece)
 
     def generate_random_set(self) -> ItemSet:
         return ItemSet(
@@ -129,5 +130,5 @@ class ItemRepositories:
             self.boots.get_random_item(),
             self.helmets.get_random_item(),
             self.gauntlets.get_random_item(),
-            self.chestpieces.get_random_item()
+            self.chest_pieces.get_random_item()
         )

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 import yaml
 
@@ -25,6 +25,7 @@ class Config:
             raise ValueError(f'There are arguments missing. Make sure "gen_size" is present')
 
         self.item_files: Dict[str, Any] = args['item_files']
+        self.character_class: str = args['class']
         self.gen_size: int = args['gen_size']
 
     # def __repr__(self) -> str:

@@ -16,9 +16,9 @@ gene_getters: Dict[str, Callable[[Character], Union[float, Item]]] = {
     'height': lambda character: character.height,
     'weapon': lambda character: character.items.weapon,
     'boots': lambda character: character.items.boots,
-    'helmets': lambda character: character.items.helmets,
+    'helmet': lambda character: character.items.helmet,
     'gauntlets': lambda character: character.items.gauntlets,
-    'chestpieces': lambda character: character.items.chestpieces
+    'chest_piece': lambda character: character.items.chest_piece
 }
 
 gene_names: Collection[str] = sorted(gene_getters.keys())
@@ -57,13 +57,13 @@ def child_creation(couple: Tuple[Character, Character], parent_seq_gen: Callable
 
 
 def item_set_from_gene_map(gene_map: Dict[str, Union[float, Item]]) -> ItemSet:
-    return ItemSet(gene_map['weapon'], gene_map['boots'], gene_map['helmets'],
-                   gene_map['gauntlets'], gene_map['chestpieces'])
+    return ItemSet(gene_map['weapon'], gene_map['boots'], gene_map['helmet'],
+                   gene_map['gauntlets'], gene_map['chest_piece'])
 
 
 def get_k_point_parent_seq(gene_count: int, k: int) -> Iterator[int]:
-    p = np.array(random.sample(range(gene_count + 1), k)).sort()  # [0, gene_count + 1)
-    return map(lambda i: np.searchsorted(p, i, side='right') % 2, range(gene_count))
+    points = np.sort(np.array(random.sample(range(gene_count + 1), k)))  # [0, gene_count + 1)
+    return map(lambda i: np.searchsorted(points, i, side='right') % 2, range(gene_count))
 
 
 def get_single_point_parent_seq(gene_count: int) -> Iterator[int]:
