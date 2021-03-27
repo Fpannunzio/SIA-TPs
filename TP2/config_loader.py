@@ -37,11 +37,13 @@ class Config:
         args = Config.validate_param(args, Schema({
             'gen_size': int,
             'class': str,
-            'item_files': Param,
-            'parent_selection': Param
+            'item_files': dict,
+            'parent_selection': dict,
+            'k': int,
         }))
 
         self.character_class: str = args['class']
         self.gen_size: int = args['gen_size']
         self.item_files: Param = args['item_files']
         self.parent_selection: Param = args['parent_selection']
+        self.k: int = args['k']

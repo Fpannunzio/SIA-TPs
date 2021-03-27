@@ -3,10 +3,11 @@ from typing import Callable, Collection, List, Dict, NamedTuple, Any, Tuple
 
 import numpy as np
 
-from TP2.character import Character, Generation
+from TP2.character import Character
 from TP2.config_loader import Config
 import random
 
+from TP2.generation import Generation
 
 ParentSelector = Callable[[Generation], Collection[Character]]
 SurvivorSelector = Callable[[Generation, int], List[Character]]
@@ -96,7 +97,7 @@ def calculate_boltzmann_accumulated_sum(generation: Generation, selection_params
     t0: float = selection_params['initial_temp']
     tc: float = selection_params['final_temp']
     k: int = selection_params['k']
-    temp: float = tc + (t0 - tc)*math.exp(k*generation.generation_number*(-1))
+    temp: float = tc + (t0 - tc)*math.exp(k*generation.generation*(-1))
     fitness_list = np.fromiter(map(lambda character: math.exp(character.get_fitness() / temp), generation.characters), float)
     mean = np.mean(fitness_list)
     boltzmann_fitness_list = fitness_list / mean
@@ -109,13 +110,13 @@ def elite_selection(generation: Generation, amount: int, selection_params: Selec
 
 def random_roulette_selection(generation: Generation, amount, selection_params: SelectionParam) -> List[Character]:
     return roulette_selection(generation.characters, generate_random_numbers(amount),
-                              calculate_accumulated_sum(generation.characters))
+                              calculate_fitness_accumulated_sum(generation.characters))
 
 
-def uniform_roulette_selection(generation: Generation, amount, selection_params: SelectionParam) -> List[
+def universal_roulette_selection(generation: Generation, amount, selection_params: SelectionParam) -> List[
     Character]:
     return roulette_selection(generation.characters, generate_universal_random_numbers(amount),
-                              calculate_accumulated_sum(generation.characters))
+                              calculate_fitness_accumulated_sum(generation.characters))
 
 
 def boltzmann_selection(generation: Generation, amount, selection_params: SelectionParam) -> List[Character]:
@@ -139,6 +140,6 @@ roulette_method: Dict[str, Callable[[int], Collection[float]]] = {
 selection_impl_dict: Dict[str, Selection] = {
     'elite_selection': elite_selection,
     'random_roulette_selection': random_roulette_selection,
-    'uniform_roulette_selection': uniform_roulette_selection,
+    'universal_roulette_selection': universal_roulette_selection,
     'boltzmann_selection': boltzmann_selection
 }
