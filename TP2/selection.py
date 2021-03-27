@@ -1,5 +1,5 @@
 import math
-from typing import Callable, Collection, List, Dict, NamedTuple, Any
+from typing import Callable, Collection, List, Dict, NamedTuple, Any, Tuple
 
 import numpy as np
 
@@ -61,14 +61,34 @@ def generate_universal_random_numbers(amount: int) -> Collection[float]:
     return np.linspace(r / amount, (r + amount - 1) / amount, amount)
 
 
-def calculate_accumulated_sum(initial_parents: List[Character]) -> Collection[float]:
+# Accumulated sum maintains list order
+def calculate_fitness_accumulated_sum(initial_parents: List[Character]) -> Collection[float]:
     fitness_list = np.fromiter(map(Character.get_fitness, initial_parents), float)
     return np.cumsum(fitness_list / fitness_list.sum())
 
 
-def calculate_ranking_accumulated_sum(initial_parents: List[Character]) -> Collection[float]:
-    fitness_list = np.fromiter(map(Character.get_fitness, initial_parents), float)
+def fitness_and_index(enumeration_tuple: Tuple[int, Character]) -> Tuple[float, int]:
 
+    index, character = enumeration_tuple
+    return character.get_fitness(), index
+
+
+def calculate_ranking_pseudo_fitness_accumulated_sum(initial_parents: List[Character]) -> Collection[float]:
+    fitness_list: np.ndarray = np.fromiter(map(fitness_and_index, enumerate(initial_parents)),
+                                           np.dtype([('fitness', float), ('index', int)]))
+
+    # Ordenar por fitness de mayor a menor
+    fitness_list = np.flipud(np.sort(fitness_list, order='fitness'))
+
+    population_size = np.size(fitness_list)
+
+    # Convertirlo en ranking
+    fitness_list['fitness'] = np.linspace(1 - 1 / population_size, 0, population_size)
+
+    # Recuperar por el orden orignal
+    fitness_list = np.sort(fitness_list, order='index')['fitness']
+
+    # Acumulada
     return np.cumsum(fitness_list / fitness_list.sum())
 
 
