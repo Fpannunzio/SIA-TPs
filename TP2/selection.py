@@ -1,5 +1,5 @@
 import math
-from typing import Callable, Collection, List, Dict
+from typing import Callable, Collection, List, Dict, NamedTuple, Any
 
 import numpy as np
 
@@ -7,8 +7,11 @@ from TP2.character import Character
 from TP2.config_loader import Config
 import random
 
-Selection = Callable[[List[Character], int], List[Character]]
-SizedSelection = Callable[[List[Character], int], List[Character]]
+Selector = Callable[[List[Character], int], List[Character]]
+ParentSelector = Callable[[Collection[Character]], Collection[Character]]
+
+SelectorParam = Dict[str, Any]
+SelectorDescriptor = NamedTuple('SelectorDescriptor', [('name', str), ('params', SelectorParam)])
 
 
 def get_parent_selection(config: Config) -> Callable[[Collection[Character]], Collection[Character]]:
