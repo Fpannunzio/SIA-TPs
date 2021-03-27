@@ -1,7 +1,7 @@
 from enum import Enum
 from math import tanh
 from random import random
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, NamedTuple, List, Collection
 
 import numpy as np
 
@@ -70,3 +70,6 @@ class Character:
             self.fitness_cache = self.calculate_fitness()
 
         return self.fitness_cache
+
+
+Generation = NamedTuple('Generation', [('characters', List[Character]), ('generation_number', int)])

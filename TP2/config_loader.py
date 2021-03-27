@@ -24,9 +24,13 @@ class Config:
         if 'gen_size' not in args:
             raise ValueError(f'There are arguments missing. Make sure "gen_size" is present')
 
+        if 'k' not in args:
+            raise ValueError(f'There are arguments missing. Make sure "k" is present')
+
         self.item_files: Dict[str, Any] = args['item_files']
         self.character_class: str = args['class']
         self.gen_size: int = args['gen_size']
+        self.k: int = args['k']
 
     # def __repr__(self) -> str:
     #     return f'Level: {repr(self.level)}. ' \
