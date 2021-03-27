@@ -63,7 +63,7 @@ def uniform_mutation(children: Collection[Character], items: ItemRepositories, m
 def multiple_mutation_swap(character: Character, items: ItemRepositories, probability: float, genes: Collection[str]):
     for gen in genes:
         if gen == 'height' and random.random() < probability:
-            gen_setters[gen](character, Engine.generate_random_height())
+            gen_setters[gen](character, character.generate_random_height())
         else:
             if random.random() < probability:
                 gen_setters[gen](character, items_accessors[gen](items).get_random_item())
