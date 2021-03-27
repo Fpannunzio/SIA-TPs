@@ -30,7 +30,7 @@ class Engine:
         current_gen: Generation = Generation(self.generate_base_population(), 0)
 
         parent_selection: ParentSelector = get_parent_selection(self.config)
-        couple_selection: ParentSelection = get_couple_selection_impl(self.config)
+        couple_selection: CoupleSelection = get_couple_selection_impl(self.config)
         crossover: Crossover = get_crossover_impl(self.config)
         mutation: Mutation = get_mutation_impl(self.config)
         recombination: Recombination = get_recombination_impl(self.config)

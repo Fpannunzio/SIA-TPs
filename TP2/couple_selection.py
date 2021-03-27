@@ -5,10 +5,10 @@ from TP2.character import Character
 from TP2.config_loader import Config
 import random
 
-ParentSelection = Callable[[Collection[Character], int], Collection[Tuple[Character, Character]]]
+CoupleSelection = Callable[[Collection[Character], int], Collection[Tuple[Character, Character]]]
 
 
-def get_couple_selection_impl(config: Config) -> ParentSelection:
+def get_couple_selection_impl(config: Config) -> CoupleSelection:
     # TODO por ahora solo esta random coupling
     return parent_selection_impl_dict['random_coupling']
 
@@ -26,6 +26,6 @@ def random_couple_from_population(population: List[Character]) -> Tuple[Characte
     return couple[0], couple[1]
 
 
-parent_selection_impl_dict: Dict[str, ParentSelection] = {
+parent_selection_impl_dict: Dict[str, CoupleSelection] = {
     'random_coupling': random_coupling,
 }
