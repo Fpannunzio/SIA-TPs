@@ -29,3 +29,10 @@ class Generation:
 
     def __len__(self) -> int:
         return len(self.population)
+
+    def __repr__(self) -> str:
+        return f'Generation=(gen_count={repr(self.gen_count)}, population={repr(self.population)})'
+
+    def __str__(self) -> str:
+        return f'Generation Number {self.gen_count}, Size {len(self)}:\n' + \
+               '\n'.join(map(lambda char_enum: f'{char_enum[0]}: {char_enum[1]}', enumerate(self.population)))

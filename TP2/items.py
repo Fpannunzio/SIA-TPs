@@ -44,6 +44,14 @@ class Item:
     def get_attribute(self, item_attr: ItemAttribute):
         return self.attributes[item_attr]
 
+    def __repr__(self) -> str:
+        return f'Item(type={repr(self.type.value)}, ' \
+               f'strength={repr(self.get_attribute(ItemAttribute.strength))}, ' \
+               f'agility={repr(self.get_attribute(ItemAttribute.agility))}, ' \
+               f'experience={repr(self.get_attribute(ItemAttribute.experience))}, ' \
+               f'endurance={repr(self.get_attribute(ItemAttribute.endurance))}, ' \
+               f'vitality={repr(self.get_attribute(ItemAttribute.vitality))})'
+
 
 class ItemSet:
 
@@ -79,6 +87,11 @@ class ItemSet:
 
     def set_item(self, item_type: ItemType, item: Item):
         self.items[item_type] = item
+
+    def __repr__(self) -> str:
+        return f'ItemSet(weapon={repr(self.get_item(ItemType.weapon))}, boots={repr(self.get_item(ItemType.boots))}, ' \
+               f'helmet={repr(self.get_item(ItemType.helmet))}, gauntlets={repr(self.get_item(ItemType.gauntlets))}, ' \
+               f'chest_piece={repr(self.get_item(ItemType.chest_piece))})'
 
 
 class ItemRepository:

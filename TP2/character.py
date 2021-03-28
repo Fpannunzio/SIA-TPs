@@ -109,3 +109,19 @@ class Character:
         if not self._fitness_cache:
             self._fitness_cache = self._calculate_fitness()
         return self._fitness_cache
+
+    def item_set_repr(self) -> str:
+        return f'Character(type={repr(self.type.value)}, height={repr(self.height)}, items={repr(self.items)})'
+
+    def stats_repr(self) -> str:
+        return f'Character(type={repr(self.type.value)}, height={repr(self.height)}, strength={repr(self.get_strength())}, ' \
+               f'agility={repr(self.get_agility())}, experience={repr(self.get_experience())}, ' \
+               f'endurance={repr(self.get_endurance())}, vitality={repr(self.get_vitality())})'
+
+    def fitness_repr(self) -> str:
+        return f'Character(type={repr(self.type.value)}, height={repr(self.height)}, fitness={repr(self.get_fitness())})'
+
+    def __repr__(self) -> str:
+        # return self.item_set_repr()
+        # return self.stats_repr()
+        return self.fitness_repr()
