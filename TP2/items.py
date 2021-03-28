@@ -20,16 +20,29 @@ class ItemType(Enum):
     chest_piece = 'chest_piece'
 
 
+class ItemAttribute(Enum):
+    strength = 'strength'
+    agility = 'agility'
+    experience = 'experience'
+    endurance = 'endurance'
+    vitality = 'vitality'
+
+
 class Item:
 
     def __init__(self, item_type: ItemType, strength: float, agility: float,
                  experience: float, endurance: float, vitality: float) -> None:
         self.type: ItemType = item_type
-        self.strength = strength
-        self.agility = agility
-        self.experience = experience
-        self.endurance = endurance
-        self.vitality = vitality
+        self.attributes = {
+            ItemAttribute.strength: strength,
+            ItemAttribute.agility: agility,
+            ItemAttribute.experience: experience,
+            ItemAttribute.endurance: endurance,
+            ItemAttribute.vitality: vitality,
+        }
+
+    def get_attribute(self, item_attr: ItemAttribute):
+        return self.attributes[item_attr]
 
 
 class ItemSet:
@@ -44,22 +57,22 @@ class ItemSet:
         }
 
     def get_total_strength(self) -> float:
-        return self.sum_items_total('strength')
+        return self.sum_items_total(ItemAttribute.strength)
 
     def get_total_agility(self) -> float:
-        return self.sum_items_total('agility')
+        return self.sum_items_total(ItemAttribute.agility)
 
     def get_total_experience(self) -> float:
-        return self.sum_items_total('experience')
+        return self.sum_items_total(ItemAttribute.experience)
 
     def get_total_endurance(self) -> float:
-        return self.sum_items_total('endurance')
+        return self.sum_items_total(ItemAttribute.endurance)
 
     def get_total_vitality(self) -> float:
-        return self.sum_items_total('vitality')
+        return self.sum_items_total(ItemAttribute.vitality)
 
-    def sum_items_total(self, attribute: str) -> float:
-        return reduce(add, map(lambda item_type: getattr(self.get_item(item_type), attribute), ItemType), 0)
+    def sum_items_total(self, attribute: ItemAttribute) -> float:
+        return reduce(add, map(lambda item_type: self.get_item(item_type).get_attribute(attribute), ItemType), 0)
 
     def get_item(self, item_type: ItemType):
         return self.items[item_type]
@@ -69,6 +82,18 @@ class ItemSet:
 
 
 class ItemRepository:
+
+    attribute_tsv_header_dict: Dict[ItemAttribute, str] = {
+        ItemAttribute.strength: 'Fu',
+        ItemAttribute.afility: 'Ag',
+        ItemAttribute.experience: 'Ex',
+        ItemAttribute.endurance: 'Re',
+        ItemAttribute.vitality: 'Vi',
+    }
+
+    @staticmethod
+    def get_attr_tsv_header(item_attr: ItemAttribute):
+        return ItemRepository.attribute_tsv_header_dict[item_attr]
 
     def __init__(self, item_file_path: str, item_type: ItemType) -> None:
 
@@ -80,15 +105,16 @@ class ItemRepository:
 
         attrs_list: List[str] = list(item_df.columns.values)
 
+        # TODO(tobi): Handle exception
         try:
-            self.strength_pos: int = attrs_list.index('Fu')
-            self.agility_pos: int = attrs_list.index('Ag')
-            self.experience_pos: int = attrs_list.index('Ex')
-            self.endurance_pos: int = attrs_list.index('Re')
-            self.vitality_pos: int = attrs_list.index('Vi')
+            self.strength_pos: int = attrs_list.index(ItemRepository.get_attr_tsv_header(ItemAttribute.strength))
+            self.agility_pos: int = attrs_list.index(ItemRepository.get_attr_tsv_header(ItemAttribute.agility))
+            self.experience_pos: int = attrs_list.index(ItemRepository.get_attr_tsv_header(ItemAttribute.experience))
+            self.endurance_pos: int = attrs_list.index(ItemRepository.get_attr_tsv_header(ItemAttribute.endurance))
+            self.vitality_pos: int = attrs_list.index(ItemRepository.get_attr_tsv_header(ItemAttribute.vitality))
 
         except ValueError:
-            raise ValueError(f'Items tsv must include Fu, Ag, Ex, Re and Vi headers')
+            raise ValueError(f'Items tsv must include this headers: {ItemRepository.attribute_tsv_header_dict.values()}')
 
     def get_item(self, item_id: int) -> Item:
         return Item(
