@@ -1,15 +1,13 @@
-from typing import Tuple, Collection
-
-from TP2.character import CharacterType, Character
+from TP2.character import CharacterType
 from TP2.config import Config
-from TP2.couple_selection import CoupleSelector, get_couple_selector
-from TP2.crossover import Crossover, get_crossover
+from TP2.couple_selection import CouplesSelector, get_couples_selector, Couples
+from TP2.crossover import Crossover, get_crossover, Children
 from TP2.end_condition import get_end_condition, AbstractEndCondition
 from TP2.generation import Generation
 from TP2.items import ItemRepositories
 from TP2.mutation import Mutator, get_mutator
 from TP2.recombination import Recombiner, get_recombiner
-from TP2.selection import get_parent_selector, get_survivor_selector, ParentSelector, SurvivorSelector
+from TP2.selection import get_parent_selector, get_survivor_selector, ParentSelector, SurvivorSelector, Parents
 
 
 class Engine:
@@ -20,15 +18,15 @@ class Engine:
         self.generation_size: int = config.population_size
         self.generation_type: CharacterType = CharacterType[config.character_class]
 
-        self.parent_selector: ParentSelector = get_parent_selector(config)
-        self.couple_selector: CoupleSelector = get_couple_selector(config)
-        self.crossover: Crossover = get_crossover(config)
-        self.mutation: Mutator = get_mutator(config)
-        self.recombination: Recombiner = get_recombiner(config)
+        self.select_parents: ParentSelector = get_parent_selector(config)
+        self.select_couples: CouplesSelector = get_couples_selector(config)
+        self.cross_couples: Crossover = get_crossover(config)
+        self.mutate_children: Mutator = get_mutator(config)
+        self.build_new_gen: Recombiner = get_recombiner(config)
         self.survivor_selection: SurvivorSelector = get_survivor_selector(config)
         self.end_condition: AbstractEndCondition = get_end_condition(config)
 
-    def resolve_simulation(self) -> Collection[Character]:
+    def resolve_simulation(self) -> Generation:
 
         current_gen: Generation = Generation.create_first_generation(
             self.generation_size, self.generation_type, self.item_repositories
@@ -36,17 +34,16 @@ class Engine:
 
         while not self.end_condition.condition_met(current_gen):
 
-            parents: Collection[Character] = self.parent_selector(current_gen)
+            parents: Parents = self.select_parents(current_gen)
 
-            parents_couples: Collection[Tuple[Character, Character]] = self.couple_selector(parents)
+            couples: Couples = self.select_couples(parents)
 
-            children: Collection[Character] = self.crossover(parents_couples)
+            children: Children = self.cross_couples(couples)
 
-            self.mutation(children, self.item_repositories)
+            self.mutate_children(children, self.item_repositories)
 
-            current_gen.population = self.recombination(current_gen, list(children), self.survivor_selection)
-            current_gen.gen_count += 1
+            current_gen = self.build_new_gen(current_gen, children, self.survivor_selection)
 
-            print(max(map(Character.get_fitness, current_gen.population)))
+            print(current_gen.get_max_fitness())
 
-        return current_gen.population
+        return current_gen

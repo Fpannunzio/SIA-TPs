@@ -85,7 +85,7 @@ class ItemRepository:
 
     attribute_tsv_header_dict: Dict[ItemAttribute, str] = {
         ItemAttribute.strength: 'Fu',
-        ItemAttribute.afility: 'Ag',
+        ItemAttribute.agility: 'Ag',
         ItemAttribute.experience: 'Ex',
         ItemAttribute.endurance: 'Re',
         ItemAttribute.vitality: 'Vi',

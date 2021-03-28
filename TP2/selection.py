@@ -1,5 +1,5 @@
 import math
-from typing import Callable, Collection, List, Dict, Any, Tuple, Optional
+from typing import Callable, Collection, Dict, Any, Tuple
 
 import numpy as np
 from schema import Schema, And
@@ -10,12 +10,16 @@ from TP2.character import Character
 from TP2.config import Config
 import random
 
-from TP2.generation import Generation
+from TP2.generation import Generation, Population
 
-Selector = Callable[[Generation, int], List[Character]]
-ParentSelector = Callable[[Generation], Collection[Character]]
-SurvivorSelector = Selector
-InternalSelector = Callable[[Generation, int, Param], List[Character]]
+# Exported Types
+Parents = Population
+ParentSelector = Callable[[Generation], Parents]
+SurvivorSelector = Callable[[Generation, int], Population]
+
+# Internal Types
+Selector = Callable[[Generation, int], Population]
+InternalSelector = Callable[[Generation, int, Param], Population]
 
 
 def _extract_parent_selector_params(config: Config) -> Param:
@@ -112,14 +116,14 @@ _roulette_method: Dict[str, Callable[[int], Collection[float]]] = {
 
 # ------------------------------- Fitness Accumulated Sum Calculators --------------------------------------------------
 
-def _get_accum_sum_fitness(fitness_list: np.ndarray) -> Collection[float]:
-    return np.cumsum(fitness_list / fitness_list.sum())
+def _get_accum_sum(probability_array: np.ndarray) -> Collection[float]:
+    return np.cumsum(probability_array / probability_array.sum())
 
 
 # Accumulated sum maintains list order
-def _calculate_fitness_accum_sum(population: List[Character]) -> Collection[float]:
+def _calculate_fitness_accum_sum(population: Population) -> Collection[float]:
     fitness_list = np.fromiter(map(Character.get_fitness, population), float)
-    return _get_accum_sum_fitness(fitness_list)
+    return _get_accum_sum(fitness_list)
 
 
 def _unpack_fitness_and_index(enum_tuple: Tuple[int, Character]) -> Tuple[float, int]:
@@ -128,7 +132,7 @@ def _unpack_fitness_and_index(enum_tuple: Tuple[int, Character]) -> Tuple[float,
 
 
 # TODO(tobi): wat, por que recupera el orden original? - No decanto en nada el metodo
-def _calculate_ranking_fitness_accumulated_sum(population: List[Character]) -> Collection[float]:
+def _calculate_ranking_fitness_accum_sum(population: Population) -> Collection[float]:
     fitness_list: np.ndarray = np.fromiter(map(_unpack_fitness_and_index, enumerate(population)),
                                            np.dtype([('fitness', float), ('index', int)]))
 
@@ -144,36 +148,36 @@ def _calculate_ranking_fitness_accumulated_sum(population: List[Character]) -> C
     fitness_list = np.sort(fitness_list, order='index')['fitness']
 
     # Acumulada
-    return _get_accum_sum_fitness(fitness_list)
+    return _get_accum_sum(fitness_list)
 
 
-def _calculate_boltzmann_accumulated_sum(generation: Generation, amount: int, t0: float, tc: float) -> Collection[float]:
+def _calculate_boltzmann_accum_sum(generation: Generation, amount: int, t0: float, tc: float) -> Collection[float]:
     t: float = tc + (t0 - tc) * math.exp(-amount * generation.gen_count)
     fitness_list: np.ndarray = \
         np.fromiter(map(lambda character: math.exp(character.get_fitness() / t), generation.population), float)
     mean = np.mean(fitness_list)
     boltzmann_fitness_list = fitness_list / mean
 
-    return _get_accum_sum_fitness(boltzmann_fitness_list)
+    return _get_accum_sum(boltzmann_fitness_list)
 
 
 # -------------------------------------- Selection Strategies ----------------------------------------------------------
 
 
 # --------------- ELITE ----------------
-def elite_selector(generation: Generation, amount: int, selection_params: Param) -> Collection[Character]:
+def elite_selector(generation: Generation, amount: int, selection_params: Param) -> Population:
     return sorted(generation.population, key=lambda c: c.get_fitness())[:amount]
 
 
 # TODO(tobi): check
-def _generic_roulette_selector(population: List[Character], random_numbers: Collection[float],
-                               accumulated_sum: Collection[float]) -> List[Character]:
+def _generic_roulette_selector(population: Population, random_numbers: Collection[float],
+                               accumulated_sum: Collection[float]) -> Population:
 
     return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(accumulated_sum, random_numbers)))
 
 
 # ----------------- ROULETTE -------------
-def roulette_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+def roulette_selector(generation: Generation, amount, selection_params: Param) -> Population:
     return _generic_roulette_selector(
         generation.population,
         _roulette_random_number_gen(amount),
@@ -182,7 +186,7 @@ def roulette_selector(generation: Generation, amount, selection_params: Param) -
 
 
 # ----------------- UNIVERSAL -------------
-def universal_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+def universal_selector(generation: Generation, amount, selection_params: Param) -> Population:
     return _generic_roulette_selector(
         generation.population,
         _universal_random_number_gen(amount),
@@ -196,11 +200,11 @@ ranking_param_validator: ParamValidator = Schema({
 }, ignore_extra_keys=True)
 
 
-def ranking_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+def ranking_selector(generation: Generation, amount, selection_params: Param) -> Population:
     return _generic_roulette_selector(
         generation.population,
         _roulette_method[selection_params['roulette_method']](amount),
-        _calculate_ranking_fitness_accumulated_sum(generation.population)
+        _calculate_ranking_fitness_accum_sum(generation.population)
     )
 
 
@@ -213,11 +217,11 @@ boltzmann_param_validator: ParamValidator = Schema({
 }, ignore_extra_keys=True)
 
 
-def boltzmann_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+def boltzmann_selector(generation: Generation, amount, selection_params: Param) -> Population:
     return _generic_roulette_selector(
         generation.population,
         _roulette_method[selection_params['roulette_method']](amount),
-        _calculate_boltzmann_accumulated_sum(
+        _calculate_boltzmann_accum_sum(
             generation,
             amount,
             selection_params['initial_temp'],

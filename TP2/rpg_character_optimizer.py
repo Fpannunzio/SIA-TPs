@@ -2,6 +2,7 @@ import sys
 
 from TP2.config import Config
 from TP2.engine import Engine
+from TP2.generation import Generation
 
 from TP2.items import ItemRepositories
 
@@ -18,7 +19,9 @@ def main(config_file: str):
     engine: Engine = Engine(config, item_repositories)
 
     # Start Simulation
-    engine.resolve_simulation()
+    last_generation: Generation = engine.resolve_simulation()
+
+    print(last_generation)
 
     print('Done')
 

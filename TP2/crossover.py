@@ -1,15 +1,21 @@
 import itertools
 import random
-from typing import Callable, Collection, Tuple, List, Dict, Union, Iterator
+from typing import Callable, Tuple, Dict, Union, Iterator
 
 import numpy as np
 from schema import Schema, And, Optional, Or
 
 from TP2.character import Character, CharacterType
 from TP2.config import Config, Param, ParamValidator
+from TP2.couple_selection import Couples, Couple
+from TP2.generation import Population
 from TP2.items import Item, ItemSet
 
-Crossover = Callable[[Collection[Tuple[Character, Character]]], Collection[Character]]
+# Exported Types
+Children = Population
+Crossover = Callable[[Couples], Children]
+
+# Internal Types
 ParentSeqGenerator = Callable[[int, Param], Iterator[int]]
 
 
@@ -39,17 +45,18 @@ def get_crossover(config: Config) -> Crossover:
 
     flatten = itertools.chain.from_iterable
 
-    def crossover(parents: Collection[Tuple[Character, Character]]):
+    # TODO(tobi, nacho): pc que sea por couple, no para todas las couples
+    def crossover(couples: Couples):
         if pc > 0 and random.random() < pc:  # Children equals parents
-            return [child for couple in parents for child in couple]
+            return [child for couple in couples for child in couple]
 
-        return list(flatten(map(lambda couple: child_creation(couple, parent_seq_gen), parents)))
+        return list(flatten(map(lambda couple: child_creation(couple, parent_seq_gen), couples)))
 
     return crossover
 
 
 # TODO(tobi): Que me lo expliquen despacito
-def child_creation(couple: Tuple[Character, Character], parent_seq_gen: Callable[[], Iterator[int]]) -> List[Character]:
+def child_creation(couple: Couple, parent_seq_gen: Callable[[], Iterator[int]]) -> Children:
     children_genes: Tuple[Dict[str, Union[float, Item]], Dict[str, Union[float, Item]]] = {}, {}
 
     parent_sequence: Iterator[int] = parent_seq_gen()
@@ -86,11 +93,10 @@ def get_two_point_parent_seq(gene_count: int, seq_params: Param) -> Iterator[int
     return get_k_point_parent_seq(gene_count, 2)
 
 
-# TODO(tobi): Chequear - Para mi annular es asi
 def get_two_point_parents_annular_seq(gene_count: int, seq_params: Param):
-    p_and_l: List[int] = random.sample(range(gene_count), 2)
-    p1: int = p_and_l[0]
-    p2: int = (p1 + p_and_l[1]) % gene_count
+    p1: int = random.randint(0, gene_count - 1)
+    l: int = random.randint(0, gene_count - 1)
+    p2: int = (p1 + l) % gene_count
     points = np.sort(np.array([p1, p2]))
     return map(lambda i: np.searchsorted(points, i, side='right') % 2, range(gene_count))
 

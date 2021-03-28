@@ -6,10 +6,14 @@ from TP2.character import Character
 from TP2.config import Config, Param, ParamValidator
 import random
 
+from TP2.crossover import Children
 from TP2.items import ItemRepositories, ItemType
 
-Mutator = Callable[[Collection[Character], ItemRepositories], None]
-InternalMutator = Callable[[Collection[Character], ItemRepositories, float, Param], None]
+# Exported Types
+Mutator = Callable[[Children, ItemRepositories], None]
+
+# Interna Types
+InternalMutator = Callable[[Children, ItemRepositories, float, Param], None]
 
 
 def _extract_mutator_params(config: Config) -> Param:
@@ -36,42 +40,42 @@ def get_mutator(config: Config) -> Mutator:
 
 # -------------------------------------- Swap Strategies ----------------------------------------------------------
 
-def _single_gen_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float) -> None:
+def _single_gen_mutation_swap(child: Character, items_repo: ItemRepositories, probability: float) -> None:
     if random.random() < probability:
-        _mutate_character_gene(character, random.choice(Character.gene_list), items_repo)
+        _mutate_child_gene(child, random.choice(Character.gene_list), items_repo)
 
 
-def _limited_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float, max_mutated_genes_count: int) -> None:
+def _limited_mutation_swap(child: Character, items_repo: ItemRepositories, probability: float, max_mutated_genes_count: int) -> None:
     mutated_genes_count: int = random.randint(1, max_mutated_genes_count)
     random_genes = random.sample(Character.gene_list, mutated_genes_count)
-    _multiple_mutation_swap(character, items_repo, probability, random_genes)
+    _multiple_mutation_swap(child, items_repo, probability, random_genes)
 
 
-def _multiple_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float, genes: Collection[str]) -> None:
+def _multiple_mutation_swap(child: Character, items_repo: ItemRepositories, probability: float, genes: Collection[str]) -> None:
     for gene in genes:
         if random.random() < probability:
-            _mutate_character_gene(character, gene, items_repo)
+            _mutate_child_gene(child, gene, items_repo)
 
 
-def _complete_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float) -> None:
+def _complete_mutation_swap(child: Character, items_repo: ItemRepositories, probability: float) -> None:
     if random.random() < probability:
-        character.height = Character.generate_random_height()
-        character.items = items_repo.generate_random_set()
+        child.height = Character.generate_random_height()
+        child.items = items_repo.generate_random_set()
 
 
-def _mutate_character_gene(character: Character, gene: str, items_repo: ItemRepositories) -> None:
+def _mutate_child_gene(child: Character, gene: str, items_repo: ItemRepositories) -> None:
     if gene == 'height':
-        character.height = Character.generate_random_height()
+        child.height = Character.generate_random_height()
     else:  # Es un item
         item_type: ItemType = ItemType(gene)
-        character.items.set_item(item_type, items_repo.get_repo(item_type).get_random_item())
+        child.items.set_item(item_type, items_repo.get_repo(item_type).get_random_item())
 
 
 # --------------------------------------------- Mutators ---------------------------------------------------------------
 
-def single_gen_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
-    for character in children:
-        _single_gen_mutation_swap(character, items, mutation_probability)
+def single_gen_mutator(children: Children, items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for child in children:
+        _single_gen_mutation_swap(child, items, mutation_probability)
 
 
 limited_mutator_params_schema: ParamValidator = Schema({
@@ -79,19 +83,19 @@ limited_mutator_params_schema: ParamValidator = Schema({
 }, ignore_extra_keys=True)
 
 
-def limited_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
-    for character in children:
-        _limited_mutation_swap(character, items, mutation_probability, mutation_params['max_mutated_genes_count'])
+def limited_mutator(children: Children, items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for child in children:
+        _limited_mutation_swap(child, items, mutation_probability, mutation_params['max_mutated_genes_count'])
 
 
-def uniform_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
-    for character in children:
-        _multiple_mutation_swap(character, items, mutation_probability, Character.gene_list)
+def uniform_mutator(children: Children, items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for child in children:
+        _multiple_mutation_swap(child, items, mutation_probability, Character.gene_list)
 
 
-def complete_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
-    for character in children:
-        _complete_mutation_swap(character, items, mutation_probability)
+def complete_mutator(children: Children, items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for child in children:
+        _complete_mutation_swap(child, items, mutation_probability)
 
 
 _mutator_dict: Dict[str, Tuple[InternalMutator, ParamValidator]] = {

@@ -1,5 +1,5 @@
 import math
-from typing import Callable, Tuple, List, Dict, Iterator, Collection
+from typing import Callable, Tuple, List, Dict, Iterator
 
 from schema import Schema, And, Optional, Or
 
@@ -7,8 +7,15 @@ from TP2.character import Character
 from TP2.config import Config, Param, ParamValidator
 import random
 
-CoupleSelector = Callable[[Collection[Character]], Collection[Tuple[Character, Character]]]
-InternalCoupleSelector = Callable[[Collection[Character], int, Param], Collection[Tuple[Character, Character]]]
+from TP2.selection import Parents
+
+# Exported Types
+Couple = Tuple[Character, Character]
+Couples = List[Couple]
+CouplesSelector = Callable[[Parents], Couples]
+
+# Internal Types
+InternalCoupleSelector = Callable[[Parents, int, Param], Couples]
 
 
 def _extract_coupling_selector_params(config: Config) -> Param:
@@ -21,7 +28,7 @@ def _extract_coupling_selector_params(config: Config) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_couple_selector(config: Config) -> CoupleSelector:
+def get_couples_selector(config: Config) -> CouplesSelector:
     coupling_selector_params: Param = _extract_coupling_selector_params(config)
 
     method, coupling_params_schema = _couple_selector_dict[coupling_selector_params['method']['name']]
@@ -34,10 +41,10 @@ def get_couple_selector(config: Config) -> CoupleSelector:
 
 
 # TODO(tobi): Mejorable
-def equitable_random_coupling(parents: Collection[Character], couple_count: int, coupling_params: Param) -> Collection[Tuple[Character, Character]]:
-    parents = list(parents)  # Preserve original list
+def equitable_random_coupling(parents: Parents, couple_count: int, coupling_params: Param) -> Couples:
+    parents = parents.copy()  # Preserve original list
     natural_coupling_count: int = len(parents)//2
-    ret: List[Tuple[Character, Character]] = []
+    ret: Couples = []
 
     if len(parents) % 2 != 0:
         parents.pop(random.randint(0, len(parents) - 1))
@@ -62,14 +69,13 @@ def equitable_random_coupling(parents: Collection[Character], couple_count: int,
     return ret
 
 
-def _random_couple_from_population(population: Collection[Character]) -> Tuple[Character, Character]:
-    # TODO(tobi): Borrar casteo a lista. Probablemente cambiar todo a List
-    couple = random.sample(list(population), 2)
+def _get_random_couple(parents: Parents) -> Couple:
+    couple = random.sample(parents, 2)
     return couple[0], couple[1]
 
 
-def chaotic_random_coupling(parents: Collection[Character], couple_count: int, coupling_params: Param) -> Collection[Tuple[Character, Character]]:
-    return [_random_couple_from_population(parents) for _ in range(math.floor(couple_count / 2))]
+def chaotic_random_coupling(parents: Parents, couple_count: int, coupling_params: Param) -> Couples:
+    return [_get_random_couple(parents) for _ in range(math.floor(couple_count / 2))]
 
 
 _couple_selector_dict: Dict[str, Tuple[InternalCoupleSelector, ParamValidator]] = {

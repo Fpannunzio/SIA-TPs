@@ -5,6 +5,8 @@ import numpy as np
 from TP2.character import Character, CharacterType
 from TP2.items import ItemRepositories
 
+Population = List[Character]
+
 
 class Generation:
 
@@ -15,10 +17,15 @@ class Generation:
             for _ in range(generation_size)
         ], 0)
 
-    def __init__(self, population: List[Character], gen_count: int) -> None:
-        self.population: List[Character] = population
+    def __init__(self, population: Population, gen_count: int) -> None:
+        self.population: Population = population
         self.gen_count: int = gen_count
 
-    def get_max_fitness(self) -> float:
-        return np.array(map(Character.get_fitness, self.population)).max()
+    def create_next_generation(self, new_population: Population):
+        return Generation(new_population, self.gen_count + 1)
 
+    def get_max_fitness(self) -> float:
+        return np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)).max()
+
+    def __len__(self) -> int:
+        return len(self.population)

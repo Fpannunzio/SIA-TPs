@@ -109,4 +109,3 @@ class Character:
         if not self._fitness_cache:
             self._fitness_cache = self._calculate_fitness()
         return self._fitness_cache
-

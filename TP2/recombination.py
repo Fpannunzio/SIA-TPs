@@ -1,14 +1,17 @@
-from typing import Callable, Collection, List, Dict, Tuple
+from typing import Callable, Dict, Tuple
 
 from schema import Schema, And, Optional, Or
 
-from TP2.character import Character
 from TP2.config import Config, Param, ParamValidator
+from TP2.crossover import Children
 from TP2.generation import Generation
 from TP2.selection import SurvivorSelector
 
-Recombiner = Callable[[Generation, List[Character], SurvivorSelector], Collection[Character]]
-InternalRecombiner = Callable[[Generation, List[Character], SurvivorSelector, Param], Collection[Character]]
+# Exported Types
+Recombiner = Callable[[Generation, Children, SurvivorSelector], Generation]
+
+# Internal Types
+InternalRecombiner = Callable[[Generation, Children, SurvivorSelector, Param], Generation]
 
 
 def _extract_recombiner_params(config: Config) -> Param:
@@ -31,23 +34,22 @@ def get_recombiner(config: Config) -> Recombiner:
         method(current_generation, children, survivor_selector, recombiner_method_params)
 
 
-def fill_all_selection(current_generation: Generation, children: List[Character],
-                       survivor_selection: SurvivorSelector, recombiner_params: Param) -> Collection[Character]:
-    return survivor_selection(
-        Generation(current_generation.population + children, current_generation.gen_count),
-        len(current_generation.population)
-    )
+def fill_all_selection(current_generation: Generation, children: Children,
+                       survivor_selector: SurvivorSelector, recombiner_params: Param) -> Generation:
+
+    temp_gen: Generation = Generation(current_generation.population + children, current_generation.gen_count)
+    return current_generation.create_next_generation(survivor_selector(temp_gen, len(current_generation)))
 
 
-def fill_parent_selection(current_generation: Generation, children: List[Character],
-                          survivor_selection: SurvivorSelector, recombiner_params: Param) -> Collection[Character]:
+def fill_parent_selection(current_generation: Generation, children: Children,
+                          survivor_selector: SurvivorSelector, recombiner_params: Param) -> Generation:
     k: int = len(children)
-    n: int = len(current_generation.population)
+    n: int = len(current_generation)
 
     if k > n:
-        return survivor_selection(Generation(children, current_generation.gen_count), n)
+        return current_generation.create_next_generation(survivor_selector(Generation(children, current_generation.gen_count), n))
     else:
-        return survivor_selection(current_generation, n-k) + children
+        return current_generation.create_next_generation(survivor_selector(current_generation, n - k) + children)
 
 
 _recombiner_dict: Dict[str, Tuple[InternalRecombiner, ParamValidator]] = {
