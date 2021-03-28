@@ -1,145 +1,236 @@
 import math
-from typing import Callable, Collection, List, Dict, NamedTuple, Any, Tuple
+from typing import Callable, Collection, List, Dict, Any, Tuple, Optional
 
 import numpy as np
+from schema import Schema, And
+import schema
 
+from TP2.config import Param, ParamValidator
 from TP2.character import Character
-from TP2.config_loader import Config
+from TP2.config import Config
 import random
 
 from TP2.generation import Generation
 
+Selector = Callable[[Generation, int], List[Character]]
 ParentSelector = Callable[[Generation], Collection[Character]]
-SurvivorSelector = Callable[[Generation, int], List[Character]]
-
-SelectionParam = Dict[str, Any]
-SelectionDescriptor = NamedTuple('SelectionDescriptor', [('name', str), ('params', SelectionParam)])
-
-Selection = Callable[[Generation, int, SelectionParam], List[Character]]
+SurvivorSelector = Selector
+InternalSelector = Callable[[Generation, int, Param], List[Character]]
 
 
-def get_parent_selection(config: Config) -> ParentSelector:
-    # TODO sacar del config nombre del metodo y sus parametros
-    first_selection_method: Selection = selection_impl_dict['elite_selection']
-    first_method_params: SelectionParam = {}
-    second_selection_method: Selection = selection_impl_dict['boltzmann_selection']
-    second_method_params: SelectionParam = {
-        'initial_temp': 24,
-        'final_temp': 12,
-        'roulette_method': 'random',
-        'k': config.k
+def _extract_parent_selector_params(config: Config) -> Param:
+    method_schema: Dict[Any, Any] = {
+        'name': schema.And(str, schema.Or(*tuple(_selector_dict.keys()))),
+        schema.Optional('params', default=dict): dict,
     }
-    a_value: float = 0.7  # config.a_value
 
-    return lambda generation: first_selection_method(generation, math.ceil(a_value * config.k),
-        first_method_params) + second_selection_method(
-        generation, math.floor((1 - a_value) * config.k), second_method_params)
+    return Config.validate_param(config.parent_selection, Schema({
+        'method1': method_schema,
+        'method2': method_schema,
+        'parent_count': int,
+        'weight': And(float, lambda p: 0 <= p <= 1),
+    }, ignore_extra_keys=True))
 
 
-def get_survivor_selection(config: Config) -> Selection:
-    # TODO sacarlo del config
-    first_selection_method: Selection = selection_impl_dict['elite_selection']
-    first_method_params: SelectionParam = {}
-    second_selection_method: Selection = selection_impl_dict['boltzmann_selection']
-    second_method_params: SelectionParam = {
-        'initial_temp': 24,
-        'final_temp': 12,
-        'roulette_method': 'universal',
-        'k': config.k
+def get_parent_selector(config: Config) -> ParentSelector:
+    parent_selector_params: Param = _extract_parent_selector_params(config)
+
+    first_selector_method: Selector = _get_selector(
+        parent_selector_params['method1']['name'],
+        parent_selector_params['method1']['params']
+    )
+    second_selector_method: Selector = _get_selector(
+        parent_selector_params['method2']['name'],
+        parent_selector_params['method2']['params']
+    )
+    parent_count: int = parent_selector_params['parent_count']
+    method_weight: float = parent_selector_params['weight']
+
+    first_method_amount: int = math.ceil(method_weight * parent_count)
+    second_method_amount: int = math.floor((1 - method_weight) * parent_count)
+
+    return lambda generation: \
+        first_selector_method(generation, first_method_amount) + \
+        second_selector_method(generation, second_method_amount)
+
+
+def _extract_survivor_selector_params(config: Config) -> Param:
+    method_schema: Dict[Any, Any] = {
+        'name': And(str, schema.Or(*tuple(_selector_dict.keys()))),
+        schema.Optional('params', default=dict): dict,
     }
-    b_value: float = 0.4  # config.b_value
-    return lambda generation, size: first_selection_method(generation, math.ceil(b_value * size),
-                                    first_method_params) + second_selection_method(
-                                    generation, math.floor((1 - b_value) * size), second_method_params)
+
+    return Config.validate_param(config.parent_selection, Schema({
+        'method1': method_schema,
+        'method2': method_schema,
+        'weight': And(float, lambda p: 0 <= p <= 1),
+    }, ignore_extra_keys=True))
 
 
-def generate_random_numbers(amount: int) -> Collection[float]:
+def get_survivor_selector(config: Config) -> SurvivorSelector:
+    survivor_selection_params: Param = _extract_survivor_selector_params(config)
+
+    first_selection_method: Selector = _get_selector(
+        survivor_selection_params['method1']['name'],
+        survivor_selection_params['method1']['params']
+    )
+    second_selection_method: Selector = _get_selector(
+        survivor_selection_params['method2']['name'],
+        survivor_selection_params['method2']['params']
+    )
+    method_weight: float = survivor_selection_params['weight']
+
+    return lambda generation, size: \
+        first_selection_method(generation, math.ceil(method_weight * size)) + \
+        second_selection_method(generation, math.floor((1 - method_weight) * size))
+
+
+def _get_selector(method_name: str, params: Param) -> Selector:
+    method, selection_param_schema = _selector_dict[method_name]
+    validated_params: Param = (Config.validate_param(params, selection_param_schema) if selection_param_schema else params)
+
+    return lambda parents, amount: method(parents, amount, validated_params)
+
+
+# -------------------------------------- Random Generators -------------------------------------------------------------
+
+def _roulette_random_number_gen(amount: int) -> Collection[float]:
     return [random.random() for _ in range(amount)]
 
 
-def generate_universal_random_numbers(amount: int) -> Collection[float]:
+def _universal_random_number_gen(amount: int) -> Collection[float]:
     r: float = random.random()
     return np.linspace(r / amount, (r + amount - 1) / amount, amount)
 
 
-# Accumulated sum maintains list order
-def calculate_fitness_accumulated_sum(initial_parents: List[Character]) -> Collection[float]:
-    fitness_list = np.fromiter(map(Character.get_fitness, initial_parents), float)
+# Tenias razon Faus, es mejor un mapa
+_roulette_method: Dict[str, Callable[[int], Collection[float]]] = {
+    'random': _roulette_random_number_gen,
+    'universal': _universal_random_number_gen
+}
+
+
+# ------------------------------- Fitness Accumulated Sum Calculators --------------------------------------------------
+
+def _get_accum_sum_fitness(fitness_list: np.ndarray) -> Collection[float]:
     return np.cumsum(fitness_list / fitness_list.sum())
 
 
-def fitness_and_index(enumeration_tuple: Tuple[int, Character]) -> Tuple[float, int]:
+# Accumulated sum maintains list order
+def _calculate_fitness_accum_sum(population: List[Character]) -> Collection[float]:
+    fitness_list = np.fromiter(map(Character.get_fitness, population), float)
+    return _get_accum_sum_fitness(fitness_list)
 
-    index, character = enumeration_tuple
+
+def _unpack_fitness_and_index(enum_tuple: Tuple[int, Character]) -> Tuple[float, int]:
+    index, character = enum_tuple
     return character.get_fitness(), index
 
 
-def calculate_ranking_pseudo_fitness_accumulated_sum(initial_parents: List[Character]) -> Collection[float]:
-    fitness_list: np.ndarray = np.fromiter(map(fitness_and_index, enumerate(initial_parents)),
+# TODO(tobi): wat, por que recupera el orden original? - No decanto en nada el metodo
+def _calculate_ranking_fitness_accumulated_sum(population: List[Character]) -> Collection[float]:
+    fitness_list: np.ndarray = np.fromiter(map(_unpack_fitness_and_index, enumerate(population)),
                                            np.dtype([('fitness', float), ('index', int)]))
 
     # Ordenar por fitness de mayor a menor
     fitness_list = np.flipud(np.sort(fitness_list, order='fitness'))
 
-    population_size = np.size(fitness_list)
+    population_size: int = np.size(fitness_list)
 
     # Convertirlo en ranking
     fitness_list['fitness'] = np.linspace(1 - 1 / population_size, 0, population_size)
 
-    # Recuperar por el orden orignal
+    # Recuperar por el orden original
     fitness_list = np.sort(fitness_list, order='index')['fitness']
 
     # Acumulada
-    return np.cumsum(fitness_list / fitness_list.sum())
+    return _get_accum_sum_fitness(fitness_list)
 
 
-def calculate_boltzmann_accumulated_sum(generation: Generation, selection_params: SelectionParam) -> Collection[float]:
-    t0: float = selection_params['initial_temp']
-    tc: float = selection_params['final_temp']
-    k: int = selection_params['k']
-    temp: float = tc + (t0 - tc)*math.exp(k*generation.generation*(-1))
-    fitness_list = np.fromiter(map(lambda character: math.exp(character.get_fitness() / temp), generation.characters), float)
+def _calculate_boltzmann_accumulated_sum(generation: Generation, amount: int, t0: float, tc: float) -> Collection[float]:
+    t: float = tc + (t0 - tc) * math.exp(-amount * generation.gen_count)
+    fitness_list: np.ndarray = \
+        np.fromiter(map(lambda character: math.exp(character.get_fitness() / t), generation.population), float)
     mean = np.mean(fitness_list)
     boltzmann_fitness_list = fitness_list / mean
-    return np.cumsum(boltzmann_fitness_list / boltzmann_fitness_list.sum())
+
+    return _get_accum_sum_fitness(boltzmann_fitness_list)
 
 
-def elite_selection(generation: Generation, amount: int, selection_params: SelectionParam) -> Collection[Character]:
-    return sorted(generation.characters, key=lambda c: c.get_fitness())[:amount]
+# -------------------------------------- Selection Strategies ----------------------------------------------------------
 
 
-def random_roulette_selection(generation: Generation, amount, selection_params: SelectionParam) -> List[Character]:
-    return roulette_selection(generation.characters, generate_random_numbers(amount),
-                              calculate_fitness_accumulated_sum(generation.characters))
+# --------------- ELITE ----------------
+def elite_selector(generation: Generation, amount: int, selection_params: Param) -> Collection[Character]:
+    return sorted(generation.population, key=lambda c: c.get_fitness())[:amount]
 
 
-def universal_roulette_selection(generation: Generation, amount, selection_params: SelectionParam) -> List[
-    Character]:
-    return roulette_selection(generation.characters, generate_universal_random_numbers(amount),
-                              calculate_fitness_accumulated_sum(generation.characters))
+# TODO(tobi): check
+def _generic_roulette_selector(population: List[Character], random_numbers: Collection[float],
+                               accumulated_sum: Collection[float]) -> List[Character]:
+
+    return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(accumulated_sum, random_numbers)))
 
 
-def boltzmann_selection(generation: Generation, amount, selection_params: SelectionParam) -> List[Character]:
-    return roulette_selection(generation.characters, roulette_method[selection_params['roulette_method']](amount), calculate_boltzmann_accumulated_sum(generation, selection_params))
+# ----------------- ROULETTE -------------
+def roulette_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+    return _generic_roulette_selector(
+        generation.population,
+        _roulette_random_number_gen(amount),
+        _calculate_fitness_accum_sum(generation.population)
+    )
 
 
-def roulette_selection(initial_parents: List[Character], random_numbers: Collection[float],
-                       accumulated_sum: Collection[float]) -> List[Character]:
-    new_parents: List[Character] = []
-    for num in random_numbers:
-        new_parents.append(initial_parents[np.searchsorted(accumulated_sum, num)])
+# ----------------- UNIVERSAL -------------
+def universal_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+    return _generic_roulette_selector(
+        generation.population,
+        _universal_random_number_gen(amount),
+        _calculate_fitness_accum_sum(generation.population)
+    )
 
-    return new_parents
+
+# ----------------- RANKING -------------
+ranking_param_validator: ParamValidator = Schema({
+    'roulette_method': _roulette_method.keys()
+}, ignore_extra_keys=True)
 
 
-roulette_method: Dict[str, Callable[[int], Collection[float]]] = {
-    'random': generate_random_numbers,
-    'universal': generate_universal_random_numbers
-}
+def ranking_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+    return _generic_roulette_selector(
+        generation.population,
+        _roulette_method[selection_params['roulette_method']](amount),
+        _calculate_ranking_fitness_accumulated_sum(generation.population)
+    )
 
-selection_impl_dict: Dict[str, Selection] = {
-    'elite_selection': elite_selection,
-    'random_roulette_selection': random_roulette_selection,
-    'universal_roulette_selection': universal_roulette_selection,
-    'boltzmann_selection': boltzmann_selection
+
+# ----------------- BOLTZMANN -------------
+# TODO(tobi): No me sale validar que tc < t0
+boltzmann_param_validator: ParamValidator = Schema({
+    'roulette_method': _roulette_method.keys(),
+    'initial_temp': And(float, lambda t0: t0 > 0),
+    'final_temp': And(float, lambda tc: 0 < tc)
+}, ignore_extra_keys=True)
+
+
+def boltzmann_selector(generation: Generation, amount, selection_params: Param) -> List[Character]:
+    return _generic_roulette_selector(
+        generation.population,
+        _roulette_method[selection_params['roulette_method']](amount),
+        _calculate_boltzmann_accumulated_sum(
+            generation,
+            amount,
+            selection_params['initial_temp'],
+            selection_params['final_temp']
+        )
+    )
+
+
+_selector_dict: Dict[str, Tuple[InternalSelector, ParamValidator]] = {
+    'elite':        (elite_selector, None),
+    'roulette':     (roulette_selector, None),
+    'universal':    (universal_selector, None),
+    'ranking':      (ranking_selector, ranking_param_validator),
+    'boltzmann':    (boltzmann_selector, boltzmann_param_validator)
+    # TODO: Torneo 1, torneo 2, verificar ranking
 }

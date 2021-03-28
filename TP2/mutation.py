@@ -1,88 +1,102 @@
-from typing import Callable, Collection, List, Dict, Union, Any
+from typing import Callable, Collection, Dict, Tuple
+
+from schema import Schema, Optional, And, Or
 
 from TP2.character import Character
-from TP2.config_loader import Config
+from TP2.config import Config, Param, ParamValidator
 import random
 
-from TP2.items import Item, ItemRepositories, ItemRepository
+from TP2.items import ItemRepositories, ItemType
 
-Mutation = Callable[[Collection[Character], ItemRepositories, Dict[str, Any]], None]
-
-gen_setters: Dict[str, Callable[[Character, Union[float, Item]], None]] = {
-    'height': lambda character, value: setattr(character, 'height', value),
-    'weapon': lambda character, value: setattr(character, 'weapon', value),
-    'boots': lambda character, value: setattr(character, 'boots', value),
-    'helmet': lambda character, value: setattr(character, 'helmet', value),
-    'gauntlets': lambda character, value: setattr(character, 'gauntlets', value),
-    'chest_piece': lambda character, value: setattr(character, 'chest_piece', value)
-}
-
-items_accessors: Dict[str, Callable[[ItemRepositories], ItemRepository]] = {
-    'weapon': lambda items: items.weapon,
-    'boots': lambda items: items.boots,
-    'helmet': lambda items: items.helmet,
-    'gauntlets': lambda items: items.gauntlets,
-    'chest_piece': lambda items: items.chest_piece
-}
-
-gen_names: List[str] = [
-    'height', 'weapon', 'boots', 'helmets', 'gauntlets', 'chestpieces'
-]
+Mutator = Callable[[Collection[Character], ItemRepositories], None]
+InternalMutator = Callable[[Collection[Character], ItemRepositories, float, Param], None]
 
 
-def get_mutation_impl(config: Config) -> Mutation:
-    # TODO por ahora solo esta complete
-    return mutation_impl_dict['complete']
+def _extract_mutator_params(config: Config) -> Param:
+    return Config.validate_param(config.mutation, Schema({
+        'mutation_probability': And(float, lambda p: 0 <= p <= 1),
+        'method': {
+            'name': And(str, Or(*tuple(_mutator_dict.keys()))),
+            Optional('params', default=dict): dict,
+        }
+    }, ignore_extra_keys=True))
 
 
-def single_gen_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
-    for character in children:
-        single_gen_mutation_swap(character, items, mutation_params['probability'], mutation_params['item_type'])
+def get_mutator(config: Config) -> Mutator:
+    mutator_params: Param = _extract_mutator_params(config)
+
+    method, mutator_method_param_schema = _mutator_dict[mutator_params['method']['name']]
+    mutator_method_params: Param = mutator_params['method']['params']
+    if mutator_method_param_schema:
+        mutator_method_params = Config.validate_param(mutator_method_params, mutator_method_param_schema)
+    mutation_probability: float = mutator_params['mutation_probability']
+
+    return lambda children, item_repo: method(children, item_repo, mutation_probability, mutator_method_params)
 
 
-def single_gen_mutation_swap(character: Character, items: ItemRepositories, probability: float, item_type: str):
+# -------------------------------------- Swap Strategies ----------------------------------------------------------
+
+def _single_gen_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float) -> None:
     if random.random() < probability:
-        gen_setters[item_type](character, items_accessors[item_type](items).get_random_item())
+        _mutate_character_gene(character, random.choice(Character.gene_list), items_repo)
 
 
-def limited_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
-    for character in children:
-        limited_mutation_swap(character, items, mutation_params['probability'], mutation_params['mutable_genes'])
+def _limited_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float, max_mutated_genes_count: int) -> None:
+    mutated_genes_count: int = random.randint(1, max_mutated_genes_count)
+    random_genes = random.sample(Character.gene_list, mutated_genes_count)
+    _multiple_mutation_swap(character, items_repo, probability, random_genes)
 
 
-def limited_mutation_swap(character, items, probability, mutable_genes):
-    random_genes = random.sample(gen_names, mutable_genes)
-    multiple_mutation_swap(character, items, probability, random_genes)
+def _multiple_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float, genes: Collection[str]) -> None:
+    for gene in genes:
+        if random.random() < probability:
+            _mutate_character_gene(character, gene, items_repo)
 
 
-def uniform_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
-    for character in children:
-        multiple_mutation_swap(character, items, mutation_params['probability'], gen_names)
-
-
-def multiple_mutation_swap(character: Character, items: ItemRepositories, probability: float, genes: Collection[str]):
-    for gen in genes:
-        if gen == 'height' and random.random() < probability:
-            gen_setters[gen](character, character.generate_random_height())
-        else:
-            if random.random() < probability:
-                gen_setters[gen](character, items_accessors[gen](items).get_random_item())
-
-
-def complete_mutation(children: Collection[Character], items: ItemRepositories, mutation_params: Dict[str, Any]):
-    for character in children:
-        complete_mutation_swap(character, items, mutation_params['probability'])
-
-
-def complete_mutation_swap(character: Character, items: ItemRepositories, probability: float):
+def _complete_mutation_swap(character: Character, items_repo: ItemRepositories, probability: float) -> None:
     if random.random() < probability:
         character.height = Character.generate_random_height()
-        character.items = items.generate_random_set()
+        character.items = items_repo.generate_random_set()
 
 
-mutation_impl_dict: Dict[str, Mutation] = {
-    'single_gen_mutation': single_gen_mutation,
-    'limited_mutation': limited_mutation,
-    'uniform_mutation': uniform_mutation,
-    'complete': complete_mutation,
+def _mutate_character_gene(character: Character, gene: str, items_repo: ItemRepositories) -> None:
+    if gene == 'height':
+        character.height = Character.generate_random_height()
+    else:  # Es un item
+        item_type: ItemType = ItemType(gene)
+        character.items.set_item(item_type, items_repo.get_repo(item_type).get_random_item())
+
+
+# --------------------------------------------- Mutators ---------------------------------------------------------------
+
+def single_gen_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for character in children:
+        _single_gen_mutation_swap(character, items, mutation_probability)
+
+
+limited_mutator_params_schema: ParamValidator = Schema({
+    'max_mutated_genes_count': And(int, lambda count: 1 <= count <= len(Character.gene_list))
+}, ignore_extra_keys=True)
+
+
+def limited_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for character in children:
+        _limited_mutation_swap(character, items, mutation_probability, mutation_params['max_mutated_genes_count'])
+
+
+def uniform_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for character in children:
+        _multiple_mutation_swap(character, items, mutation_probability, Character.gene_list)
+
+
+def complete_mutator(children: Collection[Character], items: ItemRepositories, mutation_probability: float, mutation_params: Param) -> None:
+    for character in children:
+        _complete_mutation_swap(character, items, mutation_probability)
+
+
+_mutator_dict: Dict[str, Tuple[InternalMutator, ParamValidator]] = {
+    'single_gen': (single_gen_mutator, None),
+    'limited': (limited_mutator, limited_mutator_params_schema),
+    'uniform': (uniform_mutator, None),
+    'complete': (complete_mutator, None),
 }

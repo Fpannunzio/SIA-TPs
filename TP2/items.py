@@ -1,14 +1,15 @@
 from enum import Enum
 from functools import reduce
 from operator import add
-from typing import List
+from typing import List, Any, Dict
 
 import numpy as np
 import pandas as pd
 from numpy import ndarray
 from pandas import DataFrame
+from schema import Schema
 
-from TP2.config_loader import Config
+import config as conf
 
 
 class ItemType(Enum):
@@ -34,11 +35,13 @@ class Item:
 class ItemSet:
 
     def __init__(self, weapon: Item, boots: Item, helmet: Item, gauntlets: Item, chest_piece: Item) -> None:
-        self.weapon: Item = weapon
-        self.boots: Item = boots
-        self.helmet: Item = helmet
-        self.gauntlets: Item = gauntlets
-        self.chest_piece: Item = chest_piece
+        self.items: Dict[ItemType, Item] = {
+            ItemType.weapon: weapon,
+            ItemType.boots: boots,
+            ItemType.helmet: helmet,
+            ItemType.gauntlets: gauntlets,
+            ItemType.chest_piece: chest_piece,
+        }
 
     def get_total_strength(self) -> float:
         return self.sum_items_total('strength')
@@ -56,7 +59,13 @@ class ItemSet:
         return self.sum_items_total('vitality')
 
     def sum_items_total(self, attribute: str) -> float:
-        return reduce(add, map(lambda item_type: getattr(getattr(self, item_type.value), attribute), ItemType), 0)
+        return reduce(add, map(lambda item_type: getattr(self.get_item(item_type), attribute), ItemType), 0)
+
+    def get_item(self, item_type: ItemType):
+        return self.items[item_type]
+
+    def set_item(self, item_type: ItemType, item: Item):
+        self.items[item_type] = item
 
 
 class ItemRepository:
@@ -112,23 +121,29 @@ class ItemRepository:
 
 class ItemRepositories:
 
-    def __init__(self, config: Config) -> None:
-        supported_item_types: List[str] = [item_type.value for item_type in ItemType]
-        if not all(item_type in config.item_files for item_type in supported_item_types):
-            raise ValueError(
-                f'There are arguments missing. Make sure all item types files {supported_item_types} are present')
+    def __init__(self, config: conf.Config) -> None:
+        item_files_schema: Dict[str, Any] = dict.fromkeys(map(lambda item_type: item_type.value, ItemType), str)
+        item_files: conf.Param = conf.Config.validate_param(config.item_files, Schema(item_files_schema, ignore_extra_keys=True))
 
-        self.weapons: ItemRepository = ItemRepository(config.item_files[ItemType.weapon.value], ItemType.weapon)
-        self.boots: ItemRepository = ItemRepository(config.item_files[ItemType.boots.value], ItemType.boots)
-        self.helmets: ItemRepository = ItemRepository(config.item_files[ItemType.helmet.value], ItemType.helmet)
-        self.gauntlets: ItemRepository = ItemRepository(config.item_files[ItemType.gauntlets.value], ItemType.gauntlets)
-        self.chest_pieces: ItemRepository = ItemRepository(config.item_files[ItemType.chest_piece.value], ItemType.chest_piece)
+        self.repos: Dict[ItemType, ItemRepository] = {
+            ItemType.weapon: ItemRepository(item_files[ItemType.weapon.value], ItemType.weapon),
+            ItemType.boots: ItemRepository(item_files[ItemType.boots.value], ItemType.boots),
+            ItemType.helmet: ItemRepository(item_files[ItemType.helmet.value], ItemType.helmet),
+            ItemType.gauntlets: ItemRepository(item_files[ItemType.gauntlets.value], ItemType.gauntlets),
+            ItemType.chest_piece: ItemRepository(item_files[ItemType.chest_piece.value], ItemType.chest_piece),
+        }
 
     def generate_random_set(self) -> ItemSet:
         return ItemSet(
-            self.weapons.get_random_item(),
-            self.boots.get_random_item(),
-            self.helmets.get_random_item(),
-            self.gauntlets.get_random_item(),
-            self.chest_pieces.get_random_item()
+            self.get_repo(ItemType.weapon).get_random_item(),
+            self.get_repo(ItemType.boots).get_random_item(),
+            self.get_repo(ItemType.helmet).get_random_item(),
+            self.get_repo(ItemType.gauntlets).get_random_item(),
+            self.get_repo(ItemType.chest_piece).get_random_item(),
         )
+
+    def get_repo(self, item_type: ItemType) -> ItemRepository:
+        return self.repos[item_type]
+
+    def get_random_item(self, item_type: ItemType) -> Item:
+        return self.get_repo(item_type).get_random_item()

@@ -1,15 +1,18 @@
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 import yaml
-from schema import Schema, SchemaError
+from schema import Schema, SchemaError, And, Or
+
+import character
 
 Param = Dict[str, Any]
+ParamValidator = Optional[Schema]
 
 
-def print_and_exit_with_error(message: str, error_code: int):
-    print(message)
-    sys.exit(error_code)
+def print_error_and_exit(error_msg: str, exit_code: int):
+    print(error_msg)
+    sys.exit(exit_code)
 
 
 class Config:
@@ -19,7 +22,7 @@ class Config:
         try:
             return schema.validate(param)
         except SchemaError as e:
-            print_and_exit_with_error(str(e), 2)
+            sys.exit(e.code)
 
     def __init__(self, config_path: str):
 
@@ -34,18 +37,27 @@ class Config:
             raise ValueError(f'There was a problem parsing the configuration file {config_path}. Make sure syntax is '
                              f'appropriate')
 
+        valid_class_types: List[str] = [e.value for e in character.CharacterType]
+
         args = Config.validate_param(args, Schema({
-            'gen_size': int,
-            'class': str,
+            'population_size': And(int, lambda population_size: 0 < population_size < 990000),
+            'class': And(str, Or(*tuple(e.value for e in character.CharacterType))),
             'item_files': dict,
             'parent_selection': dict,
+            'parent_coupling': dict,
+            'crossover': dict,
+            'mutation': dict,
+            'recombination': dict,
+            'survivor_selection': dict,
             'end_condition': dict,
-            'k': int,
-        }))
+        }, ignore_extra_keys=True))
 
         self.character_class: str = args['class']
-        self.gen_size: int = args['gen_size']
+        self.population_size: int = args['population_size']
         self.item_files: Param = args['item_files']
         self.parent_selection: Param = args['parent_selection']
+        self.parent_coupling: Param = args['parent_coupling']
+        self.crossover: Param = args['crossover']
+        self.mutation: Param = args['mutation']
+        self.recombination: Param = args['recombination']
         self.end_condition: Param = args['end_condition']
-        self.k: int = args['k']
