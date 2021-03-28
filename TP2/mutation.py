@@ -16,8 +16,8 @@ Mutator = Callable[[Children, ItemRepositories], None]
 InternalMutator = Callable[[Children, ItemRepositories, float, Param], None]
 
 
-def _extract_mutator_params(config: Config) -> Param:
-    return Config.validate_param(config.mutation, Schema({
+def _validate_mutator_params(mutator_params: Param) -> Param:
+    return Config.validate_param(mutator_params, Schema({
         'mutation_probability': And(float, lambda p: 0 <= p <= 1),
         'method': {
             'name': And(str, Or(*tuple(_mutator_dict.keys()))),
@@ -26,8 +26,8 @@ def _extract_mutator_params(config: Config) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_mutator(config: Config) -> Mutator:
-    mutator_params: Param = _extract_mutator_params(config)
+def get_mutator(mutator_params: Param) -> Mutator:
+    mutator_params = _validate_mutator_params(mutator_params)
 
     method, mutator_method_param_schema = _mutator_dict[mutator_params['method']['name']]
     mutator_method_params: Param = mutator_params['method']['params']

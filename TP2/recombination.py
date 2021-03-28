@@ -14,8 +14,8 @@ Recombiner = Callable[[Generation, Children, SurvivorSelector], Generation]
 InternalRecombiner = Callable[[Generation, Children, SurvivorSelector, Param], Generation]
 
 
-def _extract_recombiner_params(config: Config) -> Param:
-    return Config.validate_param(config.recombination, Schema({
+def _extract_recombiner_params(recombiner_params: Param) -> Param:
+    return Config.validate_param(recombiner_params, Schema({
         'method': {
             'name': And(str, Or(*tuple(_recombiner_dict.keys()))),
             Optional('params', default=dict): dict,
@@ -23,8 +23,9 @@ def _extract_recombiner_params(config: Config) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_recombiner(config: Config) -> Recombiner:
-    recombiner_params: Param = _extract_recombiner_params(config)
+def get_recombiner(recombiner_params: Param) -> Recombiner:
+    recombiner_params = _extract_recombiner_params(recombiner_params)
+
     method, recombiner_method_params_schema = _recombiner_dict[recombiner_params['method']['name']]
     recombiner_method_params: Param = recombiner_params['method']['params']
     if recombiner_method_params_schema:

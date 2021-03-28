@@ -5,9 +5,8 @@ import numpy as np
 from schema import Schema, And
 import schema
 
-from TP2.config import Param, ParamValidator
+from TP2.config import Config, Param, ParamValidator
 from TP2.character import Character
-from TP2.config import Config
 import random
 
 from TP2.generation import Generation, Population
@@ -22,13 +21,13 @@ Selector = Callable[[Generation, int], Population]
 InternalSelector = Callable[[Generation, int, Param], Population]
 
 
-def _extract_parent_selector_params(config: Config) -> Param:
+def _validate_parent_selector_params(parent_selector_params: Param) -> Param:
     method_schema: Dict[Any, Any] = {
         'name': schema.And(str, schema.Or(*tuple(_selector_dict.keys()))),
         schema.Optional('params', default=dict): dict,
     }
 
-    return Config.validate_param(config.parent_selection, Schema({
+    return Config.validate_param(parent_selector_params, Schema({
         'method1': method_schema,
         'method2': method_schema,
         'parent_count': int,
@@ -36,8 +35,8 @@ def _extract_parent_selector_params(config: Config) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_parent_selector(config: Config) -> ParentSelector:
-    parent_selector_params: Param = _extract_parent_selector_params(config)
+def get_parent_selector(parent_selector_params: Param) -> ParentSelector:
+    parent_selector_params = _validate_parent_selector_params(parent_selector_params)
 
     first_selector_method: Selector = _get_selector(
         parent_selector_params['method1']['name'],
@@ -58,21 +57,21 @@ def get_parent_selector(config: Config) -> ParentSelector:
         second_selector_method(generation, second_method_amount)
 
 
-def _extract_survivor_selector_params(config: Config) -> Param:
+def _validate_survivor_selector_params(survivor_selection_params: Param) -> Param:
     method_schema: Dict[Any, Any] = {
         'name': And(str, schema.Or(*tuple(_selector_dict.keys()))),
         schema.Optional('params', default=dict): dict,
     }
 
-    return Config.validate_param(config.parent_selection, Schema({
+    return Config.validate_param(survivor_selection_params, Schema({
         'method1': method_schema,
         'method2': method_schema,
         'weight': And(float, lambda p: 0 <= p <= 1),
     }, ignore_extra_keys=True))
 
 
-def get_survivor_selector(config: Config) -> SurvivorSelector:
-    survivor_selection_params: Param = _extract_survivor_selector_params(config)
+def get_survivor_selector(survivor_selection_params: Param) -> SurvivorSelector:
+    survivor_selection_params = _validate_survivor_selector_params(survivor_selection_params)
 
     first_selection_method: Selector = _get_selector(
         survivor_selection_params['method1']['name'],

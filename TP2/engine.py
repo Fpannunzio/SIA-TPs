@@ -18,13 +18,13 @@ class Engine:
         self.generation_size: int = config.population_size
         self.generation_type: CharacterType = CharacterType[config.character_class]
 
-        self.select_parents: ParentSelector = get_parent_selector(config)
-        self.select_couples: CouplesSelector = get_couples_selector(config)
-        self.cross_couples: Crossover = get_crossover(config)
-        self.mutate_children: Mutator = get_mutator(config)
-        self.build_new_gen: Recombiner = get_recombiner(config)
-        self.survivor_selection: SurvivorSelector = get_survivor_selector(config)
-        self.end_condition: AbstractEndCondition = get_end_condition(config)
+        self.select_parents: ParentSelector = get_parent_selector(config.parent_selection)
+        self.select_couples: CouplesSelector = get_couples_selector(config.parent_coupling)
+        self.cross_couples: Crossover = get_crossover(config.crossover)
+        self.mutate_children: Mutator = get_mutator(config.mutation)
+        self.survivor_selection: SurvivorSelector = get_survivor_selector(config.survivor_selection)
+        self.build_new_gen: Recombiner = get_recombiner(config.recombination)
+        self.end_condition: AbstractEndCondition = get_end_condition(config.end_condition)
 
     def resolve_simulation(self) -> Generation:
 

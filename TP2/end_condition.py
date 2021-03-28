@@ -22,15 +22,15 @@ class AbstractEndCondition(ABC):
         pass
 
 
-def _extract_end_condition_params(config: Config) -> Param:
-    return Config.validate_param(config.end_condition, Schema({
+def _extract_end_condition_params(end_condition_params: Param) -> Param:
+    return Config.validate_param(end_condition_params, Schema({
         'name': And(str, Or(*tuple(_end_condition_dict.keys()))),
         Optional('params', default=dict): dict,
     }, ignore_extra_keys=True))
 
 
-def get_end_condition(config: Config) -> AbstractEndCondition:
-    end_condition_params: Param = _extract_end_condition_params(config)
+def get_end_condition(end_condition_params: Param) -> AbstractEndCondition:
+    end_condition_params: Param = _extract_end_condition_params(end_condition_params)
 
     end_condition_type, end_condition_method_params_schema = _end_condition_dict[end_condition_params['name']]
     end_condition_method_params = end_condition_params['params']

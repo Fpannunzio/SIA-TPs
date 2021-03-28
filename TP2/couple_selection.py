@@ -18,8 +18,8 @@ CouplesSelector = Callable[[Parents], Couples]
 InternalCoupleSelector = Callable[[Parents, int, Param], Couples]
 
 
-def _extract_coupling_selector_params(config: Config) -> Param:
-    return Config.validate_param(config.parent_coupling, Schema({
+def _validate_coupling_selector_params(coupling_selector_params: Param) -> Param:
+    return Config.validate_param(coupling_selector_params, Schema({
         Optional('couple_count', default=-1): And(int, lambda count: count > 0),  # Default is parent_count//2
         'method': {
             'name': And(str, Or(*tuple(_couple_selector_dict.keys()))),
@@ -28,8 +28,8 @@ def _extract_coupling_selector_params(config: Config) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_couples_selector(config: Config) -> CouplesSelector:
-    coupling_selector_params: Param = _extract_coupling_selector_params(config)
+def get_couples_selector(coupling_selector_params: Param) -> CouplesSelector:
+    coupling_selector_params = _validate_coupling_selector_params(coupling_selector_params)
 
     method, coupling_params_schema = _couple_selector_dict[coupling_selector_params['method']['name']]
     couple_count: int = coupling_selector_params['couple_count']

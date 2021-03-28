@@ -147,9 +147,9 @@ class ItemRepository:
 
 class ItemRepositories:
 
-    def __init__(self, config: conf.Config) -> None:
+    def __init__(self, item_files: conf.Param) -> None:
         item_files_schema: Dict[str, Any] = dict.fromkeys(map(lambda item_type: item_type.value, ItemType), str)
-        item_files: conf.Param = conf.Config.validate_param(config.item_files, Schema(item_files_schema, ignore_extra_keys=True))
+        item_files = conf.Config.validate_param(item_files, Schema(item_files_schema, ignore_extra_keys=True))
 
         self.repos: Dict[ItemType, ItemRepository] = {
             ItemType.weapon: ItemRepository(item_files[ItemType.weapon.value], ItemType.weapon),

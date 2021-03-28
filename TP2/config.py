@@ -47,8 +47,8 @@ class Config:
             'parent_coupling': dict,
             'crossover': dict,
             'mutation': dict,
-            'recombination': dict,
             'survivor_selection': dict,
+            'recombination': dict,
             'end_condition': dict,
         }, ignore_extra_keys=True))
 
@@ -59,5 +59,6 @@ class Config:
         self.parent_coupling: Param = args['parent_coupling']
         self.crossover: Param = args['crossover']
         self.mutation: Param = args['mutation']
+        self.survivor_selection: Param = args['survivor_selection']
         self.recombination: Param = args['recombination']
         self.end_condition: Param = args['end_condition']

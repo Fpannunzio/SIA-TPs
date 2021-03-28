@@ -19,8 +19,8 @@ Crossover = Callable[[Couples], Children]
 ParentSeqGenerator = Callable[[int, Param], Iterator[int]]
 
 
-def _extract_crossover_params(config: Config) -> Param:
-    return Config.validate_param(config.crossover, Schema({
+def _validate_crossover_params(crossover_params: Param) -> Param:
+    return Config.validate_param(crossover_params, Schema({
         Optional('children_eq_parents_prob', default=0): And(float, lambda p: 0 <= p <= 1),
         Optional('children_per_couple', default=2): And(int, lambda count: count > 0),
         'method': {
@@ -30,8 +30,8 @@ def _extract_crossover_params(config: Config) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_crossover(config: Config) -> Crossover:
-    crossover_params: Param = _extract_crossover_params(config)
+def get_crossover(crossover_params) -> Crossover:
+    crossover_params = _validate_crossover_params(crossover_params)
 
     method, crossover_method_param_schema = _parent_seq_dict[crossover_params['method']['name']]
     crossover_method_params: Param = crossover_params['method']['params']

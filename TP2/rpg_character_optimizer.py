@@ -13,7 +13,7 @@ def main(config_file: str):
     config: Config = Config(config_file)
 
     # Load Items from .tsv Files
-    item_repositories: ItemRepositories = ItemRepositories(config)
+    item_repositories: ItemRepositories = ItemRepositories(config.item_files)
 
     # Configure Simulation
     engine: Engine = Engine(config, item_repositories)
