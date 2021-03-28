@@ -39,6 +39,7 @@ class Config:
             'class': str,
             'item_files': dict,
             'parent_selection': dict,
+            'end_condition': dict,
             'k': int,
         }))
 
@@ -46,4 +47,5 @@ class Config:
         self.gen_size: int = args['gen_size']
         self.item_files: Param = args['item_files']
         self.parent_selection: Param = args['parent_selection']
+        self.end_condition: Param = args['end_condition']
         self.k: int = args['k']

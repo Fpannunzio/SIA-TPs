@@ -3,13 +3,14 @@ from typing import Tuple, Dict, Any
 
 from TP2.character import CharacterType, Character, Generation
 from TP2.config_loader import Config
+from TP2.couple_selection import CoupleSelection, get_couple_selection_impl
 from TP2.crossover import Crossover, get_crossover_impl
+from TP2.end_condition import get_end_condition_impl, AbstractEndCondition
+from TP2.generation import Generation
 from TP2.items import ItemRepositories
 from TP2.mutation import Mutation, get_mutation_impl
-from TP2.couple_selection import CoupleSelection, get_couple_selection_impl
-from TP2.selection import get_parent_selection, get_survivor_selection, ParentSelector, SurvivorSelector
 from TP2.recombination import Recombination, get_recombination_impl
-from TP2.generation import Generation
+from TP2.selection import get_parent_selection, get_survivor_selection, ParentSelector, SurvivorSelector
 
 
 class Engine:
@@ -30,15 +31,13 @@ class Engine:
         mutation: Mutation = get_mutation_impl(self.config)
         recombination: Recombination = get_recombination_impl(self.config)
         survivor_selection: SurvivorSelector = get_survivor_selection(self.config)
+        end_condition: AbstractEndCondition = get_end_condition_impl(self.config)
 
         mutation_params: Dict[str, Any] = {
             'probability': 0.5,
         }
 
-        # #TODO real condition
-        # condition = True
-
-        for i in range(20):
+        while end_condition.condition_met(current_gen):
             parents: Collection[Character] = parent_selection(current_gen)
 
             parents_couples: Collection[Tuple[Character, Character]] = couple_selection(parents, self.config.k)
