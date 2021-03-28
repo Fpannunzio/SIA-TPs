@@ -27,6 +27,9 @@ class Generation:
     def get_max_fitness(self) -> float:
         return np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)).max()
 
+    def get_best_character(self) -> Character:
+        return self.population[np.argmax(np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)))]
+
     def __len__(self) -> int:
         return len(self.population)
 

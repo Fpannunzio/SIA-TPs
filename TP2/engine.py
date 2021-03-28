@@ -32,6 +32,8 @@ class Engine:
             self.generation_size, self.generation_type, self.item_repositories
         )
 
+        print('\nThis log is for debugging purposes\n')
+
         while not self.end_condition.condition_met(current_gen):
 
             parents: Parents = self.select_parents(current_gen)
@@ -44,6 +46,7 @@ class Engine:
 
             current_gen = self.build_new_gen(current_gen, children, self.survivor_selection)
 
-            print(current_gen.get_max_fitness())
+            print(f'Best from generation {current_gen.gen_count}: {current_gen.get_best_character()}')
 
+        print()
         return current_gen

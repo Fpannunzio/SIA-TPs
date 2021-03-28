@@ -21,7 +21,8 @@ def main(config_file: str):
     # Start Simulation
     last_generation: Generation = engine.resolve_simulation()
 
-    print(last_generation)
+    print(f'Total Simulation Iterations: {last_generation.gen_count}\n'
+          f'Best Character from Simulation: {last_generation.get_best_character()}\n')
 
     print('Done')
 
