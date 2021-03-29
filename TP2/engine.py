@@ -1,3 +1,4 @@
+from plot import Plotter
 from character import CharacterType
 from config import Config
 from couple_selection import CouplesSelector, get_couples_selector, Couples
@@ -26,6 +27,8 @@ class Engine:
         self.build_new_gen: Recombiner = get_recombiner(config.recombination)
         self.end_condition: AbstractEndCondition = get_end_condition(config.end_condition)
 
+        self.plotter: Plotter = Plotter()
+
     def resolve_simulation(self) -> Generation:
 
         current_gen: Generation = Generation.create_first_generation(
@@ -45,6 +48,8 @@ class Engine:
             self.mutate_children(children, self.item_repositories)
 
             current_gen = self.build_new_gen(current_gen, children, self.survivor_selection)
+
+            self.plotter.publish(current_gen)
 
             print(f'Best from generation {current_gen.gen_count}: {current_gen.get_best_character()}')
 

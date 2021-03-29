@@ -4,10 +4,11 @@ from typing import Dict, Any, List, Optional
 import yaml
 from schema import Schema, SchemaError, And, Or
 
-import character
-
 Param = Dict[str, Any]
 ParamValidator = Optional[Schema]
+
+
+import character
 
 
 def print_error_and_exit(error_msg: str, exit_code: int):

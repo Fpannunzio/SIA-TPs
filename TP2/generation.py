@@ -30,6 +30,12 @@ class Generation:
     def get_best_character(self) -> Character:
         return self.population[np.argmax(np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)))]
 
+    def get_min_fitness(self) -> float:
+        return np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)).min()
+
+    def get_worst_character(self) -> Character:
+        return self.population[np.argmin(np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)))]
+
     def __len__(self) -> int:
         return len(self.population)
 
