@@ -2,8 +2,8 @@ from typing import List
 
 import numpy as np
 
-from TP2.character import Character, CharacterType
-from TP2.items import ItemRepositories
+from character import Character, CharacterType
+from items import ItemRepositories
 
 Population = List[Character]
 
@@ -21,7 +21,7 @@ class Generation:
         self.population: Population = population
         self.gen_count: int = gen_count
 
-    def create_next_generation(self, new_population: Population):
+    def create_next_generation(self, new_population: Population) -> 'Generation':
         return Generation(new_population, self.gen_count + 1)
 
     def get_max_fitness(self) -> float:

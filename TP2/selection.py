@@ -5,11 +5,11 @@ import numpy as np
 from schema import Schema, And
 import schema
 
-from TP2.config import Config, Param, ParamValidator
-from TP2.character import Character
+from config import Config, Param, ParamValidator
+from character import Character
 import random
 
-from TP2.generation import Generation, Population
+from generation import Generation, Population
 
 # Exported Types
 Parents = Population

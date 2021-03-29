@@ -5,8 +5,8 @@ from typing import Dict, Type, Tuple
 import numpy as np
 from schema import Schema, And, Optional, Or
 
-from TP2.config import Config, Param, ParamValidator
-from TP2.generation import Generation
+from config import Config, Param, ParamValidator
+from generation import Generation
 
 MAX_GENERATIONS_ALLOWED: int = 1000
 
@@ -30,7 +30,7 @@ def _extract_end_condition_params(end_condition_params: Param) -> Param:
 
 
 def get_end_condition(end_condition_params: Param) -> AbstractEndCondition:
-    end_condition_params: Param = _extract_end_condition_params(end_condition_params)
+    end_condition_params = _extract_end_condition_params(end_condition_params)
 
     end_condition_type, end_condition_method_params_schema = _end_condition_dict[end_condition_params['name']]
     end_condition_method_params = end_condition_params['params']

@@ -3,11 +3,11 @@ from typing import Callable, Tuple, List, Dict, Iterator
 
 from schema import Schema, And, Optional, Or
 
-from TP2.character import Character
-from TP2.config import Config, Param, ParamValidator
+from character import Character
+from config import Config, Param, ParamValidator
 import random
 
-from TP2.selection import Parents
+from selection import Parents
 
 # Exported Types
 Couple = Tuple[Character, Character]

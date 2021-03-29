@@ -5,11 +5,11 @@ from typing import Callable, Tuple, Dict, Union, Iterator
 import numpy as np
 from schema import Schema, And, Optional, Or
 
-from TP2.character import Character, CharacterType
-from TP2.config import Config, Param, ParamValidator
-from TP2.couple_selection import Couples, Couple
-from TP2.generation import Population
-from TP2.items import Item, ItemSet
+from character import Character, CharacterType
+from config import Config, Param, ParamValidator
+from couple_selection import Couples, Couple
+from generation import Population
+from items import Item, ItemSet
 
 # Exported Types
 Children = Population
@@ -57,7 +57,7 @@ def get_crossover(crossover_params) -> Crossover:
 
 # TODO(tobi): Que me lo expliquen despacito
 def child_creation(couple: Couple, parent_seq_gen: Callable[[], Iterator[int]]) -> Children:
-    children_genes: Tuple[Dict[str, Union[float, Item]], Dict[str, Union[float, Item]]] = {}, {}
+    children_genes: Tuple[Dict[str, Union[float, Item]], Dict[str, Union[float, Item]]] = ({}, {})
 
     parent_sequence: Iterator[int] = parent_seq_gen()
 
@@ -67,15 +67,22 @@ def child_creation(couple: Couple, parent_seq_gen: Callable[[], Iterator[int]]) 
         children_genes[1][gene] = couple[1 - parent].get_gene_by_name(gene)
 
     children_item_sets: Tuple[ItemSet, ItemSet] = \
-        _item_set_from_gene_map(children_genes[0]), _item_set_from_gene_map(children_genes[1])
+        (_item_set_from_gene_map(children_genes[0]), _item_set_from_gene_map(children_genes[1]))
 
     children_type: CharacterType = couple[0].type
 
-    return [Character(children_type, children_genes[0]['height'], children_item_sets[0]),
-            Character(children_type, children_genes[1]['height'], children_item_sets[1])]
+    assert isinstance(children_genes[0]['height'], float)
+    assert isinstance(children_genes[1]['height'], float)
+    return [Character(children_type, float(children_genes[0]['height']), children_item_sets[0]),
+            Character(children_type, float(children_genes[1]['height']), children_item_sets[1])]
 
 
 def _item_set_from_gene_map(gene_map: Dict[str, Union[float, Item]]) -> ItemSet:
+    assert isinstance(gene_map['weapon'], Item)
+    assert isinstance(gene_map['boots'], Item)
+    assert isinstance(gene_map['helmet'], Item)
+    assert isinstance(gene_map['gauntlets'], Item)
+    assert isinstance(gene_map['chest_piece'], Item)
     return ItemSet(gene_map['weapon'], gene_map['boots'], gene_map['helmet'],
                    gene_map['gauntlets'], gene_map['chest_piece'])
 
@@ -93,7 +100,7 @@ def get_two_point_parent_seq(gene_count: int, seq_params: Param) -> Iterator[int
     return get_k_point_parent_seq(gene_count, 2)
 
 
-def get_two_point_parents_annular_seq(gene_count: int, seq_params: Param):
+def get_two_point_parents_annular_seq(gene_count: int, seq_params: Param) -> Iterator[int]:
     p1: int = random.randint(0, gene_count - 1)
     l: int = random.randint(0, gene_count - 1)
     p2: int = (p1 + l) % gene_count

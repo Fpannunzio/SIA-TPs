@@ -1,13 +1,13 @@
-from TP2.character import CharacterType
-from TP2.config import Config
-from TP2.couple_selection import CouplesSelector, get_couples_selector, Couples
-from TP2.crossover import Crossover, get_crossover, Children
-from TP2.end_condition import get_end_condition, AbstractEndCondition
-from TP2.generation import Generation
-from TP2.items import ItemRepositories
-from TP2.mutation import Mutator, get_mutator
-from TP2.recombination import Recombiner, get_recombiner
-from TP2.selection import get_parent_selector, get_survivor_selector, ParentSelector, SurvivorSelector, Parents
+from character import CharacterType
+from config import Config
+from couple_selection import CouplesSelector, get_couples_selector, Couples
+from crossover import Crossover, get_crossover, Children
+from end_condition import get_end_condition, AbstractEndCondition
+from generation import Generation
+from items import ItemRepositories
+from mutation import Mutator, get_mutator
+from recombination import Recombiner, get_recombiner
+from selection import get_parent_selector, get_survivor_selector, ParentSelector, SurvivorSelector, Parents
 
 
 class Engine:

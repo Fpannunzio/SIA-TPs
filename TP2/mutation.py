@@ -2,12 +2,12 @@ from typing import Callable, Collection, Dict, Tuple
 
 from schema import Schema, Optional, And, Or
 
-from TP2.character import Character
-from TP2.config import Config, Param, ParamValidator
+from character import Character
+from config import Config, Param, ParamValidator
 import random
 
-from TP2.crossover import Children
-from TP2.items import ItemRepositories, ItemType
+from crossover import Children
+from items import ItemRepositories, ItemType
 
 # Exported Types
 Mutator = Callable[[Children, ItemRepositories], None]

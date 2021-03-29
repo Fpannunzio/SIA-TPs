@@ -2,10 +2,10 @@ from typing import Callable, Dict, Tuple
 
 from schema import Schema, And, Optional, Or
 
-from TP2.config import Config, Param, ParamValidator
-from TP2.crossover import Children
-from TP2.generation import Generation
-from TP2.selection import SurvivorSelector
+from config import Config, Param, ParamValidator
+from crossover import Children
+from generation import Generation
+from selection import SurvivorSelector
 
 # Exported Types
 Recombiner = Callable[[Generation, Children, SurvivorSelector], Generation]

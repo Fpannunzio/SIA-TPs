@@ -1,10 +1,10 @@
 import sys
 
-from TP2.config import Config
-from TP2.engine import Engine
-from TP2.generation import Generation
+from config import Config
+from engine import Engine
+from generation import Generation
 
-from TP2.items import ItemRepositories
+from items import ItemRepositories
 
 
 def main(config_file: str):

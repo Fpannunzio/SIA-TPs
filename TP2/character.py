@@ -4,7 +4,7 @@ from typing import Optional, Dict, Callable, List, Union
 
 import numpy as np
 
-from TP2.items import ItemSet, ItemType, Item, ItemAttribute
+from items import ItemSet, ItemType, Item, ItemAttribute
 
 
 class CharacterType(Enum):

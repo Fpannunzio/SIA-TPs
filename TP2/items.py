@@ -33,7 +33,7 @@ class Item:
     def __init__(self, item_type: ItemType, strength: float, agility: float,
                  experience: float, endurance: float, vitality: float) -> None:
         self.type: ItemType = item_type
-        self.attributes = {
+        self.attributes: Dict[ItemAttribute, float] = {
             ItemAttribute.strength: strength,
             ItemAttribute.agility: agility,
             ItemAttribute.experience: experience,
@@ -41,7 +41,7 @@ class Item:
             ItemAttribute.vitality: vitality,
         }
 
-    def get_attribute(self, item_attr: ItemAttribute):
+    def get_attribute(self, item_attr: ItemAttribute) -> float:
         return self.attributes[item_attr]
 
     def __repr__(self) -> str:
@@ -82,10 +82,10 @@ class ItemSet:
     def sum_items_total(self, attribute: ItemAttribute) -> float:
         return reduce(add, map(lambda item_type: self.get_item(item_type).get_attribute(attribute), ItemType), 0)
 
-    def get_item(self, item_type: ItemType):
+    def get_item(self, item_type: ItemType) -> Item:
         return self.items[item_type]
 
-    def set_item(self, item_type: ItemType, item: Item):
+    def set_item(self, item_type: ItemType, item: Item) -> None:
         self.items[item_type] = item
 
     def __repr__(self) -> str:
@@ -105,7 +105,7 @@ class ItemRepository:
     }
 
     @staticmethod
-    def get_attr_tsv_header(item_attr: ItemAttribute):
+    def get_attr_tsv_header(item_attr: ItemAttribute) -> str:
         return ItemRepository.attribute_tsv_header_dict[item_attr]
 
     def __init__(self, item_file_path: str, item_type: ItemType) -> None:
