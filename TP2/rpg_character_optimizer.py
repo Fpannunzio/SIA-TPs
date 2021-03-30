@@ -1,5 +1,6 @@
 import sys
 
+from plot import AsyncPlotter
 from config import Config
 from engine import Engine
 from generation import Generation
@@ -15,14 +16,28 @@ def main(config_file: str):
     # Load Items from .tsv Files
     item_repositories: ItemRepositories = ItemRepositories(config.item_files)
 
+    # Load Plotters
+    plotter: AsyncPlotter = AsyncPlotter(['fitness'])
+
     # Configure Simulation
-    engine: Engine = Engine(config, item_repositories)
+    engine: Engine = Engine(config, item_repositories, plotter)
 
-    # Start Simulation
-    last_generation: Generation = engine.resolve_simulation()
+    print('Starting Simulation...')
 
-    print(f'Total Simulation Iterations: {last_generation.gen_count}\n'
-          f'Best Character from Simulation: {last_generation.get_best_character()}\n')
+    try:
+        # Start Simulation
+        last_generation: Generation = engine.resolve_simulation()
+
+        # Print Final Info
+        print(f'Total Simulation Iterations: {last_generation.gen_count}\n'
+              f'Best Character from Simulation: {last_generation.get_best_character()}\n')
+
+        # Wait for plotter to end
+        plotter.wait()
+
+    except KeyboardInterrupt:
+        plotter.kill()
+        sys.exit(1)
 
     print('Done')
 
@@ -37,4 +52,7 @@ if __name__ == "__main__":
     if len(argv) > 1:
         config_file = argv[1]
 
-    main(config_file)
+    try:
+        main(config_file)
+    except KeyboardInterrupt:
+        print('sigint')
