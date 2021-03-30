@@ -90,7 +90,8 @@ def get_survivor_selector(survivor_selection_params: Param) -> SurvivorSelector:
 
 def _get_selector(method_name: str, params: Param) -> Selector:
     method, selection_param_schema = _selector_dict[method_name]
-    validated_params: Param = (Config.validate_param(params, selection_param_schema) if selection_param_schema else params)
+    validated_params: Param = (
+        Config.validate_param(params, selection_param_schema) if selection_param_schema else params)
 
     return lambda parents, amount: method(parents, amount, validated_params)
 
@@ -171,7 +172,6 @@ def elite_selector(generation: Generation, amount: int, selection_params: Param)
 # TODO(tobi): check
 def _generic_roulette_selector(population: Population, random_numbers: Collection[float],
                                accumulated_sum: Collection[float]) -> Population:
-
     return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(accumulated_sum, random_numbers)))
 
 
@@ -215,6 +215,17 @@ boltzmann_param_validator: ParamValidator = Schema({
     'final_temp': And(float, lambda tc: 0 < tc)
 }, ignore_extra_keys=True)
 
+# ---------------DETERMINISTIC TOURNAMENT-------
+#TODO no se como comparar el amount con el numero de la generacion que debiera ser como maximo el tamaño de la coleccion que recibe
+deterministic_tournament_param_validator: ParamValidator = Schema({
+    'tournament_amount': And(int, lambda ta: ta > 0)
+}, ignore_extra_keys=True)
+
+#
+probabilistic_tournament_param_validator: ParamValidator = Schema({
+    'tournament_probability': And(float, lambda p: 0.5 < p < 1)
+}, ignore_extra_keys=True)
+
 
 def boltzmann_selector(generation: Generation, amount, selection_params: Param) -> Population:
     return _generic_roulette_selector(
@@ -229,11 +240,36 @@ def boltzmann_selector(generation: Generation, amount, selection_params: Param) 
     )
 
 
+# TODO lo hice asi rancio y no en una linea porque me dice que le estoy devolviendo una lista de None en vez de una de characters, sory :C
+# -----------------DETERMINISTIC TOURNAMENT ------------
+def deterministic_tournament_selector(generation: Generation, amount, selection_params: Param) -> Population:
+    new_population: Population = []
+    while len(new_population) < amount:
+        new_population.append(sorted(random.sample(generation.population, selection_params['tournament_amount']),
+                                     key=lambda c: c.get_fitness())[0])
+
+    return new_population
+
+
+# -----------------PROBABILISTIC TOURNAMENT-------------
+def probabilistic_tournament_selector(generation: Generation, amount, selection_params: Param) -> Population:
+    new_population: Population = []
+    while len(new_population) < amount:
+        pair: Population = sorted(random.sample(generation.population, 2),
+                                  key=lambda c: c.get_fitness())
+        new_population.append(pair[0] if random.random() < selection_params['tournament_probability'] else pair[1])
+
+    return new_population
+
+
 _selector_dict: Dict[str, Tuple[InternalSelector, ParamValidator]] = {
-    'elite':        (elite_selector, None),
-    'roulette':     (roulette_selector, None),
-    'universal':    (universal_selector, None),
-    'ranking':      (ranking_selector, ranking_param_validator),
-    'boltzmann':    (boltzmann_selector, boltzmann_param_validator)
+    'elite': (elite_selector, None),
+    'roulette': (roulette_selector, None),
+    'universal': (universal_selector, None),
+    'ranking': (ranking_selector, ranking_param_validator),
+    'boltzmann': (boltzmann_selector, boltzmann_param_validator),
+    'deterministic_tournament': (deterministic_tournament_selector, None),
+    'probabilistic_tournament': (probabilistic_tournament_selector, None)
+    # TODO habria que validar los parametros de torneo
     # TODO: Torneo 1, torneo 2, verificar ranking
 }
