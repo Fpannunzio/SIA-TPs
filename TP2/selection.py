@@ -172,7 +172,7 @@ def elite_selector(generation: Generation, amount: int, selection_params: Param)
 def _generic_roulette_selector(population: Population, random_numbers: Collection[float],
                                accumulated_sum: Collection[float]) -> Population:
 
-    return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(accumulated_sum, random_numbers)))
+    return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(random_numbers, accumulated_sum)))
 
 
 # ----------------- ROULETTE -------------
