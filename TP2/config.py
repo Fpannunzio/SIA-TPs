@@ -7,7 +7,6 @@ from schema import Schema, SchemaError, And, Or
 Param = Dict[str, Any]
 ParamValidator = Optional[Schema]
 
-
 import character
 
 
@@ -51,6 +50,7 @@ class Config:
             'survivor_selection': dict,
             'recombination': dict,
             'end_condition': dict,
+            'plotting': dict,
         }, ignore_extra_keys=True))
 
         self.character_class: str = args['class']
@@ -63,3 +63,4 @@ class Config:
         self.survivor_selection: Param = args['survivor_selection']
         self.recombination: Param = args['recombination']
         self.end_condition: Param = args['end_condition']
+        self.plotting: Param = args['plotting']

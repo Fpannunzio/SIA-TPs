@@ -1,7 +1,9 @@
 from typing import List, Callable, Any, Collection
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from schema import Schema, And
 
+from config import Param, Config
 from generation import Generation
 
 import multiprocessing as mp
@@ -57,6 +59,8 @@ class AsyncPlotter:
 
 class Plotter:
 
+    supported_plots: List[str] = ['min_fitness', 'max_fitness']
+
     def __init__(self, plots: Collection[str]) -> None:
         self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 8)) #2 rows y 2 cols --> 4 graphs
 
@@ -84,3 +88,45 @@ class Plotter:
 
         # plt.legend([l3, l2, l1], ["Maximum Fitness", "Mean Fitness", "Minimum Fitness"])
         plt.legend([l3, l1], ["Maximum Fitness", "Minimum Fitness"])
+
+
+class NopAsyncPlotter(AsyncPlotter):
+
+    def __init__(self, plots: Collection[str]) -> None:
+        pass
+
+    def __call__(self):
+        pass
+
+    def start(self) -> None:
+        pass
+
+    def is_running(self):
+        pass
+
+    def publish(self, new_gen: Generation) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+    def wait(self) -> None:
+        pass
+
+    def kill(self):
+        pass
+
+
+def _validate_plotter_params(plotter_params: Param) -> Param:
+    return Config.validate_param(plotter_params, Schema({
+        'render': bool,
+        'plots': And(list, Plotter.supported_plots)
+    }))
+
+
+def get_plotter(plotter_params: Param) -> AsyncPlotter:
+    plotter_params = _validate_plotter_params(plotter_params)
+    if plotter_params['render']:
+        return AsyncPlotter(plotter_params['plots'])
+    else:
+        return NopAsyncPlotter(plotter_params['plots'])

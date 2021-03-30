@@ -1,6 +1,6 @@
 import sys
 
-from plot import AsyncPlotter
+from plot import AsyncPlotter, get_plotter
 from config import Config
 from engine import Engine
 from generation import Generation
@@ -17,7 +17,7 @@ def main(config_file: str):
     item_repositories: ItemRepositories = ItemRepositories(config.item_files)
 
     # Load Plotters
-    plotter: AsyncPlotter = AsyncPlotter(['fitness'])
+    plotter: AsyncPlotter = get_plotter(config.plotting)
 
     # Configure Simulation
     engine: Engine = Engine(config, item_repositories, plotter)
