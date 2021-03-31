@@ -1,7 +1,7 @@
 from typing import List, Callable, Any, Collection
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from schema import Schema, And
+from schema import Schema, And, Optional
 
 from config import Param, Config
 from generation import Generation
@@ -62,6 +62,9 @@ class Plotter:
     supported_plots: List[str] = ['min_fitness', 'max_fitness']
 
     def __init__(self, plots: Collection[str]) -> None:
+        self.min_fitness = 'min_fitness' in plots
+        self.max_fitness = 'min_fitness' in plots
+
         self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 8)) #2 rows y 2 cols --> 4 graphs
 
         self.gens: List[int] = []
@@ -120,13 +123,13 @@ class NopAsyncPlotter(AsyncPlotter):
 def _validate_plotter_params(plotter_params: Param) -> Param:
     return Config.validate_param(plotter_params, Schema({
         'render': bool,
-        'plots': And(list, Plotter.supported_plots)
+        Optional('plots', default=list): And(list, Plotter.supported_plots)
     }))
 
 
 def get_plotter(plotter_params: Param) -> AsyncPlotter:
     plotter_params = _validate_plotter_params(plotter_params)
-    if plotter_params['render']:
+    if plotter_params['render'] and plotter_params['plots']:
         return AsyncPlotter(plotter_params['plots'])
     else:
         return NopAsyncPlotter(plotter_params['plots'])
