@@ -33,6 +33,9 @@ class Generation:
     def get_min_fitness(self) -> float:
         return np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)).min()
 
+    def get_mean_fitness(self) -> float:
+        return np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)).mean()
+
     def get_worst_character(self) -> Character:
         return self.population[np.argmin(np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)))]
 
