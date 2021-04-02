@@ -195,7 +195,7 @@ def universal_selector(generation: Generation, amount, selection_params: Param) 
 
 # ----------------- RANKING -------------
 ranking_param_validator: ParamValidator = Schema({
-    'roulette_method': _roulette_method.keys()
+    'roulette_method': lambda rm: rm in _roulette_method.keys()
 }, ignore_extra_keys=True)
 
 
