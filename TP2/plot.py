@@ -1,3 +1,4 @@
+import queue
 from typing import List, Callable, Any, Dict
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,13 +17,14 @@ Animation = Callable[[Generation], None]
 AnimationProvider = Callable[[Figure], Animation]
 
 # TODO: Definir mejores defaults
-DEFAULT_ANIMATION_INTERVAL: int = 10  # Data is processed every 100 ms
+DEFAULT_ANIMATION_INTERVAL: int = 50  # Data is processed every 100 ms
 DEFAULT_RENDER_STEP: int = 10  # Plot is re-rendered every ANIMATION_INTERVAL*render_step ms
 
 
 class AsyncPlotter:
 
     def __init__(self, render_step: int) -> None:
+        self.end_event = mp.Event()
         self.new_gen_provider: mp.Queue = mp.Queue()
         self.new_gen_provider.cancel_join_thread()
 
@@ -35,13 +37,18 @@ class AsyncPlotter:
         plotter = Plotter(self.render_step)
 
         def real_anim_func(frame: int) -> None:
-            if plotter.gens and self.new_gen_provider.empty():
-                anim.event_source.stop()
-                plotter.render()
-                print('Finished plotting data')
+            try:
+                new_gen: Generation = self.new_gen_provider.get_nowait()
+
+            except queue.Empty:  # Queue is empty
+                if self.end_event.is_set():
+                    anim.event_source.stop()
+                    plotter.render()
+                    print('Finished plotting data')
+
                 return
 
-            plotter(frame, self.new_gen_provider.get())
+            plotter(frame, new_gen)
 
         anim = FuncAnimation(plotter.fig, real_anim_func, interval=DEFAULT_ANIMATION_INTERVAL)
         plt.show()
@@ -53,9 +60,10 @@ class AsyncPlotter:
         self.new_gen_provider.put(new_gen)
 
     def close(self) -> None:
-        self.new_gen_provider.close()
+        self.end_event.set()
 
     def wait(self) -> None:
+        self.close()
         self.plot_process.join()
 
     def kill(self):
