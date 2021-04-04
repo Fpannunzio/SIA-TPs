@@ -47,6 +47,7 @@ def main(config_file: str):
         print('\n---------------------- Simulation Output --------------------------')
         print(f'Total Simulation Iterations: {last_generation.gen_count}')
         print(f'Best {config.character_class} from Simulation:')
+        # TODO(tobi) imprimir best character historico no de la ultima generacion
         print(last_generation.get_best_character())
         print()
 
