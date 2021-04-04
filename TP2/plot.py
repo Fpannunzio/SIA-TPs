@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import gridspec
 from matplotlib.animation import FuncAnimation
-from schema import Schema
+from schema import Schema, Optional, And
 
 from config import Param, Config
 from generation import Generation
@@ -15,36 +15,37 @@ Figure = Any  # Stub for matplotlib
 Animation = Callable[[Generation], None]
 AnimationProvider = Callable[[Figure], Animation]
 
+ANIMATION_INTERVAL: int = 100  # Data is processed every 100 ms
+DEFAULT_RENDER_STEP: int = 3  # Plot is re-rendered every ANIMATION_INTERVAL*render_step ms
+
 
 class AsyncPlotter:
 
-    def __init__(self) -> None:
+    def __init__(self, render_step: int) -> None:
         self.new_gen_provider: mp.Queue = mp.Queue()
         self.new_gen_provider.cancel_join_thread()
 
         self.plot_process = mp.Process(name=f'rp_character_optimizer_plotter', target=self)
 
-        self.running: bool = False
+        self.render_step = render_step
 
     def __call__(self):
         anim: FuncAnimation
-        plotter = Plotter()
+        plotter = Plotter(self.render_step)
 
         def real_anim_func(frame: int) -> None:
             if plotter.gens and self.new_gen_provider.empty():
                 anim.event_source.stop()
+                print('Finished plotting data')
                 return
 
-            plotter(self.new_gen_provider.get())
+            plotter(frame, self.new_gen_provider.get())
 
-        anim = FuncAnimation(plotter.fig, real_anim_func, interval=100)
+        anim = FuncAnimation(plotter.fig, real_anim_func, interval=ANIMATION_INTERVAL)
         plt.show()
 
     def start(self) -> None:
         self.plot_process.start()
-
-    def is_running(self):
-        return self.running
 
     def publish(self, new_gen: Generation) -> None:
         self.new_gen_provider.put(new_gen)
@@ -61,8 +62,9 @@ class AsyncPlotter:
 
 class Plotter:
 
-    def __init__(self) -> None:
+    def __init__(self, render_step: int) -> None:
 
+        self.render_step = render_step
         self.fig = plt.figure(figsize=(12, 8))
 
         # Create 2x2 sub plots
@@ -79,18 +81,41 @@ class Plotter:
         self.mean_diversity: List[float] = []
         self.diversity: Dict[str, List[float]] = {attr: [] for attr in Character.attr_list}
 
-    def __call__(self, new_gen: Generation) -> None:
+    def __call__(self, frame: int, new_gen: Generation) -> None:
+        # Always update data
+        self._add_new_gen(new_gen)
+
+        # Every render_step cycles (frames), render plot again
+        if frame % self.render_step == 0:
+            self._render()
+
+    def _add_new_gen(self, new_gen: Generation):
         self.gens.append(new_gen.gen_count)
 
-        self._plot_min_max_fitness(self.ax1, new_gen)
-        self._plot_mean_diversity(self.ax2, new_gen)
-        self._plot_all_diversities(self.ax3, new_gen)
+        self._update_min_max_fitness(new_gen)
+        self._update_mean_diversity(new_gen)
+        self._update_all_diversities(new_gen)
 
-    def _plot_min_max_fitness(self, axis, new_gen: Generation) -> None:
+    def _render(self):
+        self._plot_min_max_fitness(self.ax1)
+        self._plot_mean_diversity(self.ax2)
+        self._plot_all_diversities(self.ax3)
+
+    def _update_min_max_fitness(self, new_gen: Generation):
         self.min_fitness.append(new_gen.get_min_fitness())
         self.max_fitness.append(new_gen.get_max_fitness())
         self.mean_fitness.append(new_gen.get_mean_fitness())
 
+    def _update_mean_diversity(self, new_gen: Generation):
+        self.mean_diversity.append(new_gen.get_diversity().mean())
+
+    def _update_all_diversities(self, new_gen: Generation):
+        diversity = np.array(new_gen.get_diversity())
+
+        for idx, attr in enumerate(Character.attr_list):
+            self.diversity[attr].append(diversity[idx])
+
+    def _plot_min_max_fitness(self, axis) -> None:
         axis.clear()
 
         l_min, = axis.plot(self.gens, self.min_fitness, 'r-')
@@ -103,9 +128,7 @@ class Plotter:
 
         axis.legend([l_max, l_min, l_mean], ["Maximum Fitness", "Minimum Fitness", "Mean Fitness"])
 
-    def _plot_mean_diversity(self, axis, new_gen: Generation) -> None:
-        self.mean_diversity.append(new_gen.get_diversity().mean())
-
+    def _plot_mean_diversity(self, axis) -> None:
         axis.clear()
 
         l, = axis.plot(self.gens, self.mean_diversity, 'r-')
@@ -116,15 +139,7 @@ class Plotter:
 
         axis.legend([l], ["Mean Diversity"])
 
-    def _plot_all_diversities(self, axis, new_gen: Generation) -> None:
-        diversity = np.array(new_gen.get_diversity())
-
-        index: int = 0
-
-        for attr in Character.attr_list:
-            self.diversity[attr].append(diversity[index])
-            index += 1
-
+    def _plot_all_diversities(self, axis) -> None:
         axis.clear()
 
         l_agility, = axis.plot(self.gens, self.diversity['agility'], 'r-')
@@ -144,7 +159,7 @@ class Plotter:
 
 class NopAsyncPlotter(AsyncPlotter):
 
-    def __init__(self) -> None:
+    def __init__(self, render_step: int) -> None:
         pass
 
     def __call__(self):
@@ -171,7 +186,8 @@ class NopAsyncPlotter(AsyncPlotter):
 
 def _validate_plotter_params(plotter_params: Param) -> Param:
     return Config.validate_param(plotter_params, Schema({
-        'render': bool,
+        Optional('render', default=True): bool,
+        Optional('step', DEFAULT_RENDER_STEP): And(int, lambda step: step > 0)
         # Optional('plots', default=list): And(list, Plotter.supported_plots)
     }))
 
@@ -179,6 +195,6 @@ def _validate_plotter_params(plotter_params: Param) -> Param:
 def get_plotter(plotter_params: Param) -> AsyncPlotter:
     plotter_params = _validate_plotter_params(plotter_params)
     if plotter_params['render']:
-        return AsyncPlotter()
+        return AsyncPlotter(plotter_params['step'])
     else:
-        return NopAsyncPlotter()
+        return NopAsyncPlotter(plotter_params['step'])

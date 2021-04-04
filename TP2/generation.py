@@ -49,13 +49,15 @@ class Generation:
 
         return np.std(attributes_values, axis=1) / np.mean(attributes_values, axis=1)
 
+    # TODO(tobi): Resolver orden de atributos
     @staticmethod
     def _get_all_attributes(c: Character) -> Tuple[float, float, float, float, float, float]:
         return (
             c.items.get_total_agility(),
             c.items.get_total_endurance(),
             c.items.get_total_experience(),
-            c.height, c.items.get_total_strength(),
+            c.height,
+            c.items.get_total_strength(),
             c.items.get_total_vitality(),
         )
 
