@@ -1,8 +1,7 @@
+import random
 from enum import Enum
 from math import tanh
 from typing import Optional, Dict, Callable, List, Union
-
-import numpy as np
 
 from items import ItemSet, ItemType, Item, ItemAttribute
 
@@ -18,7 +17,7 @@ class Character:
 
     @staticmethod
     def generate_random_height() -> float:
-        return np.random.uniform(1.3, 2)
+        return random.uniform(1.3, 2)
 
     gene_list: List[str] = sorted(list(map(lambda item_type: item_type.value, ItemType)) + ['height'])
 

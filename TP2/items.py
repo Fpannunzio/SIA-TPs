@@ -1,3 +1,4 @@
+import random
 from enum import Enum
 from functools import reduce
 from operator import add
@@ -140,7 +141,7 @@ class ItemRepository:
         )
 
     def get_random_item(self) -> Item:
-        return self.get_item(np.random.random_integers(0, np.size(self.items, 0) - 1))
+        return self.get_item(random.randint(0, np.size(self.items, 0) - 1))
 
     def get_strength(self, item_id: int) -> float:
         return self.items[item_id][self.strength_pos]

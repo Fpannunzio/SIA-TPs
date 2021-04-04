@@ -1,4 +1,5 @@
 import sys
+import random
 
 from plot import AsyncPlotter, get_plotter
 from config import Config
@@ -12,6 +13,10 @@ def main(config_file: str):
 
     # Load Config from config_file
     config: Config = Config(config_file)
+
+    # Initialize Application Seed
+    random.seed(a=config.seed)
+    print(f'Seed: {config.seed}')
 
     # Load Items from .tsv Files
     item_repositories: ItemRepositories = ItemRepositories(config.item_files)
@@ -31,6 +36,8 @@ def main(config_file: str):
         # Print Final Info
         print(f'Total Simulation Iterations: {last_generation.gen_count}\n'
               f'Best Character from Simulation: {last_generation.get_best_character()}\n')
+
+        print(f'Seed: {config.seed}')
 
         # Wait for plotter to end
         plotter.wait()

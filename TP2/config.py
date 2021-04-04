@@ -1,8 +1,9 @@
 import sys
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 
 import yaml
 from schema import Schema, SchemaError, And, Or
+import schema
 
 Param = Dict[str, Any]
 ParamValidator = Optional[Schema]
@@ -40,6 +41,7 @@ class Config:
         valid_class_types: List[str] = [e.value for e in character.CharacterType]
 
         args = Config.validate_param(args, Schema({
+            schema.Optional('seed', default=None): Or(str, int),
             'population_size': And(int, lambda population_size: 0 < population_size < 990000),
             'class': And(str, Or(*tuple(e.value for e in character.CharacterType))),
             'item_files': dict,
@@ -53,6 +55,7 @@ class Config:
             'plotting': dict,
         }, ignore_extra_keys=True))
 
+        self.seed: Optional[Union[str, int]] = args['seed']
         self.character_class: str = args['class']
         self.population_size: int = args['population_size']
         self.item_files: Param = args['item_files']
