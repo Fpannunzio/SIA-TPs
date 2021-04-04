@@ -1,7 +1,6 @@
 import sys
 import random
 import time
-from math import floor
 
 from plot import AsyncPlotter, get_plotter
 from config import Config
@@ -17,8 +16,7 @@ def main(config_file: str):
     config: Config = Config(config_file)
 
     # Initialize Application Seed
-    seed = config.seed if config.seed else floor(time.time())
-
+    seed = config.seed if config.seed else int(time.time())
     random.seed(seed)
     print(f'Seed: {seed}')
 
@@ -44,6 +42,7 @@ def main(config_file: str):
         print(f'Seed: {seed}')
 
         # Wait for plotter to end
+        print('Plotting data...')
         plotter.wait()
 
     except KeyboardInterrupt:

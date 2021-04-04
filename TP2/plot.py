@@ -15,8 +15,9 @@ Figure = Any  # Stub for matplotlib
 Animation = Callable[[Generation], None]
 AnimationProvider = Callable[[Figure], Animation]
 
-ANIMATION_INTERVAL: int = 100  # Data is processed every 100 ms
-DEFAULT_RENDER_STEP: int = 3  # Plot is re-rendered every ANIMATION_INTERVAL*render_step ms
+# TODO: Definir mejores defaults
+DEFAULT_ANIMATION_INTERVAL: int = 10  # Data is processed every 100 ms
+DEFAULT_RENDER_STEP: int = 10  # Plot is re-rendered every ANIMATION_INTERVAL*render_step ms
 
 
 class AsyncPlotter:
@@ -36,12 +37,13 @@ class AsyncPlotter:
         def real_anim_func(frame: int) -> None:
             if plotter.gens and self.new_gen_provider.empty():
                 anim.event_source.stop()
+                plotter.render()
                 print('Finished plotting data')
                 return
 
             plotter(frame, self.new_gen_provider.get())
 
-        anim = FuncAnimation(plotter.fig, real_anim_func, interval=ANIMATION_INTERVAL)
+        anim = FuncAnimation(plotter.fig, real_anim_func, interval=DEFAULT_ANIMATION_INTERVAL)
         plt.show()
 
     def start(self) -> None:
@@ -83,20 +85,20 @@ class Plotter:
 
     def __call__(self, frame: int, new_gen: Generation) -> None:
         # Always update data
-        self._add_new_gen(new_gen)
+        self.add_new_gen(new_gen)
 
         # Every render_step cycles (frames), render plot again
         if frame % self.render_step == 0:
-            self._render()
+            self.render()
 
-    def _add_new_gen(self, new_gen: Generation):
+    def add_new_gen(self, new_gen: Generation):
         self.gens.append(new_gen.gen_count)
 
         self._update_min_max_fitness(new_gen)
         self._update_mean_diversity(new_gen)
         self._update_all_diversities(new_gen)
 
-    def _render(self):
+    def render(self):
         self._plot_min_max_fitness(self.ax1)
         self._plot_mean_diversity(self.ax2)
         self._plot_all_diversities(self.ax3)
@@ -187,6 +189,7 @@ class NopAsyncPlotter(AsyncPlotter):
 def _validate_plotter_params(plotter_params: Param) -> Param:
     return Config.validate_param(plotter_params, Schema({
         Optional('render', default=True): bool,
+        Optional('process_gen_interval', default=DEFAULT_ANIMATION_INTERVAL): And(int, lambda ms: ms > 0),
         Optional('step', DEFAULT_RENDER_STEP): And(int, lambda step: step > 0)
         # Optional('plots', default=list): And(list, Plotter.supported_plots)
     }))
