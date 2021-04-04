@@ -121,7 +121,7 @@ class EndByFitnessConvergence(AbstractEndCondition):
 end_by_diversity_convergence_params_schema: ParamValidator = Schema({
     Optional('limit_generation', default=MAX_GENERATIONS_ALLOWED): And(int, lambda limit: 0 < limit <= MAX_GENERATIONS_ALLOWED),
     'number_of_generations': And(int, lambda number: 0 < number <= MAX_GENERATIONS_ALLOWED),
-    'epsilon': And(float, lambda epsilon: 0 < epsilon)
+    'threshold': And(float, lambda threshold: 0 < threshold)
 }, ignore_extra_keys=True)
 
 
@@ -129,9 +129,9 @@ class EndByDiversityConvergence(AbstractEndCondition):
 
     def __init__(self, params: Param) -> None:
         super().__init__(params)
-        self.epsilon: float = params['epsilon']
+        self.threshold: float = params['threshold']
         self.number_of_generations: int = params['number_of_generations']
-        self.limit_generation: int = params.get['limit_generation']
+        self.limit_generation: int = params['limit_generation']
         self.previous_diversity_values: np.ndarray = np.zeros((1, 6))
         self.diversity_index = 0
 
@@ -149,8 +149,14 @@ class EndByDiversityConvergence(AbstractEndCondition):
         if np.size(self.previous_diversity_values, axis=0) > self.limit_generation + 1:
             return True
 
-        return np.gradient(np.swapaxes(self.previous_diversity_values[-self.number_of_generations:], 0, 1),
-                           axis=1).max() < self.epsilon
+        condition_met: bool = True
+
+        for d in self.previous_diversity_values[-self.number_of_generations:]:
+            if d.mean() > self.threshold:
+                condition_met = False
+                break
+
+        return condition_met
 
 
 _end_condition_dict: Dict[str, Tuple[Type[AbstractEndCondition], ParamValidator]] = {

@@ -107,7 +107,6 @@ def _universal_random_number_gen(amount: int) -> Collection[float]:
     return np.linspace(r / amount, (r + amount - 1) / amount, amount)
 
 
-# Tenias razon Faus, es mejor un mapa
 _roulette_method: Dict[str, Callable[[int], Collection[float]]] = {
     'random': _roulette_random_number_gen,
     'universal': _universal_random_number_gen
@@ -197,7 +196,7 @@ def universal_selector(generation: Generation, amount, selection_params: Param) 
 
 # ----------------- RANKING -------------
 ranking_param_validator: ParamValidator = Schema({
-    'roulette_method': lambda rm: rm in _roulette_method.keys()
+    'roulette_method': schema.Or(*tuple(_roulette_method.keys()))
 }, ignore_extra_keys=True)
 
 
@@ -211,7 +210,7 @@ def ranking_selector(generation: Generation, amount, selection_params: Param) ->
 
 # ----------------- BOLTZMANN -------------
 boltzmann_param_validator: ParamValidator = Schema({
-    'roulette_method': _roulette_method.keys(),
+    'roulette_method': schema.Or(*tuple(_roulette_method.keys())),
     'initial_temp': And(float, lambda t0: t0 > 0),
     'final_temp': And(float, lambda tc: 0 < tc),
     'convergence_factor': And(float, lambda k: k > 0)
@@ -270,8 +269,6 @@ _selector_dict: Dict[str, Tuple[InternalSelector, ParamValidator]] = {
     'universal': (universal_selector, None),
     'ranking': (ranking_selector, ranking_param_validator),
     'boltzmann': (boltzmann_selector, boltzmann_param_validator),
-    'deterministic_tournament': (deterministic_tournament_selector, None),
-    'probabilistic_tournament': (probabilistic_tournament_selector, None)
-    # TODO habria que validar los parametros de torneo
-    # TODO: Torneo 1, torneo 2, verificar ranking
+    'deterministic_tournament': (deterministic_tournament_selector, deterministic_tournament_param_validator),
+    'probabilistic_tournament': (probabilistic_tournament_selector, probabilistic_tournament_param_validator)
 }
