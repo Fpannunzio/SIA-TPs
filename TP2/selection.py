@@ -152,6 +152,9 @@ def _calculate_ranking_fitness_accum_sum(population: Population) -> Collection[f
 
 
 def _calculate_boltzmann_accum_sum(generation: Generation, convergence_factor: float, t0: float, tc: float) -> Collection[float]:
+    if tc >= t0:
+        raise ValueError(f'Error in Boltzmann Selection Method: tc={tc} must be lower than t0={t0}')
+
     t: float = tc + (t0 - tc) * math.exp(-convergence_factor * generation.gen_count)
     fitness_list: np.ndarray = \
         np.fromiter(map(lambda character: math.exp(character.get_fitness() / t), generation.population), float)
@@ -169,7 +172,6 @@ def elite_selector(generation: Generation, amount: int, selection_params: Param)
     return sorted(generation.population, key=lambda c: c.get_fitness())[:amount]
 
 
-# TODO(tobi): check
 def _generic_roulette_selector(population: Population, random_numbers: Collection[float],
                                accumulated_sum: Collection[float]) -> Population:
     return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(accumulated_sum, random_numbers)))
@@ -208,7 +210,6 @@ def ranking_selector(generation: Generation, amount, selection_params: Param) ->
 
 
 # ----------------- BOLTZMANN -------------
-# TODO(tobi): No me sale validar que tc < t0
 boltzmann_param_validator: ParamValidator = Schema({
     'roulette_method': _roulette_method.keys(),
     'initial_temp': And(float, lambda t0: t0 > 0),
