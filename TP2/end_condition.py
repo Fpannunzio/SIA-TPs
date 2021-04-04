@@ -90,8 +90,9 @@ class EndByFitness(AbstractEndCondition):
         return generation.get_max_fitness() >= self.target_fitness
 
 
+# TODO(tobi): Que es number_of_generations
 end_by_fitness_convergence_params_schema: ParamValidator = Schema({
-    'limit_generation': And(int, lambda limit: 0 < limit <= MAX_GENERATIONS_ALLOWED),
+    Optional('limit_generation', default=MAX_GENERATIONS_ALLOWED): And(int, lambda limit: 0 < limit <= MAX_GENERATIONS_ALLOWED),
     'number_of_generations': And(int, lambda number: 0 < number <= MAX_GENERATIONS_ALLOWED),
     'epsilon': And(float, lambda epsilon: 0 < epsilon)
 }, ignore_extra_keys=True)
@@ -103,7 +104,7 @@ class EndByFitnessConvergence(AbstractEndCondition):
         super().__init__(params)
         self.epsilon: float = params['epsilon']
         self.number_of_generations: int = params['number_of_generations']
-        self.limit_generation: int = params.get('limit_generation', MAX_GENERATIONS_ALLOWED)
+        self.limit_generation: int = params['limit_generation']
         self.previous_fitness_values: np.ndarray = np.zeros(1)
 
     def condition_met(self, generation: Generation) -> bool:
@@ -119,7 +120,7 @@ class EndByFitnessConvergence(AbstractEndCondition):
 
 
 end_by_diversity_convergence_params_schema: ParamValidator = Schema({
-    'limit_generation': And(int, lambda limit: 0 < limit <= MAX_GENERATIONS_ALLOWED),
+    Optional('limit_generation', default=MAX_GENERATIONS_ALLOWED): And(int, lambda limit: 0 < limit <= MAX_GENERATIONS_ALLOWED),
     'number_of_generations': And(int, lambda number: 0 < number <= MAX_GENERATIONS_ALLOWED),
     'epsilon': And(float, lambda epsilon: 0 < epsilon)
 }, ignore_extra_keys=True)
@@ -131,7 +132,7 @@ class EndByDiversityConvergence(AbstractEndCondition):
         super().__init__(params)
         self.epsilon: float = params['epsilon']
         self.number_of_generations: int = params['number_of_generations']
-        self.limit_generation: int = params.get('limit_generation', MAX_GENERATIONS_ALLOWED)
+        self.limit_generation: int = params.get['limit_generation']
         self.previous_diversity_values: np.ndarray = np.zeros((1, 6))
         self.diversity_index = 0
 

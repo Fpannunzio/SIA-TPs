@@ -39,7 +39,8 @@ class Generation:
     def get_worst_character(self) -> Character:
         return self.population[np.argmin(np.fromiter(map(Character.get_fitness, self.population), np.dtype(float)))]
 
-    # Diversity = Coefficient of Variation de cada uno de los atributos de los personajes. Hipotesis: todos los 0 son absolutos y significativos
+    # Diversity = Coefficient of Variation de cada uno de los atributos de los personajes.
+    # Hipotesis: todos los 0 son absolutos y significativos
     def get_diversity(self) -> np.ndarray:
         attributes_by_character: np.ndarray = np.array(
             list(map(lambda character: Generation._get_all_attributes(character), self.population)))
@@ -50,7 +51,13 @@ class Generation:
 
     @staticmethod
     def _get_all_attributes(c: Character) -> Tuple[float, float, float, float, float, float]:
-        return c.items.get_total_agility(), c.items.get_total_endurance(), c.items.get_total_experience(), c.height, c.items.get_total_strength(), c.items.get_total_vitality()
+        return (
+            c.items.get_total_agility(),
+            c.items.get_total_endurance(),
+            c.items.get_total_experience(),
+            c.height, c.items.get_total_strength(),
+            c.items.get_total_vitality(),
+        )
 
     def __len__(self) -> int:
         return len(self.population)

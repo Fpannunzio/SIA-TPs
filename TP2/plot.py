@@ -1,11 +1,13 @@
-from typing import List, Callable, Any, Collection, Dict
+from typing import List, Callable, Any, Dict
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import gridspec
 from matplotlib.animation import FuncAnimation
-from schema import Schema, And, Optional
+from schema import Schema
 
 from config import Param, Config
 from generation import Generation
+from character import Character
 
 import multiprocessing as mp
 
@@ -16,8 +18,7 @@ AnimationProvider = Callable[[Figure], Animation]
 
 class AsyncPlotter:
 
-    def __init__(self, plots: Collection[str]) -> None:
-        self.plots = plots
+    def __init__(self) -> None:
         self.new_gen_provider: mp.Queue = mp.Queue()
         self.new_gen_provider.cancel_join_thread()
 
@@ -27,7 +28,7 @@ class AsyncPlotter:
 
     def __call__(self):
         anim: FuncAnimation
-        plotter = Plotter(self.plots)
+        plotter = Plotter()
 
         def real_anim_func(frame: int) -> None:
             if plotter.gens and self.new_gen_provider.empty():
@@ -58,25 +59,25 @@ class AsyncPlotter:
         self.plot_process.terminate()
 
 
-attr_list = ['agility', 'endurance', 'experience', 'height', 'strength', 'vitality']
-
-
 class Plotter:
-    supported_plots: List[str] = ['min_fitness', 'max_fitness']
 
-    def __init__(self, plots: Collection[str]) -> None:
-        self.min_fitness = 'min_fitness' in plots
-        self.max_fitness = 'min_fitness' in plots
+    def __init__(self) -> None:
 
-        self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(
-            12, 8))  # 2 rows y 2 cols --> 4 graphs
+        self.fig = plt.figure(figsize=(12, 8))
+
+        # Create 2x2 sub plots
+        gs = gridspec.GridSpec(2, 2)
+
+        self.ax1 = plt.subplot(gs[0, 0])  # row 0, col 0
+        self.ax2 = plt.subplot(gs[0, 1])  # row 0, col 1
+        self.ax3 = plt.subplot(gs[1, :])  # entire row 1
 
         self.gens: List[int] = []
         self.min_fitness: List[float] = []
         self.mean_fitness: List[float] = []
         self.max_fitness: List[float] = []
         self.mean_diversity: List[float] = []
-        self.diversity: Dict[str, List[float]] = {attr: [] for attr in attr_list}
+        self.diversity: Dict[str, List[float]] = {attr: [] for attr in Character.attr_list}
 
     def __call__(self, new_gen: Generation) -> None:
         self.gens.append(new_gen.gen_count)
@@ -120,7 +121,7 @@ class Plotter:
 
         index: int = 0
 
-        for attr in attr_list:
+        for attr in Character.attr_list:
             self.diversity[attr].append(diversity[index])
             index += 1
 
@@ -137,12 +138,13 @@ class Plotter:
         axis.set_ylabel('Diversity')
         axis.set_title('All Diversities')
 
-        axis.legend([l_agility, l_endurance, l_experience, l_height, l_strength, l_vitality], attr_list)
+        # Estan bien ordenados - Clutch
+        axis.legend([l_agility, l_endurance, l_experience, l_height, l_strength, l_vitality], Character.attr_list)
 
 
 class NopAsyncPlotter(AsyncPlotter):
 
-    def __init__(self, plots: Collection[str]) -> None:
+    def __init__(self) -> None:
         pass
 
     def __call__(self):
@@ -170,13 +172,13 @@ class NopAsyncPlotter(AsyncPlotter):
 def _validate_plotter_params(plotter_params: Param) -> Param:
     return Config.validate_param(plotter_params, Schema({
         'render': bool,
-        Optional('plots', default=list): And(list, Plotter.supported_plots)
+        # Optional('plots', default=list): And(list, Plotter.supported_plots)
     }))
 
 
 def get_plotter(plotter_params: Param) -> AsyncPlotter:
     plotter_params = _validate_plotter_params(plotter_params)
-    if plotter_params['render'] and plotter_params['plots']:
-        return AsyncPlotter(plotter_params['plots'])
+    if plotter_params['render']:
+        return AsyncPlotter()
     else:
-        return NopAsyncPlotter(plotter_params['plots'])
+        return NopAsyncPlotter()
