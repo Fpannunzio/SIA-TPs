@@ -23,6 +23,7 @@ class Config:
         try:
             return schema.validate(param)
         except SchemaError as e:
+            print('A problem was found on the configuration file:\n')
             sys.exit(e.code)
 
     def __init__(self, config_path: str):
@@ -30,7 +31,7 @@ class Config:
         try:
             stream = open(config_path, 'r')  # contains a single YAML document.
         except FileNotFoundError:
-            raise ValueError(f'Config file missing. Make sure "{config_path}" is present')
+            raise FileNotFoundError(f'Config file missing. Make sure "{config_path}" is present')
 
         try:
             args = yaml.safe_load(stream)

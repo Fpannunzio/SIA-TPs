@@ -12,42 +12,51 @@ from items import ItemRepositories
 
 def main(config_file: str):
 
+    print('----------------- Welcome to RPG Character Optimizer -------------------')
+
     # Load Config from config_file
+    print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)
+
+    print(f'You have selected to optimize the {config.character_class} class')
 
     # Initialize Application Seed
     seed = config.seed if config.seed else int(time.time())
     random.seed(seed)
-    print(f'Seed: {seed}')
 
     # Load Items from .tsv Files
+    print('Loading Items...')
     item_repositories: ItemRepositories = ItemRepositories(config.item_files)
 
     # Load Plotters
     plotter: AsyncPlotter = get_plotter(config.plotting)
 
     # Configure Simulation
+    print('Verifying correct configuration...')
     engine: Engine = Engine(config, item_repositories, plotter)
 
-    print('Starting Simulation...')
+    print(f'Starting Simulation (seed: {seed})')
 
     try:
         # Start Simulation
         last_generation: Generation = engine.resolve_simulation()
 
-        # Print Final Info
-        print(f'Total Simulation Iterations: {last_generation.gen_count}\n'
-              f'Best Character from Simulation: {last_generation.get_best_character()}\n')
+        print(f'Simulation Ended (seed: {seed})')
 
-        print(f'Seed: {seed}')
+        # Print Final Info
+        print('\n---------------------- Simulation Output --------------------------')
+        print(f'Total Simulation Iterations: {last_generation.gen_count}')
+        print(f'Best {config.character_class} from Simulation:')
+        print(last_generation.get_best_character())
+        print()
 
         # Wait for plotter to end
         print('Plotting data...')
         plotter.wait()
 
-    except KeyboardInterrupt:
+    except Exception as e:
         plotter.kill()
-        sys.exit(1)
+        raise e
 
     print('Done')
 
@@ -64,5 +73,15 @@ if __name__ == "__main__":
 
     try:
         main(config_file)
+
     except KeyboardInterrupt:
-        print('sigint')
+        pass
+
+    except (ValueError, FileNotFoundError) as ex:
+        print('\nAn Error Was Found!!')
+        print(ex)
+        sys.exit(1)
+
+    except Exception as ex:
+        print('An unexpected error ocurred')
+        raise ex

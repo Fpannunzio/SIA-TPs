@@ -50,6 +50,6 @@ class Engine:
 
             self.plotter.publish(current_gen)
 
-            print(f'Best from generation {current_gen.gen_count}: {current_gen.get_best_character()}')
+            # print(f'Best from generation {current_gen.gen_count}: {current_gen.get_best_character()}')
 
         return current_gen

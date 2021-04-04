@@ -90,7 +90,6 @@ class EndByFitness(AbstractEndCondition):
         return generation.get_max_fitness() >= self.target_fitness
 
 
-# TODO(tobi): Que es number_of_generations
 end_by_fitness_convergence_params_schema: ParamValidator = Schema({
     Optional('limit_generation', default=MAX_GENERATIONS_ALLOWED): And(int, lambda limit: 0 < limit <= MAX_GENERATIONS_ALLOWED),
     'number_of_generations': And(int, lambda number: 0 < number <= MAX_GENERATIONS_ALLOWED),

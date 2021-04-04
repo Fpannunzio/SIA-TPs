@@ -121,6 +121,6 @@ class Character:
         return f'Character(type={repr(self.type.value)}, height={repr(self.height)}, fitness={repr(self.get_fitness())})'
 
     def __repr__(self) -> str:
-        # return self.item_set_repr()
+        return self.item_set_repr()
         # return self.stats_repr()
-        return self.fitness_repr()
+        # return self.fitness_repr()
