@@ -1,4 +1,4 @@
-from plot import Plotter
+from plot import AsyncPlotter
 from character import CharacterType
 from config import Config
 from couple_selection import CouplesSelector, get_couples_selector, Couples
@@ -13,8 +13,9 @@ from selection import get_parent_selector, get_survivor_selector, ParentSelector
 
 class Engine:
 
-    def __init__(self, config: Config, item_repositories: ItemRepositories) -> None:
+    def __init__(self, config: Config, item_repositories: ItemRepositories, plotter: AsyncPlotter) -> None:
         self.item_repositories = item_repositories
+        self.plotter: AsyncPlotter = plotter
 
         self.generation_size: int = config.population_size
         self.generation_type: CharacterType = CharacterType[config.character_class]
@@ -27,15 +28,13 @@ class Engine:
         self.build_new_gen: Recombiner = get_recombiner(config.recombination)
         self.end_condition: AbstractEndCondition = get_end_condition(config.end_condition)
 
-        self.plotter: Plotter = Plotter()
-
     def resolve_simulation(self) -> Generation:
 
         current_gen: Generation = Generation.create_first_generation(
             self.generation_size, self.generation_type, self.item_repositories
         )
 
-        print('\nThis log is for debugging purposes\n')
+        self.plotter.start()
 
         while not self.end_condition.condition_met(current_gen):
 
@@ -51,7 +50,6 @@ class Engine:
 
             self.plotter.publish(current_gen)
 
-            print(f'Best from generation {current_gen.gen_count}: {current_gen.get_best_character()}')
+            # print(f'Best from generation {current_gen.gen_count}: {current_gen.get_best_character()}')
 
-        print()
         return current_gen

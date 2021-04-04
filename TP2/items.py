@@ -1,3 +1,4 @@
+import random
 from enum import Enum
 from functools import reduce
 from operator import add
@@ -30,9 +31,10 @@ class ItemAttribute(Enum):
 
 class Item:
 
-    def __init__(self, item_type: ItemType, strength: float, agility: float,
+    def __init__(self, item_type: ItemType, item_id: int, strength: float, agility: float,
                  experience: float, endurance: float, vitality: float) -> None:
         self.type: ItemType = item_type
+        self.item_id = item_id
         self.attributes: Dict[ItemAttribute, float] = {
             ItemAttribute.strength: strength,
             ItemAttribute.agility: agility,
@@ -44,13 +46,21 @@ class Item:
     def get_attribute(self, item_attr: ItemAttribute) -> float:
         return self.attributes[item_attr]
 
-    def __repr__(self) -> str:
-        return f'Item(type={repr(self.type.value)}, ' \
+    def full_repr(self):
+        return f'Item(type={repr(self.type.value)},' \
+               f'id={repr(self.item_id)}, ' \
                f'strength={repr(self.get_attribute(ItemAttribute.strength))}, ' \
                f'agility={repr(self.get_attribute(ItemAttribute.agility))}, ' \
                f'experience={repr(self.get_attribute(ItemAttribute.experience))}, ' \
                f'endurance={repr(self.get_attribute(ItemAttribute.endurance))}, ' \
                f'vitality={repr(self.get_attribute(ItemAttribute.vitality))})'
+
+    def id_repr(self):
+        return f'Item(type={repr(self.type.value)}, id={repr(self.item_id)})'
+
+    def __repr__(self) -> str:
+        return self.id_repr()
+        # return self.full_repr()
 
 
 class ItemSet:
@@ -110,15 +120,16 @@ class ItemRepository:
 
     def __init__(self, item_file_path: str, item_type: ItemType) -> None:
 
-        # TODO: na_values is for testing only
-        # TODO: Handle tsv not found error
-        item_df: DataFrame = pd.read_csv(item_file_path, sep='\t', index_col=0, nrows=20)
+        try:
+            item_df: DataFrame = pd.read_csv(item_file_path, sep='\t', index_col=0)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'File {item_file_path} configured to load {item_type.value}s was not found')
+
         self.items: ndarray = item_df.values
         self.type = item_type
 
         attrs_list: List[str] = list(item_df.columns.values)
 
-        # TODO(tobi): Handle exception
         try:
             self.strength_pos: int = attrs_list.index(ItemRepository.get_attr_tsv_header(ItemAttribute.strength))
             self.agility_pos: int = attrs_list.index(ItemRepository.get_attr_tsv_header(ItemAttribute.agility))
@@ -132,6 +143,7 @@ class ItemRepository:
     def get_item(self, item_id: int) -> Item:
         return Item(
             self.type,
+            item_id,
             self.get_strength(item_id),
             self.get_agility(item_id),
             self.get_experience(item_id),
@@ -140,7 +152,7 @@ class ItemRepository:
         )
 
     def get_random_item(self) -> Item:
-        return self.get_item(np.random.random_integers(0, np.size(self.items, 0) - 1))
+        return self.get_item(random.randint(0, np.size(self.items, 0) - 1))
 
     def get_strength(self, item_id: int) -> float:
         return self.items[item_id][self.strength_pos]

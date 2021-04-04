@@ -107,7 +107,6 @@ def _universal_random_number_gen(amount: int) -> Collection[float]:
     return np.linspace(r / amount, (r + amount - 1) / amount, amount)
 
 
-# Tenias razon Faus, es mejor un mapa
 _roulette_method: Dict[str, Callable[[int], Collection[float]]] = {
     'random': _roulette_random_number_gen,
     'universal': _universal_random_number_gen
@@ -151,8 +150,11 @@ def _calculate_ranking_fitness_accum_sum(population: Population) -> Collection[f
     return _get_accum_sum(fitness_list)
 
 
-def _calculate_boltzmann_accum_sum(generation: Generation, amount: int, t0: float, tc: float) -> Collection[float]:
-    t: float = tc + (t0 - tc) * math.exp(-amount * generation.gen_count)
+def _calculate_boltzmann_accum_sum(generation: Generation, convergence_factor: float, t0: float, tc: float) -> Collection[float]:
+    if tc >= t0:
+        raise ValueError(f'Error in Boltzmann Selection Method: tc={tc} must be lower than t0={t0}')
+
+    t: float = tc + (t0 - tc) * math.exp(-convergence_factor * generation.gen_count)
     fitness_list: np.ndarray = \
         np.fromiter(map(lambda character: math.exp(character.get_fitness() / t), generation.population), float)
     mean = np.mean(fitness_list)
@@ -169,10 +171,9 @@ def elite_selector(generation: Generation, amount: int, selection_params: Param)
     return sorted(generation.population, key=lambda c: c.get_fitness())[:amount]
 
 
-# TODO(tobi): check
 def _generic_roulette_selector(population: Population, random_numbers: Collection[float],
                                accumulated_sum: Collection[float]) -> Population:
-    return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(random_numbers, accumulated_sum)))
+    return list(map(lambda rand_num_pos: population[rand_num_pos], np.searchsorted(accumulated_sum, random_numbers)))
 
 
 # ----------------- ROULETTE -------------
@@ -195,7 +196,7 @@ def universal_selector(generation: Generation, amount, selection_params: Param) 
 
 # ----------------- RANKING -------------
 ranking_param_validator: ParamValidator = Schema({
-    'roulette_method': _roulette_method.keys()
+    'roulette_method': schema.Or(*tuple(_roulette_method.keys()))
 }, ignore_extra_keys=True)
 
 
@@ -208,22 +209,11 @@ def ranking_selector(generation: Generation, amount, selection_params: Param) ->
 
 
 # ----------------- BOLTZMANN -------------
-# TODO(tobi): No me sale validar que tc < t0
 boltzmann_param_validator: ParamValidator = Schema({
-    'roulette_method': _roulette_method.keys(),
+    'roulette_method': schema.Or(*tuple(_roulette_method.keys())),
     'initial_temp': And(float, lambda t0: t0 > 0),
-    'final_temp': And(float, lambda tc: 0 < tc)
-}, ignore_extra_keys=True)
-
-# ---------------DETERMINISTIC TOURNAMENT-------
-#TODO no se como comparar el amount con el numero de la generacion que debiera ser como maximo el tamaño de la coleccion que recibe
-deterministic_tournament_param_validator: ParamValidator = Schema({
-    'tournament_amount': And(int, lambda ta: ta > 0)
-}, ignore_extra_keys=True)
-
-#
-probabilistic_tournament_param_validator: ParamValidator = Schema({
-    'tournament_probability': And(float, lambda p: 0.5 < p < 1)
+    'final_temp': And(float, lambda tc: 0 < tc),
+    'convergence_factor': And(float, lambda k: k > 0)
 }, ignore_extra_keys=True)
 
 
@@ -233,15 +223,21 @@ def boltzmann_selector(generation: Generation, amount, selection_params: Param) 
         _roulette_method[selection_params['roulette_method']](amount),
         _calculate_boltzmann_accum_sum(
             generation,
-            amount,
+            selection_params['convergence_factor'],
             selection_params['initial_temp'],
             selection_params['final_temp']
         )
     )
 
 
-# TODO lo hice asi rancio y no en una linea porque me dice que le estoy devolviendo una lista de None en vez de una de characters, sory :C
 # -----------------DETERMINISTIC TOURNAMENT ------------
+# TODO lo hice asi rancio y no en una linea porque me dice que le estoy devolviendo una lista de None en vez de una de characters, sory :C
+#TODO no se como comparar el amount con el numero de la generacion que debiera ser como maximo el tamaño de la coleccion que recibe
+deterministic_tournament_param_validator: ParamValidator = Schema({
+    'tournament_amount': And(int, lambda ta: ta > 0)
+}, ignore_extra_keys=True)
+
+
 def deterministic_tournament_selector(generation: Generation, amount, selection_params: Param) -> Population:
     new_population: Population = []
     while len(new_population) < amount:
@@ -252,6 +248,11 @@ def deterministic_tournament_selector(generation: Generation, amount, selection_
 
 
 # -----------------PROBABILISTIC TOURNAMENT-------------
+probabilistic_tournament_param_validator: ParamValidator = Schema({
+    'tournament_probability': And(float, lambda p: 0.5 < p < 1)
+}, ignore_extra_keys=True)
+
+
 def probabilistic_tournament_selector(generation: Generation, amount, selection_params: Param) -> Population:
     new_population: Population = []
     while len(new_population) < amount:
@@ -268,8 +269,6 @@ _selector_dict: Dict[str, Tuple[InternalSelector, ParamValidator]] = {
     'universal': (universal_selector, None),
     'ranking': (ranking_selector, ranking_param_validator),
     'boltzmann': (boltzmann_selector, boltzmann_param_validator),
-    'deterministic_tournament': (deterministic_tournament_selector, None),
-    'probabilistic_tournament': (probabilistic_tournament_selector, None)
-    # TODO habria que validar los parametros de torneo
-    # TODO: Torneo 1, torneo 2, verificar ranking
+    'deterministic_tournament': (deterministic_tournament_selector, deterministic_tournament_param_validator),
+    'probabilistic_tournament': (probabilistic_tournament_selector, probabilistic_tournament_param_validator)
 }

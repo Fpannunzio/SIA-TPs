@@ -55,7 +55,6 @@ def get_crossover(crossover_params) -> Crossover:
     return crossover
 
 
-# TODO(tobi): Que me lo expliquen despacito
 def child_creation(couple: Couple, parent_seq_gen: Callable[[], Iterator[int]]) -> Children:
     children_genes: Tuple[Dict[str, Union[float, Item]], Dict[str, Union[float, Item]]] = ({}, {})
 
@@ -113,7 +112,6 @@ uniform_parent_seq_param_schema: ParamValidator = Schema({
 }, ignore_extra_keys=True)
 
 
-# TODO(tobi): Para mi uniform es asi
 def uniform_parent_seq(gene_count: int, seq_params: Param) -> Iterator[int]:
     weight: float = seq_params['weight']
     return map(lambda _: 1 if weight > random.randint(0, 1) else 0, range(gene_count))

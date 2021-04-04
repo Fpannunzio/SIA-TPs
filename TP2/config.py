@@ -1,12 +1,12 @@
 import sys
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 
 import yaml
 from schema import Schema, SchemaError, And, Or
+import schema
 
 Param = Dict[str, Any]
 ParamValidator = Optional[Schema]
-
 
 import character
 
@@ -23,6 +23,7 @@ class Config:
         try:
             return schema.validate(param)
         except SchemaError as e:
+            print('A problem was found on the configuration file:\n')
             sys.exit(e.code)
 
     def __init__(self, config_path: str):
@@ -30,7 +31,7 @@ class Config:
         try:
             stream = open(config_path, 'r')  # contains a single YAML document.
         except FileNotFoundError:
-            raise ValueError(f'Config file missing. Make sure "{config_path}" is present')
+            raise FileNotFoundError(f'Config file missing. Make sure "{config_path}" is present')
 
         try:
             args = yaml.safe_load(stream)
@@ -41,6 +42,7 @@ class Config:
         valid_class_types: List[str] = [e.value for e in character.CharacterType]
 
         args = Config.validate_param(args, Schema({
+            schema.Optional('seed', default=None): Or(str, int),
             'population_size': And(int, lambda population_size: 0 < population_size < 990000),
             'class': And(str, Or(*tuple(e.value for e in character.CharacterType))),
             'item_files': dict,
@@ -51,8 +53,10 @@ class Config:
             'survivor_selection': dict,
             'recombination': dict,
             'end_condition': dict,
+            'plotting': dict,
         }, ignore_extra_keys=True))
 
+        self.seed: Optional[Union[str, int]] = args['seed']
         self.character_class: str = args['class']
         self.population_size: int = args['population_size']
         self.item_files: Param = args['item_files']
@@ -63,3 +67,4 @@ class Config:
         self.survivor_selection: Param = args['survivor_selection']
         self.recombination: Param = args['recombination']
         self.end_condition: Param = args['end_condition']
+        self.plotting: Param = args['plotting']
