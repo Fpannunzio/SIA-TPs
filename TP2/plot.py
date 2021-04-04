@@ -190,7 +190,7 @@ def _validate_plotter_params(plotter_params: Param) -> Param:
     return Config.validate_param(plotter_params, Schema({
         Optional('render', default=True): bool,
         Optional('process_gen_interval', default=DEFAULT_ANIMATION_INTERVAL): And(int, lambda ms: ms > 0),
-        Optional('step', DEFAULT_RENDER_STEP): And(int, lambda step: step > 0)
+        Optional('step', default=DEFAULT_RENDER_STEP): And(int, lambda step: step > 0)
         # Optional('plots', default=list): And(list, Plotter.supported_plots)
     }))
 
