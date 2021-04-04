@@ -43,6 +43,9 @@ class Character:
         self._endurance_cache: Optional[float] = None
         self._vitality_cache: Optional[float] = None
 
+    def has_higher_fitness(self, other: 'Character') -> bool:
+        return self.get_fitness() > other.get_fitness()
+
     def get_gene_by_name(self, gene: str) -> Union[Item, float]:
         if gene == 'height':
             return self.height
