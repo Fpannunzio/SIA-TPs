@@ -54,7 +54,7 @@ def main(config_file: str):
         print('Plotting data...')
         plotter.wait()
 
-    except Exception as e:
+    except (KeyboardInterrupt, Exception) as e:
         plotter.kill()
         raise e
 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         main(config_file)
 
     except KeyboardInterrupt:
-        pass
+        sys.exit(0)
 
     except (ValueError, FileNotFoundError) as ex:
         print('\nAn Error Was Found!!')
@@ -83,5 +83,5 @@ if __name__ == "__main__":
         sys.exit(1)
 
     except Exception as ex:
-        print('An unexpected error ocurred')
+        print('An unexpected error occurred')
         raise ex
