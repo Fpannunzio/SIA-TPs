@@ -166,7 +166,7 @@ def _calculate_boltzmann_accum_sum(generation: Generation, convergence_factor: f
 
 # --------------- ELITE ----------------
 def elite_selector(generation: Generation, amount: int, selection_params: Param) -> Population:
-    return sorted(generation.population, key=lambda c: c.get_fitness())[:amount]
+    return sorted(generation.population, key=lambda c: c.get_fitness())[-amount:]
 
 
 def _generic_roulette_selector(population: Population, random_numbers: Collection[float],
