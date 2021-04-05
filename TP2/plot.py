@@ -1,4 +1,6 @@
+import os
 import queue
+import time
 from typing import List, Callable, Any, Dict
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +26,7 @@ DEFAULT_RENDER_STEP: int = 10  # Plot is re-rendered every ANIMATION_INTERVAL*re
 
 class AsyncPlotter:
 
-    def __init__(self, render_step: int) -> None:
+    def __init__(self, render_step: int, output_dir: typing.Optional[str]) -> None:
         self.end_event = mp.Event()
         self.new_gen_provider: mp.Queue = mp.Queue()
         self.new_gen_provider.cancel_join_thread()
@@ -32,6 +34,8 @@ class AsyncPlotter:
         self.plot_process = mp.Process(name=f'rp_character_optimizer_plotter', target=self)
 
         self.render_step = render_step
+        self.output_dir = output_dir
+        self.saved_fig = False
 
     def __call__(self):
         anim: FuncAnimation
@@ -45,6 +49,8 @@ class AsyncPlotter:
                 if self.end_event.is_set():
                     anim.event_source.stop()
                     plotter.render()
+                    if self.output_dir:
+                        plotter.save_plot(self.output_dir)
                     print('Finished plotting data')
 
                 return
@@ -129,6 +135,12 @@ class Plotter:
         self._plot_best_character_stats(self.ax2, self.ax3)
         self._plot_diversity(self.ax4)
 
+    def save_plot(self, output_dir: str):
+        output_file_name: str = f'plot_{int(time.time())}.png'
+        output_file: str = os.path.join(output_dir, output_file_name)
+        print(f'Saving plot to {output_file}')
+        plt.savefig(output_file)
+
     def _update_min_max_fitness(self, new_gen: Generation):
         self.min_fitness.append(new_gen.get_min_fitness())
         self.max_fitness.append(new_gen.get_max_fitness())
@@ -210,10 +222,12 @@ class Plotter:
         axis.legend([l_agility, l_endurance, l_experience, l_height, l_strength, l_vitality], Character.attr_list)
 
 
-class NopAsyncPlotter(AsyncPlotter):
+class BatchPlotter(AsyncPlotter):
 
-    def __init__(self, render_step: int) -> None:
-        pass
+    def __init__(self, render: bool, output_dir: typing.Optional[str]) -> None:
+        self.plotter = Plotter(0)
+        self.render = render
+        self.output_dir = output_dir
 
     def __call__(self):
         pass
@@ -221,7 +235,34 @@ class NopAsyncPlotter(AsyncPlotter):
     def start(self) -> None:
         pass
 
-    def is_running(self):
+    def publish(self, new_gen: Generation) -> None:
+        self.plotter.add_new_gen(new_gen)
+
+    def close(self) -> None:
+        pass
+
+    def wait(self) -> None:
+        self.plotter.render()
+
+        if self.render:
+            plt.show()
+
+        if self.output_dir:
+            self.plotter.save_plot(self.output_dir)
+
+    def kill(self):
+        pass
+
+
+class NopAsyncPlotter(AsyncPlotter):
+
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self):
+        pass
+
+    def start(self) -> None:
         pass
 
     def publish(self, new_gen: Generation) -> None:
@@ -241,13 +282,18 @@ def _validate_plotter_params(plotter_params: Param) -> Param:
     return Config.validate_param(plotter_params, Schema({
         Optional('render', default=True): bool,
         Optional('process_gen_interval', default=DEFAULT_ANIMATION_INTERVAL): And(int, lambda ms: ms > 0),
-        Optional('step', default=DEFAULT_RENDER_STEP): And(int, lambda step: step > 0)
+        Optional('step', default=DEFAULT_RENDER_STEP): And(int, lambda step: step > 0),
+        Optional('batch', default=False): bool,
+        Optional('output_dir', default=None): str,
     }))
 
 
 def get_plotter(plotter_params: Param) -> AsyncPlotter:
     plotter_params = _validate_plotter_params(plotter_params)
+    if plotter_params['batch']:
+        return BatchPlotter(plotter_params['render'], plotter_params['output_dir'])
+
     if plotter_params['render']:
-        return AsyncPlotter(plotter_params['step'])
+        return AsyncPlotter(plotter_params['step'], plotter_params['output_dir'])
     else:
-        return NopAsyncPlotter(plotter_params['step'])
+        return NopAsyncPlotter()
