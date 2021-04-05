@@ -130,7 +130,6 @@ def _unpack_fitness_and_index(enum_tuple: Tuple[int, Character]) -> Tuple[float,
     return character.get_fitness(), index
 
 
-# TODO(tobi): wat, por que recupera el orden original? - No decanto en nada el metodo
 def _calculate_ranking_fitness_accum_sum(population: Population) -> Collection[float]:
     fitness_list: np.ndarray = np.fromiter(map(_unpack_fitness_and_index, enumerate(population)),
                                            np.dtype([('fitness', float), ('index', int)]))

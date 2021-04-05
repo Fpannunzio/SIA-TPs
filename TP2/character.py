@@ -37,6 +37,8 @@ class Character:
 
         # Caches para no recalcular propiedades costosas, y mejorar performance
         self._fitness_cache: Optional[float] = None
+        self._atm_cache: Optional[float] = None
+        self._dem_cache: Optional[float] = None
         self._strength_cache: Optional[float] = None
         self._agility_cache: Optional[float] = None
         self._experience_cache: Optional[float] = None
@@ -52,11 +54,21 @@ class Character:
         else:
             return self.items.get_item(ItemType(gene))
 
+    def _calculate_atm(self) -> float:
+        return 0.7 - (3 * self.height - 5) ** 4 + (3 * self.height - 5) ** 2 + self.height / 4
+
+    def _calculate_dem(self) -> float:
+        return 1.9 + (2.5 * self.height - 4.16) ** 4 - (2.5 * self.height - 4.16) ** 2 - 3 * self.height / 10
+
     def get_atm(self) -> float:
-        return 0.7 - (3*self.height - 5)**4 + (3*self.height - 5)**2 + self.height/4
+        if not self._atm_cache:
+            self._atm_cache = self._calculate_atm()
+        return self._atm_cache
 
     def get_dem(self) -> float:
-        return 1.9 + (2.5*self.height - 4.16)**4 - (2.5*self.height - 4.16)**2 - 3*self.height/10
+        if not self._dem_cache:
+            self._dem_cache = self._calculate_dem()
+        return self._dem_cache
 
     def _calculate_strength(self) -> float:
         return 100*tanh(0.01*self.items.get_total_strength())
