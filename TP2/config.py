@@ -45,6 +45,7 @@ class Config:
             schema.Optional('seed', default=None): Or(str, int),
             'population_size': And(int, lambda population_size: 0 < population_size < 990000),
             'class': And(str, Or(*tuple(e.value for e in character.CharacterType))),
+            schema.Optional('output_file', default=None): str,
             'item_files': dict,
             'parent_selection': dict,
             'parent_coupling': dict,
@@ -59,6 +60,8 @@ class Config:
         self.seed: Optional[Union[str, int]] = args['seed']
         self.character_class: str = args['class']
         self.population_size: int = args['population_size']
+        self.output_file: Optional[str] = args['output_file']
+
         self.item_files: Param = args['item_files']
         self.parent_selection: Param = args['parent_selection']
         self.parent_coupling: Param = args['parent_coupling']

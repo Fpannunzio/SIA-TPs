@@ -1,5 +1,7 @@
+from typing import Tuple
+
 from plot import AsyncPlotter
-from character import CharacterType
+from character import CharacterType, Character
 from config import Config
 from couple_selection import CouplesSelector, get_couples_selector, Couples
 from crossover import Crossover, get_crossover, Children
@@ -28,11 +30,14 @@ class Engine:
         self.build_new_gen: Recombiner = get_recombiner(config.recombination)
         self.end_condition: AbstractEndCondition = get_end_condition(config.end_condition)
 
-    def resolve_simulation(self) -> Generation:
+    def resolve_simulation(self) -> Tuple[int, int, Character]:
 
         current_gen: Generation = Generation.create_first_generation(
             self.generation_size, self.generation_type, self.item_repositories
         )
+
+        best_character: Character = current_gen.get_best_character()
+        best_character_gen: int = 0
 
         self.plotter.start()
 
@@ -50,6 +55,12 @@ class Engine:
 
             self.plotter.publish(current_gen)
 
+            generation_best: Character = current_gen.get_best_character()
+
+            if generation_best.has_higher_fitness(best_character):
+                best_character = generation_best
+                best_character_gen = current_gen.gen_count
+
             # print(f'Best from generation {current_gen.gen_count}: {current_gen.get_best_character()}')
 
-        return current_gen
+        return current_gen.gen_count, best_character_gen, best_character

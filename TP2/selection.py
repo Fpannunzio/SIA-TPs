@@ -165,7 +165,6 @@ def _calculate_boltzmann_accum_sum(generation: Generation, convergence_factor: f
 
 # -------------------------------------- Selection Strategies ----------------------------------------------------------
 
-
 # --------------- ELITE ----------------
 def elite_selector(generation: Generation, amount: int, selection_params: Param) -> Population:
     return sorted(generation.population, key=lambda c: c.get_fitness())[:amount]
@@ -231,36 +230,43 @@ def boltzmann_selector(generation: Generation, amount, selection_params: Param) 
 
 
 # -----------------DETERMINISTIC TOURNAMENT ------------
-# TODO lo hice asi rancio y no en una linea porque me dice que le estoy devolviendo una lista de None en vez de una de characters, sory :C
-#TODO no se como comparar el amount con el numero de la generacion que debiera ser como maximo el tamaño de la coleccion que recibe
 deterministic_tournament_param_validator: ParamValidator = Schema({
     'tournament_amount': And(int, lambda ta: ta > 0)
 }, ignore_extra_keys=True)
 
 
 def deterministic_tournament_selector(generation: Generation, amount, selection_params: Param) -> Population:
-    new_population: Population = []
-    while len(new_population) < amount:
-        new_population.append(sorted(random.sample(generation.population, selection_params['tournament_amount']),
-                                     key=lambda c: c.get_fitness())[0])
+    ta: int = selection_params['tournament_amount']
+    if ta > len(generation):
+        raise ValueError(f'Error in Deterministic Tournament Selection Method: '
+                         f'tournament_amount={ta} must not be higher than the population size={len(generation)}')
 
-    return new_population
+    return [max(random.sample(generation.population, ta), key=lambda c: c.get_fitness()) for _ in range(amount)]
 
 
 # -----------------PROBABILISTIC TOURNAMENT-------------
 probabilistic_tournament_param_validator: ParamValidator = Schema({
-    'tournament_probability': And(float, lambda p: 0.5 < p < 1)
+    'tournament_probability': And(float, lambda p: 0.5 <= p <= 1)
 }, ignore_extra_keys=True)
 
 
-def probabilistic_tournament_selector(generation: Generation, amount, selection_params: Param) -> Population:
-    new_population: Population = []
-    while len(new_population) < amount:
-        pair: Population = sorted(random.sample(generation.population, 2),
-                                  key=lambda c: c.get_fitness())
-        new_population.append(pair[0] if random.random() < selection_params['tournament_probability'] else pair[1])
+def _fitness_key(c: Character) -> float:
+    return c.get_fitness()
 
-    return new_population
+
+def _probabilistic_selection(sample: Population, tournament_probability: float):
+    rand: float = random.random()
+    if rand < tournament_probability:
+        return max(sample, key=_fitness_key)
+    else:
+        return min(sample, key=_fitness_key)
+
+
+def probabilistic_tournament_selector(generation: Generation, amount, selection_params: Param) -> Population:
+    return [
+        _probabilistic_selection(random.sample(generation.population, 2), selection_params['tournament_probability'])
+        for _ in range(amount)
+    ]
 
 
 _selector_dict: Dict[str, Tuple[InternalSelector, ParamValidator]] = {

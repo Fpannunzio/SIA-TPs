@@ -1,13 +1,27 @@
 import sys
 import random
 import time
+from typing import Optional
 
+from character import Character
 from plot import AsyncPlotter, get_plotter
 from config import Config
 from engine import Engine
-from generation import Generation
 
 from items import ItemRepositories
+
+
+def append_result_to_output_file(output_path: Optional[str], result: str) -> None:
+    if output_path is None:
+        return
+
+    print(f'Writing output to {output_path}')
+    try:
+        out = open(output_path, 'a')
+        out.write(result)
+        out.close()
+    except FileNotFoundError:
+        print(f'Warning: Could not open or create file {output_path}. Output is not being recorded')
 
 
 def main(config_file: str):
@@ -39,15 +53,23 @@ def main(config_file: str):
 
     try:
         # Start Simulation
-        last_generation: Generation = engine.resolve_simulation()
+        gen_count: int
+        best_character_gen: int
+        best_character: Character
+        gen_count, best_character_gen, best_character = engine.resolve_simulation()
 
-        print(f'Simulation Ended (seed: {seed})')
+        print(f'Simulation Ended')
 
-        # Print Final Info
-        print('\n---------------------- Simulation Output --------------------------')
-        print(f'Total Simulation Iterations: {last_generation.gen_count}')
-        print(f'Best {config.character_class} from Simulation:')
-        print(last_generation.get_best_character())
+        simulation_output: str = f'---------------------- Simulation Output --------------------------\n' \
+                                 f'Simulation Seed: {seed}\n' \
+                                 f'Total Simulation Generations: {gen_count}\n' \
+                                 f'Best Character Found on Generation: {best_character_gen}\n' \
+                                 f'Best {config.character_class} from Simulation: {best_character}\n'
+
+        # Output Final Info
+        append_result_to_output_file(config.output_file, simulation_output)
+        print()
+        print(simulation_output)
         print()
 
         # Wait for plotter to end
