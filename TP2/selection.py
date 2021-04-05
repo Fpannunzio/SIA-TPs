@@ -2,8 +2,7 @@ import math
 from typing import Callable, Collection, Dict, Any, Tuple
 
 import numpy as np
-from schema import Schema, And
-import schema
+from schema import Schema, And, Or, Optional
 
 from config import Config, Param, ParamValidator
 from character import Character
@@ -23,14 +22,14 @@ InternalSelector = Callable[[Generation, int, Param], Population]
 
 def _validate_parent_selector_params(parent_selector_params: Param) -> Param:
     method_schema: Dict[Any, Any] = {
-        'name': schema.And(str, schema.Or(*tuple(_selector_dict.keys()))),
-        schema.Optional('params', default=dict): dict,
+        'name': And(str, Or(*tuple(_selector_dict.keys()))),
+        Optional('params', default=dict): dict,
     }
 
     return Config.validate_param(parent_selector_params, Schema({
         'method1': method_schema,
         'method2': method_schema,
-        'parent_count': int,
+        'parent_count': And(int, lambda count: 1 < count),
         'weight': And(float, lambda p: 0 <= p <= 1),
     }, ignore_extra_keys=True))
 
@@ -59,8 +58,8 @@ def get_parent_selector(parent_selector_params: Param) -> ParentSelector:
 
 def _validate_survivor_selector_params(survivor_selection_params: Param) -> Param:
     method_schema: Dict[Any, Any] = {
-        'name': And(str, schema.Or(*tuple(_selector_dict.keys()))),
-        schema.Optional('params', default=dict): dict,
+        'name': And(str, Or(*tuple(_selector_dict.keys()))),
+        Optional('params', default=dict): dict,
     }
 
     return Config.validate_param(survivor_selection_params, Schema({
@@ -194,7 +193,7 @@ def universal_selector(generation: Generation, amount, selection_params: Param) 
 
 # ----------------- RANKING -------------
 ranking_param_validator: ParamValidator = Schema({
-    'roulette_method': schema.Or(*tuple(_roulette_method.keys()))
+    'roulette_method': Or(*tuple(_roulette_method.keys()))
 }, ignore_extra_keys=True)
 
 
@@ -208,10 +207,10 @@ def ranking_selector(generation: Generation, amount, selection_params: Param) ->
 
 # ----------------- BOLTZMANN -------------
 boltzmann_param_validator: ParamValidator = Schema({
-    'roulette_method': schema.Or(*tuple(_roulette_method.keys())),
-    'initial_temp': And(schema.Or(float, int), lambda t0: t0 > 0),
-    'final_temp': And(schema.Or(float, int), lambda tc: 0 < tc),
-    'convergence_factor': And(float, lambda k: k > 0)
+    'roulette_method': Or(*tuple(_roulette_method.keys())),
+    'initial_temp': And(Or(float, int), lambda t0: t0 > 0),
+    'final_temp': And(Or(float, int), lambda tc: 0 < tc),
+    'convergence_factor': And(Or(float, int), lambda k: k > 0)
 }, ignore_extra_keys=True)
 
 
