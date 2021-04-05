@@ -2,6 +2,7 @@ import queue
 from typing import List, Callable, Any, Dict
 import matplotlib.pyplot as plt
 import numpy as np
+import typing
 from matplotlib import gridspec
 from matplotlib.animation import FuncAnimation
 from schema import Schema, Optional, And
@@ -75,20 +76,37 @@ class Plotter:
     def __init__(self, render_step: int) -> None:
 
         self.render_step = render_step
-        self.fig = plt.figure(figsize=(12, 8))
+        self.fig = plt.figure(figsize=(16, 10))
+        self.fig.tight_layout()
+        plt.style.use('ggplot')
 
         # Create 2x2 sub plots
-        gs = gridspec.GridSpec(2, 2)
+        gs = gridspec.GridSpec(2, 3)
 
-        self.ax1 = plt.subplot(gs[0, 0])  # row 0, col 0
-        self.ax2 = plt.subplot(gs[0, 1])  # row 0, col 1
-        self.ax3 = plt.subplot(gs[1, :])  # entire row 1
+        self.ax1 = plt.subplot(gs[0, :2])  # row 0, col 0 and 1
+        self.ax2 = plt.subplot(gs[0, 2])   # row 0, col 2
+        self.ax3 = plt.subplot(gs[1, 2])   # row 1, col 2
+        self.ax4 = plt.subplot(gs[1, :2])  # row 1, col 0 and 1
 
         self.gens: List[int] = []
+
         self.min_fitness: List[float] = []
         self.mean_fitness: List[float] = []
         self.max_fitness: List[float] = []
-        self.mean_diversity: List[float] = []
+
+        self.best_char_stats: Dict[str, List[float]] = {
+            'strength': [],
+            'agility': [],
+            'experience': [],
+            'endurance': [],
+            'vitality': [],
+            'height': [],
+            'attack': [],
+            'defence': []
+        }
+
+        # self.mean_diversity: List[float] = []
+
         self.diversity: Dict[str, List[float]] = {attr: [] for attr in Character.attr_list}
 
     def __call__(self, frame: int, new_gen: Generation) -> None:
@@ -103,21 +121,30 @@ class Plotter:
         self.gens.append(new_gen.gen_count)
 
         self._update_min_max_fitness(new_gen)
-        self._update_mean_diversity(new_gen)
+        self._update_best_char_stats(new_gen)
         self._update_all_diversities(new_gen)
 
     def render(self):
         self._plot_min_max_fitness(self.ax1)
-        self._plot_mean_diversity(self.ax2)
-        self._plot_all_diversities(self.ax3)
+        self._plot_best_character_stats(self.ax2, self.ax3)
+        self._plot_diversity(self.ax4)
 
     def _update_min_max_fitness(self, new_gen: Generation):
         self.min_fitness.append(new_gen.get_min_fitness())
         self.max_fitness.append(new_gen.get_max_fitness())
         self.mean_fitness.append(new_gen.get_mean_fitness())
 
-    def _update_mean_diversity(self, new_gen: Generation):
-        self.mean_diversity.append(new_gen.get_diversity().mean())
+    def _update_best_char_stats(self, new_gen: Generation):
+        best_char: Character = new_gen.get_best_character()
+
+        self.best_char_stats['strength'].append(best_char.get_strength())
+        self.best_char_stats['agility'].append(best_char.get_agility())
+        self.best_char_stats['experience'].append(best_char.get_experience())
+        self.best_char_stats['endurance'].append(best_char.get_endurance())
+        self.best_char_stats['vitality'].append(best_char.get_vitality())
+        self.best_char_stats['height'].append(best_char.height)
+        self.best_char_stats['attack'].append(best_char.get_attack())
+        self.best_char_stats['defence'].append(best_char.get_defence())
 
     def _update_all_diversities(self, new_gen: Generation):
         diversity = np.array(new_gen.get_diversity())
@@ -138,18 +165,34 @@ class Plotter:
 
         axis.legend([l_max, l_min, l_mean], ["Maximum Fitness", "Minimum Fitness", "Mean Fitness"])
 
-    def _plot_mean_diversity(self, axis) -> None:
-        axis.clear()
+    def _plot_best_character_stats(self, base_stats_axis, calculated_stats_axis) -> None:
+        base_stats_axis.clear()
+        calculated_stats_axis.clear()
 
-        l, = axis.plot(self.gens, self.mean_diversity, 'r-')
+        l_agility, = base_stats_axis.plot(self.gens, self.best_char_stats['agility'], 'r-')
+        l_endurance, = base_stats_axis.plot(self.gens, self.best_char_stats['endurance'], 'b-')
+        l_experience, = base_stats_axis.plot(self.gens, self.best_char_stats['experience'], 'c-')
+        l_height, = base_stats_axis.plot(self.gens, self.best_char_stats['height'], 'm-')
+        l_strength, = base_stats_axis.plot(self.gens, self.best_char_stats['strength'], 'k-')
+        l_vitality, = base_stats_axis.plot(self.gens, self.best_char_stats['vitality'], 'g-')
 
-        axis.set_xlabel('Generation')
-        axis.set_ylabel('Diversity')
-        axis.set_title('Mean Diversity')
+        l_attack, = calculated_stats_axis.plot(self.gens, self.best_char_stats['attack'], 'r-')
+        l_defence, = calculated_stats_axis.plot(self.gens, self.best_char_stats['defence'], 'b-')
 
-        axis.legend([l], ["Mean Diversity"])
+        base_stats_axis.set_xlabel('Generation')
+        base_stats_axis.set_ylabel('Stats (same colors as Genetic Diversity)')
+        base_stats_axis.set_title('Stats of Best Individual of Generation')
 
-    def _plot_all_diversities(self, axis) -> None:
+        calculated_stats_axis.set_xlabel('Generation')
+        calculated_stats_axis.set_ylabel('Attack & Defence')
+        calculated_stats_axis.set_title('Attack and Defence of Best Individual of Generation')
+
+        # base_stats_axis.legend([l_agility, l_endurance, l_experience, l_height, l_strength, l_vitality],
+        #                        ['agility', 'endurance', 'experience', 'height', 'strength', 'vitality'])
+
+        calculated_stats_axis.legend([l_attack, l_defence], ['attack', 'defence'])
+
+    def _plot_diversity(self, axis) -> None:
         axis.clear()
 
         l_agility, = axis.plot(self.gens, self.diversity['agility'], 'r-')
@@ -161,7 +204,7 @@ class Plotter:
 
         axis.set_xlabel('Generation')
         axis.set_ylabel('Diversity')
-        axis.set_title('All Diversities')
+        axis.set_title('Genetic Diversity')
 
         # Estan bien ordenados - Clutch
         axis.legend([l_agility, l_endurance, l_experience, l_height, l_strength, l_vitality], Character.attr_list)
@@ -199,7 +242,6 @@ def _validate_plotter_params(plotter_params: Param) -> Param:
         Optional('render', default=True): bool,
         Optional('process_gen_interval', default=DEFAULT_ANIMATION_INTERVAL): And(int, lambda ms: ms > 0),
         Optional('step', default=DEFAULT_RENDER_STEP): And(int, lambda step: step > 0)
-        # Optional('plots', default=list): And(list, Plotter.supported_plots)
     }))
 
 

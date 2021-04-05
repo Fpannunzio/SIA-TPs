@@ -22,7 +22,6 @@ ParentSeqGenerator = Callable[[int, Param], Iterator[int]]
 def _validate_crossover_params(crossover_params: Param) -> Param:
     return Config.validate_param(crossover_params, Schema({
         Optional('children_eq_parents_prob', default=0): And(float, lambda p: 0 <= p <= 1),
-        Optional('children_per_couple', default=2): And(int, lambda count: count > 0),
         'method': {
             'name': And(str, Or(*tuple(_parent_seq_dict.keys()))),
             Optional('params', default=dict): dict,
@@ -37,8 +36,6 @@ def get_crossover(crossover_params) -> Crossover:
     crossover_method_params: Param = crossover_params['method']['params']
     if crossover_method_param_schema:
         crossover_method_params = Config.validate_param(crossover_method_params, crossover_method_param_schema)
-    # TODO(tobi): Ver que onda children_per_couple. Como implementarlo
-    children_per_couple: int = crossover_params['children_per_couple']
     pc: int = crossover_params['children_eq_parents_prob']
 
     def parent_seq_gen(): return method(len(Character.gene_list), crossover_method_params)
