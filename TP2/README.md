@@ -215,7 +215,7 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
             - Propiedad equivalente al parametro del mismo nombre del metodo de corte **Por Valor de Fitness**
     - **Por Convergencia de la Diversidad**
       - Corta la ejecucion cuando el valor medio de la diversidad de cada atributo de la poblacion se mantiene debajo de un valor determinado durante una cantidad determinada de generaciones.
-      - El valor de la diversidad se calcula **TODO(nacho): Explicar (para el readme y para la posteridad) como se calcula la diversidad.
+      - El valor de la diversidad se calcula para cada uno de los 6 atributos que influencian el cálculo del fitness (strength, agility, experience, endurance, vitality, height). Este valor es obtenido calculando el coeficiente de variación respecto a la suma de los atributos de los componentes (no aplicando tanh). Esto permite medir la variación relativa, independiente de la escala. 
         - `name: by_diversity_convergence`
         - `params: `
           - `threshold: <float>`

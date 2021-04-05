@@ -43,7 +43,7 @@ class Config:
 
         args = Config.validate_param(args, Schema({
             schema.Optional('seed', default=None): Or(str, int),
-            'population_size': And(int, lambda population_size: 0 < population_size < 10000),
+            'population_size': And(int, lambda population_size: 0 < population_size <= 10000),
             'class': And(str, Or(*tuple(e.value for e in character.CharacterType))),
             schema.Optional('output_file', default=None): str,
             'item_files': dict,
