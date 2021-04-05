@@ -209,8 +209,8 @@ def ranking_selector(generation: Generation, amount, selection_params: Param) ->
 # ----------------- BOLTZMANN -------------
 boltzmann_param_validator: ParamValidator = Schema({
     'roulette_method': schema.Or(*tuple(_roulette_method.keys())),
-    'initial_temp': And(float, lambda t0: t0 > 0),
-    'final_temp': And(float, lambda tc: 0 < tc),
+    'initial_temp': And(schema.Or(float, int), lambda t0: t0 > 0),
+    'final_temp': And(schema.Or(float, int), lambda tc: 0 < tc),
     'convergence_factor': And(float, lambda k: k > 0)
 }, ignore_extra_keys=True)
 

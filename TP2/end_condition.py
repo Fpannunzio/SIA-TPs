@@ -76,7 +76,8 @@ class EndByGeneration(AbstractEndCondition):
 
 
 end_by_fitness_params_schema: ParamValidator = Schema({
-    'target_fitness': And(float, lambda fitness: 0 < fitness)
+    Optional('limit_generation', default=MAX_GENERATIONS_ALLOWED): And(int, lambda limit: 0 < limit <= MAX_GENERATIONS_ALLOWED),
+    'target_fitness': And(Or(float, int), lambda fitness: 0 < fitness)
 }, ignore_extra_keys=True)
 
 
@@ -85,8 +86,15 @@ class EndByFitness(AbstractEndCondition):
     def __init__(self, params: Param) -> None:
         super().__init__(params)
         self.target_fitness: float = params['target_fitness']
+        self.remaining_generations: float = params['limit_generation']
 
     def condition_met(self, generation: Generation) -> bool:
+
+        self.remaining_generations -= 1
+
+        if self.remaining_generations < 0:
+            return True
+
         return generation.get_max_fitness() >= self.target_fitness
 
 
