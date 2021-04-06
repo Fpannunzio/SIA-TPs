@@ -23,7 +23,7 @@ Para esto se debera correr `rpg_character_optimizer.py`.
 
 A menos que se indique lo contrario, se buscara en la raiz del proyecto el archivo `config.yaml` donde debera estar toda la informacion de [configuracion](#configuracion). 
 
-En caso de querer almacenar el archivo de configuracion en otro ubicacion o con otro nombre se debera proveer el path del mismo como argumento de ejecucion `python sokoban_solver.py <path>`.
+En caso de querer almacenar el archivo de configuracion en otro ubicacion o con otro nombre se debera proveer el path del mismo como argumento de ejecucion `python rpg_character_optimizer.py <path>`.
 
 Una vez ejecutado se imprimira a salida estandar el estado del programa y se abrira de forma automatica una ventana mostrando graficos en tiempo real (hechos con [matplotlib](https://matplotlib.org/)) que informan sobre las generaciones de individuos que se van creando.
 
@@ -85,11 +85,11 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
             - `roulette_method: <str>`
               - Especifica el metodo de ruleta a usar utilizando la nueva funcion de fitness calculada a partir de la funcion de ranking.
               - Los posibles valores son:
-                - `roulette`
+                - `random` (roulette)
                 - `universal`
         - **Boltzmann**
           - `name: boltzmann`
-          -`params: `
+          - `params: `
             - `roulette_method: <str>`
               - Equivalente a la propiedad del mismo nombre en **Ranking**, pero usando la nueva funcion de fitness definida con por **Boltzmann**
             - `initial_temp: (<float>|<int>)`
@@ -98,7 +98,7 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
               - Temperatura final. Numero positivo. Debe ser menor a `initial_temp`
             - `convergence_factor: (<float>|<int>)`
               - Factor de convergencia. Numero positivo (idealmente entre 0 y 1). Cuanto mas grande sea, mas rapido la tempreatura desciende.
-              - La temperatura esta dada por la funcion `T(t) = final_temp + (initial_temp - final_temp) * exp(-convergence_factor*t)`
+              - La temperatura esta dada por la funcion `T(t) = final_temp + (initial_temp - final_temp) * exp(-convergence_factor*t)` donde t es el numero de generacion.
         - **Torneos Deterministicos**
           - `name: deterministic_tournament`
           - `params: `
@@ -124,12 +124,12 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
           - `name: chaotic_random`
       - **Emparejamiento aleatorio equitativo**
         - Este metodo de emparejamiento divide el conjunto de padres en dos y va formando parejas hasta que los conjuntos se vacian, o se alcanzo la cantidad de padres deseada. Si el conjunto se vacio, se vuelve a partir el conjunto original, y se repite el proceso.
-          - `name: chaotic_random`
+          - `name: equitable_random`
 - `crossover: `
   - Dentro de este mapa se encuentran todas las propiedades encargadas de configurar la creacion de hijos a partir de los padres (la cruza).
   - A partir de cada pareja de padres se crearan exactamente 2 hijos. Por lo tanto, el conjunto de hijos sera tan grande como el conjunto de padres. 
-    - `children_eq_parents_prob: <float>`
-      - Probabilidad de que el conjunto de hijos sea igual al conjunto de padres, es decir, que la creacion de hijos este solamente determinada por el proceso de mutacion.
+    - `children_eq_parents_prob: <float>` *Opcional*
+      - Probabilidad de que el conjunto de hijos sea igual al conjunto de padres, es decir, que la creacion de hijos este solamente determinada por el proceso de mutacion. Por default es 0.
     - `method: <method>`
       - `method` configura el metodo de cruza que se usara. El valor `<method>` es un mapa que varia segun el metodo seleccionado.
       - Los distintos metodos de cruza soportados son:
@@ -188,7 +188,7 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
     - **Por Cantidad de Generaciones**
       - Corta la ejecucion una vez que la simulacion haya llegado a un numero de generacion determinado.
         - `name: by_generation`
-        -`params: `
+        - `params: `
           - `limit_generation: <int>`
             - Numero de generacion donde se debe cortar ejecucion.
             - Entero positivo menor o igual a 1000.
@@ -241,10 +241,128 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
 Ejemplos de configuracion
 
 ```yaml
-TODO EJEMPLO 1
+item_files:
+  weapon: allitems/armas.tsv
+  boots: allitems/botas.tsv
+  helmet: allitems/cascos.tsv
+  gauntlets: allitems/guantes.tsv
+  chest_piece: allitems/pecheras.tsv
+
+seed: 1617663078  # good seed
+class: archer
+population_size: 1000
+
+parent_selection:
+  parent_count: 1500
+  weight: 0.3  # A
+  method1:
+    name: elite
+
+  method2:
+    name: universal
+
+parent_coupling:
+  method:
+    name: chaotic_random
+
+crossover:
+  method:
+    name: uniform
+
+mutation:
+  mutation_probability: 0.15
+  method:
+    name: uniform
+
+survivor_selection:
+  weight: 0.25  # A
+  method1:
+    name: elite
+
+  method2:
+    name: boltzmann
+    params:
+      roulette_method: random
+      initial_temp: 100
+      final_temp: 5
+      convergence_factor: 0.005
+
+recombination:
+  method:
+    name: fill_parent
+
+end_condition:
+  name: by_fitness_convergence
+  params:
+    limit_generation: 1000
+    number_of_generations: 100
+    epsilon: 0.05
+
+plotting:
+  render: true
+  step: 10
+  process_gen_interval: 10
 ```
 ```yaml
-TODO EJEMPLO 2
+item_files:
+  weapon: allitems/armas.tsv
+  boots: allitems/botas.tsv
+  helmet: allitems/cascos.tsv
+  gauntlets: allitems/guantes.tsv
+  chest_piece: allitems/pecheras.tsv
+
+class: defender
+population_size: 500
+
+parent_selection:
+  parent_count: 100
+  weight: 0.3
+  method1:
+    name: deterministic_tournament
+    params:
+      tournament_amount: 5
+
+  method2:
+    name: universal
+
+parent_coupling:
+  method:
+    name: equitable_random
+
+crossover:
+  method:
+    name: two_point
+
+mutation:
+  mutation_probability: 0.15
+  method:
+    name: limited
+    params:
+      max_mutated_genes_count: 2
+
+survivor_selection:
+  weight: 0.25
+  method1:
+    name: ranking
+    params:
+      roulette_method: universal
+
+  method2:
+    name: probabilistic_tournament
+    params:
+      tournament_probability: 0.7
+
+recombination:
+  method:
+    name: fill_all
+
+end_condition:
+  name: by_time
+  params:
+    runtime: 20
+
+plotting:
+  render: false
 ```
 
 ### Resultado
