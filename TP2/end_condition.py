@@ -56,6 +56,7 @@ class EndByTime(AbstractEndCondition):
     def condition_met(self, generation: Generation) -> bool:
         if not self.has_started:
             self.limit_time = time.perf_counter() + self.runtime
+            self.has_started = True
 
         return time.perf_counter() > self.limit_time
 
