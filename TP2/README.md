@@ -1,6 +1,6 @@
 # RPG Character Optimizer
 
-RPG Character Optimizer busca encontrar el mejor personaje de RPG
+RPG Character Optimizer busca encontrar el mejor personaje de RPG mediante el uso de algoritmos geneticos
 
 ## Autores
 
@@ -215,7 +215,7 @@ La configuracion de ejecucion es realizada via un archivo de tipo [YAML](https:/
             - Propiedad equivalente al parametro del mismo nombre del metodo de corte **Por Valor de Fitness**
     - **Por Convergencia de la Diversidad**
       - Corta la ejecucion cuando el valor medio de la diversidad de cada atributo de la poblacion se mantiene debajo de un valor determinado durante una cantidad determinada de generaciones.
-      - El valor de la diversidad se calcula **TODO(nacho): Explicar (para el readme y para la posteridad) como se calcula la diversidad.
+      - El valor de la diversidad se calcula para cada uno de los 6 atributos que influencian el cálculo del fitness (strength, agility, experience, endurance, vitality, height). Este valor es obtenido calculando el coeficiente de variación (`desvio estandar / media`) respecto a la suma de los atributos de los componentes (no aplicando tanh)detoda la poblacion de la generacion. Esto permite medir la variación relativa, independiente de la escala. 
         - `name: by_diversity_convergence`
         - `params: `
           - `threshold: <float>`
@@ -249,4 +249,12 @@ TODO EJEMPLO 2
 
 ### Resultado
 
-TODO: RESULTADOS
+El resultado de la ejecucion es impreso por salida estandar (y de ser configurado, adjuntado a un archivo de salida) una vez finalizada la ejecucion. Esta contiene informacion sobre el mejor personaje generado durante la simulacion.
+
+- Seed usada durante la simulacion.
+- Cantidad total de generaciones creadas durante la simulacion
+- Numero de la generacion a la cual pertenece el mejor personaje
+- Todas las caracteristicas del mejor jugador generado:
+  - type: la clase del personaje
+  - fitness
+  - alelos: altura y el id de los items equipados (arma, botas, casco, guantes, pechera)
