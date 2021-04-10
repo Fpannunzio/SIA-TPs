@@ -112,6 +112,10 @@ class Plotter:
     def render(self):
         self.ax.clear()
 
+        x = np.arange(-1.0, 1.0, 0.02)
+
+        self.ax.plot(x, lambda x: (- self.curr_w[1] * x - self.curr_w[0])/ self.curr_w[2], 'k')
+
         self.ax.scatter(self.positive_values['x'], self.positive_values['y'], color='red')
         self.ax.scatter(self.negative_values['x'], self.negative_values['y'], color='blue')
 
