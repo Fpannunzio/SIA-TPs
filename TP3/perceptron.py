@@ -1,3 +1,4 @@
+import math
 import random
 from collections import Callable
 from typing import Type, Dict
@@ -45,9 +46,13 @@ class Perceptron:
                 w_min = np.copy(w)
             i += 1
 
-        for j in range(len(x)):
-            print(f'Expected value {y[j]} got: {self.activation_func(self.heavy_sum(x[j], w))}')
         return w
+
+    def are_validate_coefficients_valid(self, x: np.ndarray, y: np.ndarray) -> bool:
+        for i in range(len(x)):
+            if not math.isclose(self.activation_func(self.heavy_sum(x[i], self.w_min)), y[i]):
+                return False
+        return True
 
     def calculate_error(self, x: np.ndarray, y: np.ndarray, w: np.ndarray) -> float:
         return sum([0.5 * (abs(y[j] - self.activation_func(self.heavy_sum(x[j], w)))) ** 2 for j in range(len(x))])

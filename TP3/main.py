@@ -21,6 +21,16 @@ def main(config_file: str):
 
     print(perceptron.generate_hyperplane_coefficients(training_x, training_y))
 
+    validation_set: Dict[str, str] = config.training_set
+
+    validation_x: np.ndarray = pd.read_csv(validation_set['inputs'], delim_whitespace=True, header=None).values
+    validation_y: np.ndarray = pd.read_csv(validation_set['outputs'], delim_whitespace=True, header=None).values
+
+    if perceptron.are_validate_coefficients_valid(validation_x, validation_y):
+        print('La solucion encontrada paso la prueba de validacion')
+    else:
+        print('La solucion encontrada no paso la prueba de validacion')
+
 
 if __name__ == "__main__":
     argv = sys.argv
