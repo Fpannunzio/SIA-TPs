@@ -153,7 +153,8 @@ def _validate_plotter_params(plotter_params: Param) -> Param:
 
 
 def get_plotter(plotter_params: Param, inputs: np.ndarray, outputs: np.ndarray) -> AsyncPlotter:
-    if plotter_params['render']:
-        return AsyncPlotter(inputs, outputs)
-    else:
-        return NopAsyncPlotter()
+    # if plotter_params['render']:
+    #     return AsyncPlotter(inputs, outputs)
+    # else:
+    #     return NopAsyncPlotter()
+    return AsyncPlotter(inputs, outputs)
