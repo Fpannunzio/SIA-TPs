@@ -1,39 +1,45 @@
+import sys
+from typing import Dict
+
 import numpy as np
 import pandas as pd
 
-from TP3.perceptron import Perceptron
+from TP3.config import Config
+from TP3.perceptron import Perceptron, get_perceptron
 
 
-def main():
-    # x: np.array = np.array([[-1, 1], [1, -1], [-1, -1], [1, 1]])
-    # y: np.array = np.array([-1, -1, -1, 1])
+def main(config_file: str):
+    print(f'Loading config file {config_file}...')
+    config: Config = Config(config_file)
 
-    # perceptron: Perceptron = Perceptron(0.01, np.sign)
-    # print(perceptron.generate_hyperplane_coefficients(x, y))
-    #  XOR es un problema no linealmente separable
-    # y: List[int] = [1, 1, -1, -1]
+    training_set: Dict[str, str] = config.training_set
 
-    x: np.ndarray = pd.read_csv('trainingset/trainingset2.txt', delim_whitespace=True, header=None).values
-    y: np.ndarray = pd.read_csv('resultset/resultset2.txt', delim_whitespace=True, header=None).values
+    training_x: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values
+    training_y: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values
 
-    perceptron: Perceptron = Perceptron(0.005, lambda var: var)
-    print(perceptron.generate_hyperplane_coefficients(x, y))
-    # with open('training.txt') as f:
-    #     for line in f:
-    #         numbers: List[str] = line.split()
-    #         x.append([float(numbers[i]) for i in range(len(numbers))])
-    #
-    #     f.close()
-    #
-    # with open('result.txt') as f:
-    #     for line in f:
-    #         y.append(float(line))
-    #
-    #     f.close()
-    #
-    # resolve(x, y, lambda var: var, False)
-    # resolve(x, y, np.tanh, True)
+    perceptron: Perceptron = get_perceptron(config.perceptron)
+
+    print(perceptron.generate_hyperplane_coefficients(training_x, training_y))
 
 
 if __name__ == "__main__":
-    main()
+    argv = sys.argv
+
+    config_file: str = 'config.yaml'
+    if len(argv) > 1:
+        config_file = argv[1]
+
+    try:
+        main(config_file)
+
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+    except (ValueError, FileNotFoundError) as ex:
+        print('\nAn Error Was Found!!')
+        print(ex)
+        sys.exit(1)
+
+    except Exception as ex:
+        print('An unexpected error occurred')
+        raise ex
