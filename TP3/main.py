@@ -4,8 +4,9 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
-from TP3.config import Config
-from TP3.perceptron import Perceptron, get_perceptron
+from config import Config
+from perceptron import Perceptron, get_perceptron
+from plot import AsyncPlotter, get_plotter
 
 
 def main(config_file: str):
@@ -19,7 +20,9 @@ def main(config_file: str):
 
     perceptron: Perceptron = get_perceptron(config.perceptron)
 
-    print(perceptron.generate_hyperplane_coefficients(training_x, training_y))
+    plotter: AsyncPlotter = get_plotter(config.plotting, training_x, training_y)
+
+    print(perceptron.generate_hyperplane_coefficients(training_x, training_y, plotter))
 
     validation_set: Dict[str, str] = config.training_set
 

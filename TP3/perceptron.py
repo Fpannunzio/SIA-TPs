@@ -6,7 +6,8 @@ from typing import Type, Dict
 import numpy as np
 from schema import Schema, And, Or
 
-from TP3.config import Param, Config
+from config import Param, Config
+from plot import AsyncPlotter
 
 Function = Callable[[float], float]
 
@@ -30,7 +31,7 @@ class Perceptron:
     def calculate_delta(self, x: np.ndarray, y: float, heavy_sum: float) -> np.ndarray:
         return x * self.l_rate * (y - self.activation_func(heavy_sum))
 
-    def generate_hyperplane_coefficients(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def generate_hyperplane_coefficients(self, x: np.ndarray, y: np.ndarray, plotter: AsyncPlotter) -> np.ndarray:
         x = np.insert(x, 0, 1, axis=1)
         w: np.array = np.random.rand(len(x[0])) * 2 - 1
         self.w_min: np.ndarray = np.copy(w)
@@ -50,6 +51,7 @@ class Perceptron:
             if error < error_min:
                 error_min = error
                 self.w_min = np.copy(w)
+                plotter.publish(self.w_min)
             i += 1
 
         return w
