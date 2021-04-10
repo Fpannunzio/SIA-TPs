@@ -40,6 +40,8 @@ class Perceptron:
         i: int = 0
         n: int = 0
 
+        plotter.start()
+
         while error > 0 and i < 10000:
             if n > 1000 * len(x):
                 w = np.random.rand(len(x[0])) * 2 - 1
