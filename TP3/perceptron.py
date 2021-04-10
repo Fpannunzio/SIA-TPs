@@ -35,6 +35,7 @@ class Perceptron:
         x = np.insert(x, 0, 1, axis=1)
         w: np.array = np.random.rand(len(x[0])) * 2 - 1
         self.w_min: np.ndarray = np.copy(w)
+        plotter.publish(w)
         error: float = 1.0
         error_min: float = len(x) * 2
         i: int = 0
@@ -50,10 +51,10 @@ class Perceptron:
             w += self.calculate_delta(x[i_x], y[i_x], calculate_heavy_sum(x[i_x], w))
             error = self.calculate_error(x, y, w)
 
+            plotter.publish(w)
             if error < error_min:
                 error_min = error
                 self.w_min = np.copy(w)
-                plotter.publish(self.w_min)
             i += 1
 
         return w

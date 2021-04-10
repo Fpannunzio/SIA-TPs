@@ -13,7 +13,7 @@ from config import Param, Config
 Figure = Any  # Stub for matplotlib
 
 # TODO: Definir mejores defaults
-DEFAULT_ANIMATION_INTERVAL: int = 50  # Data is processed every 100 ms
+DEFAULT_ANIMATION_INTERVAL: int = 1000  # Data is processed every 100 ms
 DEFAULT_RENDER_STEP: int = 10  # Plot is re-rendered every ANIMATION_INTERVAL*render_step ms
 
 
@@ -73,7 +73,7 @@ class Plotter:
 
     def __init__(self, inputs, outputs) -> None:
 
-        self.fig = plt.figure(figsize=(16, 10))
+        self.fig = plt.figure()
         self.fig.tight_layout()
         plt.style.use('ggplot')
 
@@ -112,9 +112,10 @@ class Plotter:
     def render(self):
         self.ax.clear()
 
-        x = np.arange(-1.0, 1.0, 0.02)
+        x = np.arange(-1.5, 1.5, 0.02)
+        y = (- self.curr_w[1] * x - self.curr_w[0]) / self.curr_w[2]
 
-        self.ax.plot(x, lambda x: (- self.curr_w[1] * x - self.curr_w[0])/ self.curr_w[2], 'k')
+        self.ax.plot(x, y, 'k')
 
         self.ax.scatter(self.positive_values['x'], self.positive_values['y'], color='red')
         self.ax.scatter(self.negative_values['x'], self.negative_values['y'], color='blue')
@@ -157,8 +158,8 @@ def _validate_plotter_params(plotter_params: Param) -> Param:
 
 
 def get_plotter(plotter_params: Param, inputs: np.ndarray, outputs: np.ndarray) -> AsyncPlotter:
-    # if plotter_params['render']:
-    #     return AsyncPlotter(inputs, outputs)
-    # else:
-    #     return NopAsyncPlotter()
-    return AsyncPlotter(inputs, outputs)
+    if plotter_params['render']:
+        return AsyncPlotter(inputs, outputs)
+    else:
+        return NopAsyncPlotter()
+    # return AsyncPlotter(inputs, outputs)
