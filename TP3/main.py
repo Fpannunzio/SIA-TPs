@@ -4,8 +4,9 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
+from perceptron_utils import get_perceptron
 from config import Config
-from perceptron import Perceptron, get_perceptron
+from perceptron import Perceptron
 from plot import AsyncPlotter, get_plotter
 
 
@@ -18,21 +19,29 @@ def main(config_file: str):
     training_x: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values
     training_y: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values
 
-    perceptron: Perceptron = get_perceptron(config.perceptron)
+    perceptron: Perceptron = get_perceptron(config.perceptron, training_x, training_y)
 
+    # TODO(tobi): Ver de mejorar plotter
     plotter: AsyncPlotter = get_plotter(config.plotting, training_x, training_y)
+    plotter.start()
 
-    print(perceptron.generate_hyperplane_coefficients(training_x, training_y, plotter))
+    # Train Perceptron with training data!
+    perceptron.train(plotter.publish)
 
-    validation_set: Dict[str, str] = config.training_set
+    print(perceptron.w_min)
+
+    validation_set: Dict[str, str] = config.validation_set
 
     validation_x: np.ndarray = pd.read_csv(validation_set['inputs'], delim_whitespace=True, header=None).values
     validation_y: np.ndarray = pd.read_csv(validation_set['outputs'], delim_whitespace=True, header=None).values
 
-    if perceptron.are_validate_coefficients_valid(validation_x, validation_y):
-        print('La solucion encontrada paso la prueba de validacion')
+    # Validate Perceptron with Validation Points
+    failed_points: np.ndarray = perceptron.validate_points(validation_x, validation_y)
+    if len(failed_points) > 0:
+        print('La solucion encontrada no paso la prueba de validacion. No pude precedir correctamente el valor de los siguientes puntos:')
+        print(failed_points)
     else:
-        print('La solucion encontrada no paso la prueba de validacion')
+        print('La solucion encontrada paso la prueba de validacion')
 
 
 if __name__ == "__main__":
