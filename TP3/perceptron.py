@@ -1,6 +1,6 @@
 import math
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 
@@ -9,7 +9,6 @@ ActivationFunction = Callable[[float], float]
 
 class Perceptron(ABC):
 
-    # TODO(tobi): Capaz cambiarlos a default value del constructor
     DEFAULT_MAX_ITERATION       : int = 10000
     DEFAULT_SOFT_RESET_THRESHOLD: int = 1000
 
@@ -21,81 +20,90 @@ class Perceptron(ABC):
     def with_identity_dimension(points: np.ndarray) -> np.ndarray:
         return np.insert(points, 0, 1, axis=1)
 
-    def soft_reset(self) -> None:
-        self.w = np.random.uniform(-1, 1, len(self.training_points[0]))
-        self.iters_since_soft_reset = 0
-
-    # TODO(tobi): Puedo renombrar y por z?
-    # len(x) = p = cantidad de puntos en el training set
-    # len(x[0]) = n + 1 = dimension de los puntos + 1 (por la columna de 1 agregados, que representa la dimension de los resultados)
-    def __init__(self, l_rate: float, activation: ActivationFunction, training_points: np.ndarray, training_values: np.ndarray,
-                 max_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None,
-                 insert_identity_column: bool = True) -> None:
+    def __init__(self, l_rate: float, input_count: int, activation: ActivationFunction,
+                 max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None, ) -> None:
 
         self.l_rate: float = l_rate
         self.activation: ActivationFunction = activation
-        self.training_points: np.ndarray = (Perceptron.with_identity_dimension(training_points) if insert_identity_column else training_points)
-        self.training_values: np.ndarray = training_values
-        self.max_iteration = (max_iteration if max_iteration is not None else Perceptron.DEFAULT_MAX_ITERATION)
-        self.soft_reset_threshold = (soft_reset_threshold if soft_reset_threshold is not None else Perceptron.DEFAULT_SOFT_RESET_THRESHOLD)
+        self.w: np.ndarray = np.random.uniform(-1, 1, input_count + 1)  # array de n + 1 puntos con dist. Uniforme([-1, 1))
+        self.error: Optional[float] = None
 
-        self.w: np.ndarray = np.random.uniform(-1, 1, len(self.training_points[0]))  # array de n + 1 puntos con dist. Uniforme([-1, 1))
-        self.w_min: np.ndarray = np.copy(self.w)
-        self.error: float = 1.0
-        self.error_min: float = len(self.training_points) * 2
-        self.iteration: int = 0
+        # Training
+        self.training_w: np.ndarray = np.copy(self.w)
+        self.training_iteration: int = 0
         self.iters_since_soft_reset: int = 0
+        self.max_training_iteration = (max_training_iteration if max_training_iteration is not None else Perceptron.DEFAULT_MAX_ITERATION)
+        self.soft_reset_threshold = (soft_reset_threshold if soft_reset_threshold is not None else Perceptron.DEFAULT_SOFT_RESET_THRESHOLD)
 
     @abstractmethod
     def calculate_delta_weight(self, point: np.ndarray, point_value: float, weighted_sum: float) -> np.ndarray:
         pass
 
     @abstractmethod
-    def calculate_error(self) -> float:
-        return sum([0.5 * (abs(self.training_values[point] - self._predict(self.training_points[point])) ** 2) for point in range(len(self.training_points))])  # Good Default
+    def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
+        pass
+
+    def soft_training_reset(self) -> None:
+        self.training_w = np.random.uniform(-1, 1, len(self.training_w))
+        self.iters_since_soft_reset = 0
+
+    def hard_training_reset(self) -> None:
+        self.soft_training_reset()
+        self.training_iteration = 0
 
     def has_training_ended(self) -> bool:
-        return self.error <= 0 or self.iteration >= self.max_iteration
+        return self.error is not None and (self.error <= 0 or self.training_iteration >= self.max_training_iteration)
 
-    def do_training_iteration(self) -> None:
-        if self.iters_since_soft_reset > self.soft_reset_threshold * len(self.training_points):
-            self.soft_reset()
+    # No cambiar los training points en el medio del entrenamiento
+    # Antes de empezar un nuevo entrenamiento hacer un hard_training_reset
+    # Asume que los training_points ya tienen la columna identidad
+    def do_training_iteration(self, training_points: np.ndarray, training_values: np.ndarray) -> None:
+        if self.iters_since_soft_reset > self.soft_reset_threshold * len(training_points):
+            self.soft_training_reset()
 
         # Seleccionamos un punto del training set al azar
-        point: int = np.random.randint(0, len(self.training_points))  # random int intervalo [0, n + 1) => [0, n]
+        point: int = np.random.randint(0, len(training_points))  # random int intervalo [0, n + 1) => [0, n]
 
         # Actualizamos el valor del vector peso
-        self.w += self.calculate_delta_weight(
-            self.training_points[point],
-            self.training_values[point],
-            Perceptron.calculate_weighted_sum(self.training_points[point], self.w)
+        self.training_w += self.calculate_delta_weight(
+            training_points[point],
+            training_values[point],
+            Perceptron.calculate_weighted_sum(training_points[point], self.training_w)
         )
 
         # Actualizamos el error
-        self.error = self.calculate_error()
-        if self.error < self.error_min:
-            self.error_min = self.error
-            self.w_min = np.copy(self.w)
+        current_error: float = self.calculate_error(training_points, training_values, self.training_w)
+        if self.error is None or current_error < self.error:
+            self.error = current_error
+            self.w = np.copy(self.training_w)
 
-        self.iteration += 1
+        self.training_iteration += 1
 
-    def train(self, status_callback: Optional[Callable[[np.ndarray], None]] = None) -> None:
-        while not self.has_training_ended():
-            self.do_training_iteration()
-            if status_callback:
-                status_callback(self.w)
+    def train(self, training_points: np.ndarray, training_values: np.ndarray,
+              status_callback: Optional[Callable[[np.ndarray], None]] = None, insert_identity_column: bool = True) -> Tuple[int, np.ndarray]:
 
-    # Utiliza el w actual
-    def _predict(self, point: np.ndarray, insert_identity_column: bool = False) -> float:
         if insert_identity_column:
-            point = np.insert(point, 0, 1)
-        return self.activation(Perceptron.calculate_weighted_sum(point, self.w))
+            training_points = Perceptron.with_identity_dimension(training_points)
 
-    # Utiliza el w minimo
+        while not self.has_training_ended():
+            self.do_training_iteration(training_points, training_values)
+            if status_callback:
+                status_callback(self.training_w)
+
+        # Retorno al estado inicial y devuelvo el training_w final y la cantidad de training_iterations
+        ret: Tuple[int, np.ndarray] = (self.training_iteration, self.training_w)
+        self.hard_training_reset()
+
+        return ret
+
+    # Asume que el punto tiene la columna identidad
+    def _predict(self, point: np.ndarray, w: np.ndarray) -> float:
+        return self.activation(Perceptron.calculate_weighted_sum(point, w))
+
     def predict(self, point: np.ndarray, insert_identity_column: bool = False) -> float:
         if insert_identity_column:
             point = np.insert(point, 0, 1)
-        return self.activation(Perceptron.calculate_weighted_sum(point, self.w_min))
+        return self.activation(Perceptron.calculate_weighted_sum(point, self.w))
 
     # TODO(tobi): Alguno sabe una mejor manera? - Es mejor con fromiter o array
     def predict_points(self, points: np.ndarray, insert_identity_column: bool = True) -> np.ndarray:
@@ -109,7 +117,7 @@ class Perceptron(ABC):
         if insert_identity_column:
             points = Perceptron.with_identity_dimension(points)
 
-        return np.array([point for idx, point in enumerate(points) if not math.isclose(self.predict(point), values[idx])])
+        return np.array([points[point] for point in range(len(points)) if not math.isclose(self.predict(points[point]), values[point])])
 
     def is_validation_successful(self, points: np.ndarray, values: np.ndarray, insert_identity_column: bool = True) -> bool:
         if insert_identity_column:
@@ -121,48 +129,49 @@ class Perceptron(ABC):
         return True
 
 
-# self.l_rate = params['learning_rate']
-# self.activation_func = self.function_map[params['function']]
 class SimplePerceptron(Perceptron):
 
-    def __init__(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray, max_iteration: Optional[int] = None,
-                 soft_reset_threshold: Optional[int] = None, insert_identity_column: bool = True) -> None:
+    def __init__(self, l_rate: float, input_count: int,
+                 max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None) -> None:
         # Activation Function = funcion signo
-        super().__init__(l_rate, np.sign, training_points, training_values, max_iteration, soft_reset_threshold, insert_identity_column)
+        super().__init__(l_rate, input_count, np.sign, max_training_iteration, soft_reset_threshold)
 
     def calculate_delta_weight(self, point: np.ndarray, point_value: float, weighted_sum: float) -> np.ndarray:
         return self.l_rate * (point_value - self.activation(weighted_sum)) * point
 
-    def calculate_error(self) -> float:
-        return sum(abs(self.training_values[point] - self._predict(self.training_points[point])) for point in range(len(self.training_points)))
+    # TODO(tobi): wat
+    def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
+        if sum(abs(training_values[point] - self._predict(training_points[point], w)) for point in range(len(training_points))) == 0:
+            print('bien')
+
+        return sum(abs(training_values[point] - self._predict(training_points[point], w)) for point in range(len(training_points)))
 
 
-# linear
 class LinearPerceptron(Perceptron):
 
-    def __init__(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray, max_iteration: Optional[int] = None,
-                 soft_reset_threshold: Optional[int] = None, insert_identity_column: bool = True) -> None:
+    def __init__(self, l_rate: float, input_count: int, max_training_iteration: Optional[int] = None,
+                 soft_reset_threshold: Optional[int] = None) -> None:
         # Activation Function = funcion identidad
-        super().__init__(l_rate, lambda x: x, training_points, training_values, max_iteration, soft_reset_threshold, insert_identity_column)
+        super().__init__(l_rate, input_count, lambda x: x, max_training_iteration, soft_reset_threshold)
 
     def calculate_delta_weight(self, point: np.ndarray, point_value: float, weighted_sum: float) -> np.ndarray:
         return self.l_rate * (point_value - self.activation(weighted_sum)) * point
 
-    def calculate_error(self) -> float:
-        return super().calculate_error()
+    def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
+        return sum([0.5 * (abs(training_values[point] - self._predict(training_points[point], w)) ** 2)
+                    for point in range(len(training_points))])
 
 
 class NonLinearPerceptron(Perceptron):
 
-    def __init__(self, l_rate: float, activation: ActivationFunction, activation_derivative: ActivationFunction,
-                 training_points: np.ndarray, training_values: np.ndarray, max_iteration: Optional[int] = None,
-                 soft_reset_threshold: Optional[int] = None, insert_identity_column: bool = True) -> None:
-
-        super().__init__(l_rate, activation, training_points, training_values, max_iteration, soft_reset_threshold, insert_identity_column)
+    def __init__(self, l_rate: float, input_count: int, activation: ActivationFunction, activation_derivative: ActivationFunction,
+                 max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None) -> None:
+        super().__init__(l_rate, input_count, activation, max_training_iteration, soft_reset_threshold)
         self.activation_derivative = activation_derivative
 
     def calculate_delta_weight(self, point: np.ndarray, point_value: float, weighted_sum: float) -> np.ndarray:
         return self.l_rate * (point_value - self.activation(weighted_sum)) * point * self.activation_derivative(weighted_sum)
 
-    def calculate_error(self) -> float:
-        return super().calculate_error()
+    def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
+        return sum([0.5 * (abs(training_values[point] - self._predict(training_points[point], w)) ** 2)
+                    for point in range(len(training_points))])

@@ -6,7 +6,7 @@ from schema import And, Schema, Or, Optional
 from perceptron import Perceptron, SimplePerceptron, LinearPerceptron, NonLinearPerceptron, ActivationFunction
 from config import Param, Config
 
-PerceptronFactory = Callable[[float, np.ndarray, np.ndarray, Param], Perceptron]
+PerceptronFactory = Callable[[float, int, Param], Perceptron]
 SigmoidFunction = Callable[[float, float], float]
 SigmoidDerivativeFunction = SigmoidFunction
 
@@ -19,20 +19,20 @@ def _validate_perceptron_params(perceptron_params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_perceptron(perceptron_params: Param, training_points: np.ndarray, training_values: np.ndarray) -> Perceptron:
+def get_perceptron(perceptron_params: Param, input_count: int) -> Perceptron:
     _validate_perceptron_params(perceptron_params)
 
     factory: PerceptronFactory = _perceptron_factory_map[perceptron_params['type']]
 
-    return factory(perceptron_params['learning_rate'], training_points, training_values, perceptron_params['params'])
+    return factory(perceptron_params['learning_rate'], input_count, perceptron_params['params'])
 
 
-def _get_simple_perceptron(l_rate: float, training_points: np.ndarray, training_values: np.ndarray, params: Param) -> Perceptron:
-    return SimplePerceptron(l_rate, training_points, training_values)
+def _get_simple_perceptron(l_rate: float, input_count: int, params: Param) -> Perceptron:
+    return SimplePerceptron(l_rate, input_count)
 
 
-def _get_linear_perceptron(l_rate: float, training_points: np.ndarray, training_values: np.ndarray, params: Param) -> Perceptron:
-    return LinearPerceptron(l_rate, training_points, training_values)
+def _get_linear_perceptron(l_rate: float, input_count: int, params: Param) -> Perceptron:
+    return LinearPerceptron(l_rate, input_count)
 
 
 def _validate_non_linear_perceptron_params(params: Param) -> Param:
@@ -42,14 +42,14 @@ def _validate_non_linear_perceptron_params(params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def _get_non_linear_perceptron(l_rate: float, training_points: np.ndarray, training_values: np.ndarray, params: Param) -> Perceptron:
+def _get_non_linear_perceptron(l_rate: float, input_count: int, params: Param) -> Perceptron:
     params = _validate_non_linear_perceptron_params(params)
     activation_function, activation_derivative = _sigmoid_activation_function_map[params['activation_function']]
 
     real_activation_function:   ActivationFunction = lambda x: activation_function(x, params['slope_factor'])
     real_activation_derivative: ActivationFunction = lambda x: activation_derivative(x, params['slope_factor'])
 
-    return NonLinearPerceptron(l_rate, real_activation_function, real_activation_derivative, training_points, training_values)
+    return NonLinearPerceptron(l_rate, input_count, real_activation_function, real_activation_derivative)
 
 
 # Sigmoid Activation Functions And Derivatives

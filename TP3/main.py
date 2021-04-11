@@ -16,27 +16,32 @@ def main(config_file: str):
 
     training_set: Dict[str, str] = config.training_set
 
-    training_x: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values
-    training_y: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values
+    training_points: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values
+    training_values: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values
+    training_values = np.squeeze(training_values)  # Turn n x 1 matrix into array with length n
 
-    perceptron: Perceptron = get_perceptron(config.perceptron, training_x, training_y)
+    # Get Perceptron according to config, and as many inputs as training points dimension
+    perceptron: Perceptron = get_perceptron(config.perceptron, len(training_points[0]))
 
     # TODO(tobi): Ver de mejorar plotter
-    plotter: AsyncPlotter = get_plotter(config.plotting, training_x, training_y)
+    plotter: AsyncPlotter = get_plotter(config.plotting, training_points, training_values)
     plotter.start()
 
     # Train Perceptron with training data!
-    perceptron.train(plotter.publish)
+    iteration_count, last_w = perceptron.train(training_points, training_values, plotter.publish)
 
-    print(perceptron.w_min)
+    print(iteration_count)
+    print(last_w)
+    print(perceptron.w)
 
     validation_set: Dict[str, str] = config.validation_set
 
-    validation_x: np.ndarray = pd.read_csv(validation_set['inputs'], delim_whitespace=True, header=None).values
-    validation_y: np.ndarray = pd.read_csv(validation_set['outputs'], delim_whitespace=True, header=None).values
+    validation_points: np.ndarray = pd.read_csv(validation_set['inputs'], delim_whitespace=True, header=None).values
+    validation_values: np.ndarray = pd.read_csv(validation_set['outputs'], delim_whitespace=True, header=None).values
+    validation_values = np.squeeze(validation_values)  # Turn n x 1 matrix into array with length n
 
     # Validate Perceptron with Validation Points
-    failed_points: np.ndarray = perceptron.validate_points(validation_x, validation_y)
+    failed_points: np.ndarray = perceptron.validate_points(validation_points, validation_values)
     if len(failed_points) > 0:
         print('La solucion encontrada no paso la prueba de validacion. No pude precedir correctamente el valor de los siguientes puntos:')
         print(failed_points)
