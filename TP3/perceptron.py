@@ -52,7 +52,7 @@ class Perceptron(ABC):
         self.training_iteration = 0
 
     def has_training_ended(self) -> bool:
-        return self.error is not None and (self.error <= 0 or self.training_iteration >= self.max_training_iteration)
+        return self.error is not None and (math.isclose(self.error, 0) or self.training_iteration >= self.max_training_iteration)
 
     # No cambiar los training points en el medio del entrenamiento
     # Antes de empezar un nuevo entrenamiento hacer un hard_training_reset
@@ -139,11 +139,7 @@ class SimplePerceptron(Perceptron):
     def calculate_delta_weight(self, point: np.ndarray, point_value: float, weighted_sum: float) -> np.ndarray:
         return self.l_rate * (point_value - self.activation(weighted_sum)) * point
 
-    # TODO(tobi): wat
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
-        if sum(abs(training_values[point] - self._predict(training_points[point], w)) for point in range(len(training_points))) == 0:
-            print('bien')
-
         return sum(abs(training_values[point] - self._predict(training_points[point], w)) for point in range(len(training_points)))
 
 
@@ -158,8 +154,8 @@ class LinearPerceptron(Perceptron):
         return self.l_rate * (point_value - self.activation(weighted_sum)) * point
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
-        return sum([0.5 * (abs(training_values[point] - self._predict(training_points[point], w)) ** 2)
-                    for point in range(len(training_points))])
+        return sum(0.5 * (training_values[point] - self._predict(training_points[point], w)) ** 2
+                   for point in range(len(training_points)))
 
 
 class NonLinearPerceptron(Perceptron):
@@ -173,5 +169,5 @@ class NonLinearPerceptron(Perceptron):
         return self.l_rate * (point_value - self.activation(weighted_sum)) * point * self.activation_derivative(weighted_sum)
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
-        return sum([0.5 * (abs(training_values[point] - self._predict(training_points[point], w)) ** 2)
-                    for point in range(len(training_points))])
+        return sum(0.5 * (training_values[point] - self._predict(training_points[point], w)) ** 2
+                   for point in range(len(training_points)))
