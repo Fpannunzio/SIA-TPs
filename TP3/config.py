@@ -40,10 +40,8 @@ class Config:
             'training_set': dict,
             'validation_set': dict,
             'perceptron': dict,
-            'plotting': dict,
         }, ignore_extra_keys=True))
 
         self.training_set: Param = args['training_set']
         self.validation_set: Param = args['validation_set']
         self.perceptron: Param = args['perceptron']
-        self.plotting: Param = args['plotting']

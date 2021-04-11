@@ -7,7 +7,7 @@ import pandas as pd
 from perceptron_utils import get_perceptron
 from config import Config
 from perceptron import Perceptron
-from plot import AsyncPlotter, get_plotter
+from plot import plot_2d_hyperplane
 
 
 def main(config_file: str):
@@ -23,16 +23,15 @@ def main(config_file: str):
     # Get Perceptron according to config, and as many inputs as training points dimension
     perceptron: Perceptron = get_perceptron(config.perceptron, len(training_points[0]))
 
-    # TODO(tobi): Ver de mejorar plotter
-    plotter: AsyncPlotter = get_plotter(config.plotting, training_points, training_values)
-    plotter.start()
-
     # Train Perceptron with training data!
-    iteration_count, last_w = perceptron.train(training_points, training_values, plotter.publish)
+    iteration_count, last_w = perceptron.train(training_points, training_values)
 
     print(iteration_count)
     print(last_w)
     print(perceptron.w)
+
+    if len(training_points[0]) == 2:
+        plot_2d_hyperplane(training_points, training_values, perceptron.w)
 
     validation_set: Dict[str, str] = config.validation_set
 
@@ -42,6 +41,7 @@ def main(config_file: str):
 
     # Validate Perceptron with Validation Points
     failed_points: np.ndarray = perceptron.validate_points(validation_points, validation_values)
+
     if len(failed_points) > 0:
         print('La solucion encontrada no paso la prueba de validacion. No pude precedir correctamente el valor de los siguientes puntos:')
         print(failed_points)
