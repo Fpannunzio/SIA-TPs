@@ -1,6 +1,7 @@
+import itertools
 import math
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, List, Collection
 
 import numpy as np
 
@@ -9,7 +10,7 @@ ActivationFunction = Callable[[float], float]
 
 class Perceptron(ABC):
 
-    DEFAULT_MAX_ITERATION       : int = 10000
+    DEFAULT_MAX_ITERATION: int = 10000
     DEFAULT_SOFT_RESET_THRESHOLD: int = 1000
 
     @staticmethod
@@ -21,19 +22,50 @@ class Perceptron(ABC):
         return np.insert(points, 0, 1, axis=1)
 
     def __init__(self, l_rate: float, input_count: int, activation: ActivationFunction,
-                 max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None, ) -> None:
+                 max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None) -> None:
 
         self.l_rate: float = l_rate
+        self.input_count = input_count
         self.activation: ActivationFunction = activation
-        self.w: np.ndarray = np.random.uniform(-1, 1, input_count + 1)  # array de n + 1 puntos con dist. Uniforme([-1, 1))
         self.error: Optional[float] = None
 
         # Training
-        self.training_w: np.ndarray = np.copy(self.w)
         self.training_iteration: int = 0
         self.iters_since_soft_reset: int = 0
         self.max_training_iteration = (max_training_iteration if max_training_iteration is not None else Perceptron.DEFAULT_MAX_ITERATION)
         self.soft_reset_threshold = (soft_reset_threshold if soft_reset_threshold is not None else Perceptron.DEFAULT_SOFT_RESET_THRESHOLD)
+
+    @abstractmethod
+    def train(self, training_points: np.ndarray, training_values: np.ndarray,
+              status_callback: Optional[Callable[[np.ndarray], None]] = None, insert_identity_column: bool = True) -> Tuple[int, np.ndarray]:
+        pass
+
+    @abstractmethod
+    def predict(self, point: np.ndarray, insert_identity_column: bool = False) -> float:
+        pass
+
+    @abstractmethod
+    def predict_points(self, points: np.ndarray, insert_identity_column: bool = True) -> np.ndarray:
+        pass
+
+    # Retorna los puntos que fueron predecidos incorrectamente
+    @abstractmethod
+    def validate_points(self, points: np.ndarray, values: np.ndarray, insert_identity_column: bool = True) -> np.ndarray:
+        pass
+
+    @abstractmethod
+    def is_validation_successful(self, points: np.ndarray, values: np.ndarray, insert_identity_column: bool = True) -> bool:
+        pass
+
+
+class BaseSimplePerceptron(Perceptron):
+
+    def __init__(self, l_rate: float, input_count: int, activation: ActivationFunction,
+                 max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None, ) -> None:
+        super().__init__(l_rate, input_count, activation, max_training_iteration, soft_reset_threshold)
+
+        self.w: np.ndarray = np.random.uniform(-1, 1, input_count + 1)  # array de n + 1 puntos con dist. Uniforme([-1, 1))
+        self.training_w: np.ndarray = np.copy(self.w)
 
     @abstractmethod
     def calculate_delta_weight(self, point: np.ndarray, point_value: float, weighted_sum: float) -> np.ndarray:
@@ -129,7 +161,7 @@ class Perceptron(ABC):
         return True
 
 
-class SimplePerceptron(Perceptron):
+class SimplePerceptron(BaseSimplePerceptron):
 
     def __init__(self, l_rate: float, input_count: int,
                  max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None) -> None:
@@ -143,7 +175,7 @@ class SimplePerceptron(Perceptron):
         return sum(abs(training_values[point] - self._predict(training_points[point], w)) for point in range(len(training_points)))
 
 
-class LinearPerceptron(Perceptron):
+class LinearPerceptron(BaseSimplePerceptron):
 
     def __init__(self, l_rate: float, input_count: int, max_training_iteration: Optional[int] = None,
                  soft_reset_threshold: Optional[int] = None) -> None:
@@ -158,7 +190,7 @@ class LinearPerceptron(Perceptron):
                    for point in range(len(training_points)))
 
 
-class NonLinearPerceptron(Perceptron):
+class NonLinearPerceptron(BaseSimplePerceptron):
 
     def __init__(self, l_rate: float, input_count: int, activation: ActivationFunction, activation_derivative: ActivationFunction,
                  max_training_iteration: Optional[int] = None, soft_reset_threshold: Optional[int] = None) -> None:
@@ -171,3 +203,43 @@ class NonLinearPerceptron(Perceptron):
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, w: np.ndarray) -> float:
         return sum(0.5 * (training_values[point] - self._predict(training_points[point], w)) ** 2
                    for point in range(len(training_points)))
+
+
+class PerceptronLayer:
+
+    def __init__(self, size: int, perceptron_factory: Callable[[], NonLinearPerceptron]) -> None:
+        self.size = size
+        self.perceptrons: Collection[NonLinearPerceptron] = [perceptron_factory() for _ in range(self.size)]
+
+    def predict(self, back_layer_prediction: np.ndarray) -> np.ndarray:
+        return np.fromiter(
+            # Concatenar el primer valor identidad (1) con las predicciones de los perceptrons
+            itertools.chain(range(1, 1), (perceptron.predict(back_layer_prediction) for perceptron in self.perceptrons)),
+            float
+        )
+
+    def calculate_error(self, front_layer_error: np.ndarray) -> np.ndarray:
+        pass
+
+class MultilayeredPerceptron(Perceptron):
+
+    def __init__(self, l_rate: float, input_count: int, activation: ActivationFunction, activation_derivative: ActivationFunction,
+                 layer_sizes: List[int], max_training_iteration: Optional[int] = None,
+                 soft_reset_threshold: Optional[int] = None) -> None:
+
+        super().__init__(l_rate, input_count, activation, max_training_iteration, soft_reset_threshold)
+        self.activation_derivative: ActivationFunction = activation_derivative
+        self.output_size = layer_sizes[-1]
+
+        perceptron_factory: Callable[[], NonLinearPerceptron] =\
+            lambda input_count: NonLinearPerceptron(
+                l_rate, input_count, activation, activation_derivative,
+                max_training_iteration, soft_reset_threshold
+            )
+
+        # layer_sizes[i + 1] = layer_size => layer_sizes[i] = perceptrons input size
+        # Los perceptrones de la capa actual reciben una cantidad de inputs equivalente al tamaño de la layer anterior
+        layer_sizes = [input_count] + layer_sizes # La primera capa recibe input_count inputs
+        self.layers: List[PerceptronLayer] = [
+            PerceptronLayer(layer_sizes[i + 1], lambda: perceptron_factory(layer_sizes[i])) for i in range(len(layer_sizes) - 1)
+        ]
