@@ -234,25 +234,35 @@ class PerceptronLayer:
     def predict(self, back_layer_prediction: np.ndarray) -> None:
         self.activation = np.fromiter(
             # Concatenar el primer valor identidad (1) con las predicciones de los perceptrons
-            itertools.chain(range(1, 1),
+            itertools.chain(range(1, 2),
                             (perceptron.predict(back_layer_prediction) for perceptron in self.perceptrons)),
             float
         )
+        self._get_excitements()
 
-    def get_excitements(self) -> None:
+    def _get_excitements(self) -> None:
         self.excitements = np.fromiter(
             # Concatenar el primer valor identidad (1) con las predicciones de los perceptrons
-            itertools.chain(range(1, 1), (perceptron.excitement for perceptron in self.perceptrons)),
+            itertools.chain(range(1, 2), (perceptron.excitement for perceptron in self.perceptrons)),
             float
         )
 
     def calculate_previous_delta(self, previous_excitements: np.ndarray,
                                  activation_derivative: ActivationFunction) -> np.ndarray:
+
+        #Hacer la suma pesada entre el componente del delta del perceptron correspondiente y el peso para cada uno de los nodos de la capa de abajo
+        weighted_sums: List[float] = []
+
+        #No interesa el primer peso porque es el ficticio
+        for j in range(1, len(self.perceptrons[0].w)):
+            weighted_sum: float = 0
+            for i, perceptron in enumerate(self.perceptrons):
+                weighted_sum += self.delta[i] * perceptron.w[j]
+            weighted_sums.append(weighted_sum)
+        # aca hay que ignorar la primer excitacion porque tambien es la ficticia
         return np.fromiter(
-            itertools.chain(range(1, 1), (
-                Perceptron.calculate_weighted_sum(self.delta, perceptron.w) * activation_derivative(
-                    previous_excitements[i])
-                for i, perceptron in enumerate(self.perceptrons))),
+            (weighted_sums[i - 1] * activation_derivative(previous_excitements[i])
+                for i in range(1, len(previous_excitements))),
             float
         )
 
@@ -262,6 +272,20 @@ class PerceptronLayer:
 
 
 class MultilayeredPerceptron(Perceptron):
+
+    def predict(self, point: np.ndarray, insert_identity_column: bool = False) -> float:
+        pass
+
+    def predict_points(self, points: np.ndarray, insert_identity_column: bool = True) -> np.ndarray:
+        pass
+
+    def validate_points(self, points: np.ndarray, values: np.ndarray,
+                        insert_identity_column: bool = True) -> np.ndarray:
+        pass
+
+    def is_validation_successful(self, points: np.ndarray, values: np.ndarray,
+                                 insert_identity_column: bool = True) -> bool:
+        pass
 
     def __init__(self, l_rate: float, input_count: int, activation: ActivationFunction,
                  activation_derivative: ActivationFunction,
@@ -288,47 +312,50 @@ class MultilayeredPerceptron(Perceptron):
 
     def get_first_delta(self, training_value: np.ndarray) -> np.ndarray:
         return np.array(
-            [self.activation_derivative(perceptron.excitement) * (training_value[i] - self.layers[-1].activation[i]) for
+            [self.activation_derivative(perceptron.excitement) * (training_value - self.layers[-1].activation[i]) for
              i, perceptron in enumerate(self.layers[-1].perceptrons)])
 
-    def calculate_error(self, training_values: np.ndarray) -> float:
-        return sum(0.5 * (training_values[point] - self.layers[-1].activation[point]) ** 2
-                   for point in range(len(training_values)))
+    def calculate_error(self, training_values: np.ndarray, point: int) -> float:
+        return sum(0.5 * (training_values[point] - self.layers[-1].activation[1:]) ** 2)
 
     def do_training_iteration(self, training_points: np.ndarray, training_values: np.ndarray) -> None:
 
         point: int = np.random.randint(0, len(training_points))
 
         if not self.layers[0].activation:
-            self.layers[0].activation = np.copy(training_points[point])
+            self.layers[0].predict(training_points[point])
 
         # Conseguir el V de la capa de salida, propagando los puntos de entrada por todas las capas
         for m in range(1, len(self.layers)):
             self.layers[m].predict(self.layers[m - 1].activation)
-            self.layers[m].get_excitements()
 
         self.layers[-1].delta = self.get_first_delta(training_values[point])
 
-        for m in range(2, len(self.layers)):
-            self.layers[len(self.layers) - m].delta = self.layers[len(self.layers) - m + 1].calculate_previous_delta(
+        for m in range(2, len(self.layers) + 1):
+            self.layers[-m].delta = self.layers[1 - m].calculate_previous_delta(
                 self.layers[len(self.layers) - m].excitements, self.activation_derivative)
+
+        self.layers[0].update_w(self.l_rate, training_points[point])
 
         for m in range(1, len(self.layers)):
             self.layers[m].update_w(self.l_rate, self.layers[m - 1].activation)
 
-        self.error = self.calculate_error(training_values)
+        self.error = self.calculate_error(training_values, point)
 
     def has_training_ended(self) -> bool:
         return self.error is not None and (
                 math.isclose(self.error, 0) or self.training_iteration >= self.max_training_iteration)
 
     def train(self, training_points: np.ndarray, training_values: np.ndarray,
-              status_callback: Optional[Callable[[np.ndarray], None]] = None, insert_identity_column: bool = True) -> None:
+              status_callback: Optional[Callable[[np.ndarray], None]] = None,
+              insert_identity_column: bool = True) -> None:
+
+        if insert_identity_column:
+            training_points = Perceptron.with_identity_dimension(training_points)
 
         while not self.has_training_ended():
             self.do_training_iteration(training_points, training_values)
             # if status_callback:
             #     status_callback(self.training_w)
 
-    #TODO Capaz hay que implementar el hard reset??
-
+    # TODO Capaz hay que implementar el hard reset??
