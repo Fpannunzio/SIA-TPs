@@ -394,8 +394,8 @@ ActivationFunction = Callable[[float], float]
 # ML.train
 
 class NeuralNetwork(ABC):
-    DEFAULT_MAX_ITERATION: int = 100
-    DEFAULT_SOFT_RESET_THRESHOLD: int = 1000
+    DEFAULT_MAX_ITERATION: int = 10000
+    DEFAULT_SOFT_RESET_THRESHOLD: int = 10000
 
     @staticmethod
     def with_identity_dimension(points: np.ndarray) -> np.ndarray:
@@ -420,7 +420,7 @@ class NeuralNetwork(ABC):
 
 class Perceptron:
 
-    def __init__(self, l_rate: float, input_count: int, activation_fn: ActivationFunction):
+    def __init__(self, l_rate: float, input_count: int, activation_fn: ActivationFunction, momentum_factor: float):
         self.activation_fn: ActivationFunction = activation_fn
         self.l_rate: float = l_rate
         self.input_count = input_count
@@ -429,6 +429,8 @@ class Perceptron:
         self.delta: float = 0
         self.w: np.ndarray = np.zeros(input_count)
         self.training_w: np.ndarray = np.zeros(input_count)
+        self.momentum_factor: float = momentum_factor
+        self.previous_delta_w: np.ndarray = np.zeros(input_count + 1)
 
         self.training_weights_reset()
         self.persist_weights()
@@ -448,10 +450,15 @@ class Perceptron:
         self.w = self.training_w
 
     def update_training_weights(self, inputs: np.ndarray) -> None:
-        self.training_w += self.l_rate * self.delta * inputs
+        new_delta_w: np.ndarray = self.l_rate * self.delta * inputs + self.momentum_factor * self.previous_delta_w
+        self.training_w += new_delta_w
+        self.previous_delta_w = new_delta_w
 
     def training_weights_reset(self) -> None:
         self.training_w = np.random.uniform(-1, 1, self.input_count + 1)
+
+    def update_eta(self, delta_l_rate: float) -> None:
+        self.l_rate += delta_l_rate
 
 
 class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
@@ -468,6 +475,8 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
         self.error: Optional[float] = None
         self.training_iteration: int = 0
         self.iters_since_soft_reset: int = 0
+        self.concurrent_error_improvements: int = 0
+        self.concurrent_error_deterioration: int = 0
         self.max_training_iteration = (
             max_training_iteration if max_training_iteration is not None else Perceptron.DEFAULT_MAX_ITERATION)
         self.soft_reset_threshold = (
@@ -516,8 +525,24 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
         if self.error is None or current_error < self.error:
             self.error = current_error
             self.perceptron.persist_weights()
+            self._update_eta(True)
+        else:
+            self._update_eta(False)
 
         self.training_iteration += 1
+
+    def _update_eta(self, error_updated: bool) -> None:
+        if error_updated:
+            self.concurrent_error_improvements += 1
+            self.concurrent_error_deterioration = 0
+            if self.concurrent_error_improvements == 5:
+                self.perceptron.update_eta()  # config
+
+        else:
+            self.concurrent_error_deterioration += 1
+            self.concurrent_error_improvements = 0
+            if self.concurrent_error_deterioration == 10:
+                self.perceptron.update_eta()  # config
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray) -> float:
 
@@ -565,7 +590,8 @@ class NonLinearSinglePerceptronNeuralNetwork(BaseSinglePerceptronNeuralNetwork):
 
 class PerceptronLayer:
 
-    def __init__(self, size: int, perceptron_factory: Callable[[], Perceptron], activation_derivative: ActivationFunction) -> None:
+    def __init__(self, size: int, perceptron_factory: Callable[[], Perceptron],
+                 activation_derivative: ActivationFunction) -> None:
         self.size = size
         self.perceptrons: List[Perceptron] = [perceptron_factory() for _ in range(self.size)]
         self.activation_derivative: ActivationFunction = activation_derivative
@@ -618,19 +644,23 @@ class PerceptronLayer:
         for perceptron in self.perceptrons:
             perceptron.update_training_weights(previous_activations)
 
-    def persist_training_weights(self):
+    def persist_training_weights(self) -> None:
         for perceptron in self.perceptrons:
             perceptron.persist_weights()
 
-    def training_weights_reset(self):
+    def training_weights_reset(self) -> None:
         for perceptron in self.perceptrons:
             perceptron.training_weights_reset()
+
+    def training_weights_reset(self, delta_l_rate: float) -> None:
+        for perceptron in self.perceptrons:
+            perceptron.update_eta(delta_l_rate)
 
 
 class MultilayeredNeuralNetwork(NeuralNetwork):
 
     def __init__(self, l_rate: float, input_count: int, activation_fn: ActivationFunction,
-                 activation_derivative: ActivationFunction,
+                 activation_derivative: ActivationFunction, momentum_factor: float,
                  layer_sizes: List[int], max_training_iteration: Optional[int] = None,
                  soft_reset_threshold: Optional[int] = None) -> None:
 
@@ -643,6 +673,8 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
         self.error: float = float("inf")
         self.training_iteration: int = 0
         self.iters_since_soft_reset: int = 0
+        self.concurrent_error_improvements: int = 0
+        self.concurrent_error_deterioration: int = 0
         self.max_training_iteration = (
             max_training_iteration if max_training_iteration is not None else NeuralNetwork.DEFAULT_MAX_ITERATION)
         self.soft_reset_threshold = (
@@ -650,14 +682,15 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
 
         perceptron_factory: Callable[[], Perceptron] = \
             lambda input_count: Perceptron(
-                l_rate, input_count, activation_fn
+                l_rate, input_count, activation_fn, momentum_factor
             )
 
         # layer_sizes[i + 1] = layer_size => layer_sizes[i] = perceptrons input size
         # Los perceptrones de la capa actual reciben una cantidad de inputs equivalente al tamaño de la layer anterior
         layer_sizes = [input_count] + layer_sizes  # La primera capa recibe input_count inputs
         self.layers: List[PerceptronLayer] = [
-            PerceptronLayer(layer_sizes[i + 1], lambda: perceptron_factory(layer_sizes[i]), activation_derivative) for i in
+            PerceptronLayer(layer_sizes[i + 1], lambda: perceptron_factory(layer_sizes[i]), activation_derivative) for i
+            in
             range(len(layer_sizes) - 1)
         ]
 
@@ -704,8 +737,30 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
 
         if current_error < self.error:
             self.error = current_error
-            print(self.error)
+            print(self.error, self.training_iteration)
             self._persist_training_weights()
+            self._update_eta(True)
+        else:
+            self._update_eta(False)
+
+        self.training_iteration += 1
+
+    def _update_eta(self, error_updated: bool) -> None:
+        if error_updated:
+            self.concurrent_error_improvements += 1
+            self.concurrent_error_deterioration = 0
+            if self.concurrent_error_improvements == 5:
+                self._persist_updated_eta()  # config
+
+        else:
+            self.concurrent_error_deterioration += 1
+            self.concurrent_error_improvements = 0
+            if self.concurrent_error_deterioration == 10:
+                self._persist_updated_eta()  # config
+
+    def _persist_updated_eta(self, delta_learning_rate: float):
+        for m in range(len(self.layers)):
+            self.layers[m].training_weights_reset()
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray) -> float:
 
@@ -745,4 +800,3 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
     def _training_weights_reset(self):
         for m in range(len(self.layers)):
             self.layers[m].training_weights_reset()
-

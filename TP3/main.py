@@ -19,7 +19,7 @@ def main(config_file: str):
     training_values: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values
       # Turn n x 1 matrix into array with length n
 
-    nn: NeuralNetwork = MultilayeredNeuralNetwork(0.1, 2, lambda x: np.tanh(0.6 * x), lambda x: 0.6 * (1 - np.tanh(x * 0.6) ** 2), [4, 1])
+    nn: NeuralNetwork = MultilayeredNeuralNetwork(0.1, 2, lambda x: np.tanh(0.6 * x), lambda x: 0.6 * (1 - np.tanh(x * 0.6) ** 2), 0.9, [4, 1])
 
     nn.train(training_points, training_values)
     # Get Perceptron according to config, and as many inputs as training points dimension
