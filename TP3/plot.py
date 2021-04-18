@@ -5,7 +5,6 @@ import numpy as np
 
 
 def plot_2d_hyperplane(points, values, w) -> None:
-
     fig = plt.figure()
     fig.tight_layout()
     plt.style.use('ggplot')
@@ -42,5 +41,20 @@ def plot_2d_hyperplane(points, values, w) -> None:
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_title('Hiperplano 2D')
+
+    plt.show()
+
+
+def plot_error(error_values: List[float]) -> None:
+    fig = plt.figure()
+    fig.tight_layout()
+    plt.style.use('ggplot')
+
+    ax = plt.gca()
+    ax.plot(range(len(error_values)), error_values, 'k')
+
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Error')
+    ax.set_title('Min error at  iteration')
 
     plt.show()

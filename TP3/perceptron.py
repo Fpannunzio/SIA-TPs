@@ -394,7 +394,7 @@ ActivationFunction = Callable[[float], float]
 
 class NeuralNetwork(ABC):
     DEFAULT_VARIABLE_LEARNING_RATE_FACTOR = 1
-    DEFAULT_MAX_ITERATION: int = 10000000
+    DEFAULT_MAX_ITERATION: int = 2500
     DEFAULT_SOFT_RESET_THRESHOLD: int = 10000000
 
     def __init__(self, max_training_iteration=None) -> None:
@@ -403,6 +403,7 @@ class NeuralNetwork(ABC):
             max_training_iteration if max_training_iteration is not None else NeuralNetwork.DEFAULT_MAX_ITERATION)
         self.error: float = float("inf")
         self.training_iteration: int = 0
+        self.error_progression: List[float] = []
 
     @staticmethod
     def with_identity_dimension(points: np.ndarray) -> np.ndarray:
@@ -420,11 +421,13 @@ class NeuralNetwork(ABC):
         return self.error is not None and (
                 math.isclose(self.error, 0) or self.training_iteration >= self.max_training_iteration)
 
-    def train(self, training_points: np.ndarray, training_values: np.ndarray) -> None:
+    def train(self, training_points: np.ndarray, training_values: np.ndarray) -> List[float]:
         training_points = NeuralNetwork.with_identity_dimension(training_points)
 
         while not self.has_training_ended():
             self.do_training_iteration(training_points, training_values)
+
+        return self.error_progression
 
     @abstractmethod
     def do_training_iteration(self, training_points: np.ndarray, training_values: np.ndarray) -> None:
@@ -496,7 +499,7 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
         self.activation_fn: ActivationFunction = activation_fn
         self.momentum_factor = momentum_factor
 
-        self.perceptron = Perceptron(l_rate, input_count, activation_fn)
+        self.perceptron = Perceptron(l_rate, input_count, activation_fn, momentum_factor)
 
         self.variable_learning_rate_factor: float = (
             variable_learning_rate_factor if variable_learning_rate_factor is not None else NeuralNetwork.DEFAULT_VARIABLE_LEARNING_RATE_FACTOR)
@@ -507,7 +510,7 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
 
         self.iters_since_soft_reset: int = 0
         self.soft_reset_threshold = (
-            soft_reset_threshold if soft_reset_threshold is not None else Perceptron.DEFAULT_SOFT_RESET_THRESHOLD)
+            soft_reset_threshold if soft_reset_threshold is not None else NeuralNetwork.DEFAULT_SOFT_RESET_THRESHOLD)
 
     def predict(self, points: np.ndarray) -> np.ndarray:
         return np.array(self.perceptron.predict(points))
@@ -515,9 +518,9 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
     def predict_points(self, points: np.ndarray) -> np.ndarray:
         return np.apply_along_axis(self.perceptron.predict, 1, points)
 
-    def train(self, training_points: np.ndarray, training_values: np.ndarray) -> None:
+    def train(self, training_points: np.ndarray, training_values: np.ndarray) -> List[float]:
         training_values = np.squeeze(training_values)
-        super().train(training_points, training_values)
+        return super().train(training_points, training_values)
 
     # Training values es boxed o no?
     def do_training_iteration(self, training_points: np.ndarray, training_values: np.ndarray) -> None:
@@ -526,6 +529,8 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
 
         # Seleccionamos un punto del training set al azar
         point: int = np.random.randint(0, len(training_points))  # random int intervalo [0, n + 1) => [0, n]
+
+        self.perceptron.training_predict(training_points[point])
 
         # Actualizamos el valor del vector peso
         self.perceptron.delta = self.calculate_delta(training_values[point])
@@ -542,6 +547,7 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
         else:
             self._update_eta(False)
 
+        self.error_progression.append(self.error)
         self.training_iteration += 1
 
     def _update_eta(self, error_updated: bool) -> None:
@@ -549,19 +555,17 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
             self.concurrent_error_improvements += 1
             self.concurrent_error_deterioration = 0
             if self.concurrent_error_improvements == 5:
-                self.perceptron.update_eta()  # config
+                self.perceptron.update_eta(self.variable_learning_rate_factor)  # config
 
         else:
             self.concurrent_error_deterioration += 1
             self.concurrent_error_improvements = 0
             if self.concurrent_error_deterioration == 10:
-                self.perceptron.update_eta()  # config
+                self.perceptron.update_eta(- self.variable_learning_rate_factor / 4 * self.l_rate)  # config
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray) -> float:
-
-        # FIXME Puede hacer falta que sea una lambda
         predictions: np.ndarray = np.apply_along_axis(self.perceptron.training_predict, 1, training_points)
-        return sum(abs(training_points - predictions))
+        return sum(abs(training_values - predictions))
 
     def calculate_delta(self, training_values: np.ndarray) -> float:
         return training_values - self.perceptron.activation
@@ -592,7 +596,7 @@ class LinearNeuralNetwork(BaseSinglePerceptronNeuralNetwork):
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray) -> float:
         predictions: np.ndarray = np.apply_along_axis(self.perceptron.training_predict, 1, training_points)
-        return sum(0.5 * (training_points - predictions) ** 2)
+        return sum(0.5 * (training_values - predictions) ** 2)
 
 
 class NonLinearSinglePerceptronNeuralNetwork(BaseSinglePerceptronNeuralNetwork):
@@ -611,7 +615,7 @@ class NonLinearSinglePerceptronNeuralNetwork(BaseSinglePerceptronNeuralNetwork):
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray) -> float:
         predictions: np.ndarray = np.apply_along_axis(self.perceptron.predict, 1, training_points)
-        return sum(0.5 * (training_points - predictions) ** 2)
+        return sum(0.5 * (training_values - predictions) ** 2)
 
     def calculate_delta(self, training_values: np.ndarray) -> float:
         return (training_values - self.perceptron.activation) * self.activation_derivative(self.perceptron.excitement)
@@ -760,14 +764,15 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
 
         current_error: float = self.calculate_error(training_points, training_values)
 
+
         if current_error < self.error:
             self.error = current_error
             self._persist_training_weights()
             self._update_eta(True)
-            print(self.error, self.training_iteration)
         else:
             self._update_eta(False)
 
+        self.error_progression.append(self.error)
         self.training_iteration += 1
 
     def _update_eta(self, error_updated: bool) -> None:

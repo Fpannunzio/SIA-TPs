@@ -7,7 +7,7 @@ from config import Param, Config
 from perceptron import MultilayeredNeuralNetwork, StepNeuralNetwork, LinearNeuralNetwork, \
     NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork
 
-NeuralNetworkFactory = Callable[[float, int, Param], NeuralNetwork]
+NeuralNetworkFactory = Callable[[float, int, float, float, Param], NeuralNetwork]
 SigmoidFunction = Callable[[float, float], float]
 SigmoidDerivativeFunction = SigmoidFunction
 
@@ -16,8 +16,8 @@ def _validate_network_params(perceptron_params: Param) -> Param:
     return Config.validate_param(perceptron_params, Schema({
         'type': And(str, Or(*tuple(_perceptron_factory_map.keys()))),
         'learning_rate': And(Or(float, int), lambda lr: lr > 0),
-        'momentum_factor': And(Or(float, int), lambda lr: lr > 0),
-        'variable_learning_rate_factor': And(Or(float, int), lambda lr: lr > 0),
+        'momentum_factor': And(Or(float, int), lambda lr: lr >= 0),
+        'variable_learning_rate_factor': And(Or(float, int), lambda lr: lr >= 0),
         Optional('params', default=dict): dict,
     }, ignore_extra_keys=True))
 

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from TP3.perceptron_utils import get_neural_network
+from TP3.plot import plot_error
 from config import Config
 from perceptron import NeuralNetwork, MultilayeredNeuralNetwork
 
@@ -15,13 +16,13 @@ def main(config_file: str):
 
     training_set: Dict[str, str] = config.training_set
 
-    training_points: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values
+    training_points: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values / 100
 
     if training_set['input_rows'] > 1:
         elem_size: int = len(training_points[0]) * int(training_set['input_rows'])
         training_points = np.reshape(training_points, (int(np.size(training_points)/elem_size), elem_size))
 
-    training_values: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values
+    training_values: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values / 100
 
     if training_set['output_rows'] > 1:
         elem_size: int = len(training_points[0]) * int(training_set['input_rows'])
@@ -31,7 +32,10 @@ def main(config_file: str):
 
     nn: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
 
-    nn.train(training_points, training_values)
+    plot_error(nn.train(training_points, training_values))
+
+    print(nn.error)
+    print(nn.training_iteration)
     # Get Perceptron according to config, and as many inputs as training points dimension
     # perceptron: Perceptron = get_perceptron(config.perceptron, len(training_points[0]))
     #
