@@ -39,9 +39,9 @@ class Config:
         args = Config.validate_param(args, Schema({
             'training_set': dict,
             'validation_set': dict,
-            'perceptron': dict,
+            'network': dict,
         }, ignore_extra_keys=True))
 
         self.training_set: Param = args['training_set']
         self.validation_set: Param = args['validation_set']
-        self.perceptron: Param = args['perceptron']
+        self.network: Param = args['network']

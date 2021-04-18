@@ -394,8 +394,8 @@ ActivationFunction = Callable[[float], float]
 
 class NeuralNetwork(ABC):
     DEFAULT_VARIABLE_LEARNING_RATE_FACTOR = 1
-    DEFAULT_MAX_ITERATION: int = 10000
-    DEFAULT_SOFT_RESET_THRESHOLD: int = 10000
+    DEFAULT_MAX_ITERATION: int = 10000000
+    DEFAULT_SOFT_RESET_THRESHOLD: int = 10000000
 
     def __init__(self, max_training_iteration=None) -> None:
         super().__init__()
@@ -494,7 +494,7 @@ class BaseSinglePerceptronNeuralNetwork(NeuralNetwork):
         self.l_rate: float = l_rate
         self.input_count = input_count
         self.activation_fn: ActivationFunction = activation_fn
-        self.momentum_factor: float = 0
+        self.momentum_factor = momentum_factor
 
         self.perceptron = Perceptron(l_rate, input_count, activation_fn)
 
@@ -602,9 +602,11 @@ class NonLinearSinglePerceptronNeuralNetwork(BaseSinglePerceptronNeuralNetwork):
                  input_count: int,
                  activation_fn: ActivationFunction,
                  activation_derivative: ActivationFunction,
+                 momentum_factor: float = 0,
                  max_training_iteration: Optional[int] = None,
-                 soft_reset_threshold: Optional[int] = None) -> None:
-        super().__init__(l_rate, input_count, activation_fn, max_training_iteration, soft_reset_threshold)
+                 soft_reset_threshold: Optional[int] = None,
+                 variable_learning_rate_factor: Optional[float] = None) -> None:
+        super().__init__(l_rate, input_count, activation_fn, momentum_factor, max_training_iteration, soft_reset_threshold, variable_learning_rate_factor)
         self.activation_derivative: ActivationFunction = activation_derivative
 
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray) -> float:
@@ -691,8 +693,8 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
                  input_count: int,
                  activation_fn: ActivationFunction,
                  activation_derivative: ActivationFunction,
-                 momentum_factor: float,
                  layer_sizes: List[int],
+                 momentum_factor: float = 0,
                  max_training_iteration: Optional[int] = None,
                  soft_reset_threshold: Optional[int] = None, variable_learning_rate_factor: Optional[float] = None) -> None:
 
@@ -762,6 +764,7 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
             self.error = current_error
             self._persist_training_weights()
             self._update_eta(True)
+            print(self.error, self.training_iteration)
         else:
             self._update_eta(False)
 

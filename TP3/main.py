@@ -4,7 +4,7 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
-# from perceptron_utils import get_perceptron
+from TP3.perceptron_utils import get_neural_network
 from config import Config
 from perceptron import NeuralNetwork, MultilayeredNeuralNetwork
 
@@ -16,10 +16,20 @@ def main(config_file: str):
     training_set: Dict[str, str] = config.training_set
 
     training_points: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values
+
+    if training_set['input_rows'] > 1:
+        elem_size: int = len(training_points[0]) * int(training_set['input_rows'])
+        training_points = np.reshape(training_points, (int(np.size(training_points)/elem_size), elem_size))
+
     training_values: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values
+
+    if training_set['output_rows'] > 1:
+        elem_size: int = len(training_points[0]) * int(training_set['input_rows'])
+        training_values = np.reshape(training_values, (int(np.size(training_values) / elem_size), elem_size))
+
       # Turn n x 1 matrix into array with length n
 
-    nn: NeuralNetwork = MultilayeredNeuralNetwork(0.1, 2, lambda x: np.tanh(0.6 * x), lambda x: 0.6 * (1 - np.tanh(x * 0.6) ** 2), 0.9, [4, 1])
+    nn: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
 
     nn.train(training_points, training_values)
     # Get Perceptron according to config, and as many inputs as training points dimension

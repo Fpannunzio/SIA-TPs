@@ -12,7 +12,7 @@ SigmoidFunction = Callable[[float, float], float]
 SigmoidDerivativeFunction = SigmoidFunction
 
 
-def _validate_perceptron_params(perceptron_params: Param) -> Param:
+def _validate_network_params(perceptron_params: Param) -> Param:
     return Config.validate_param(perceptron_params, Schema({
         'type': And(str, Or(*tuple(_perceptron_factory_map.keys()))),
         'learning_rate': And(Or(float, int), lambda lr: lr > 0),
@@ -22,20 +22,19 @@ def _validate_perceptron_params(perceptron_params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def get_perceptron(perceptron_params: Param, input_count: int) -> NeuralNetwork:
-    _validate_perceptron_params(perceptron_params)
+def get_neural_network(network_params: Param, input_count: int) -> NeuralNetwork:
+    _validate_network_params(network_params)
 
-    factory: NeuralNetworkFactory = _perceptron_factory_map[perceptron_params['type']]
+    factory: NeuralNetworkFactory = _perceptron_factory_map[network_params['type']]
 
-    return factory(perceptron_params['learning_rate'], input_count, perceptron_params['params'])
-
-
-def _get_simple_perceptron(l_rate: float, input_count: int, params: Param) -> NeuralNetwork:
-    return StepNeuralNetwork(l_rate, input_count)
+    return factory(network_params['learning_rate'], input_count, network_params['momentum_factor'], network_params['variable_learning_rate_factor'], network_params['params'])
 
 
-def _get_linear_perceptron(l_rate: float, input_count: int, params: Param) -> NeuralNetwork:
-    return LinearNeuralNetwork(l_rate, input_count)
+def _get_simple_perceptron(l_rate: float, input_count: int, momentum_factor: float, variable_learing_rate_factor: float, params: Param) -> NeuralNetwork:
+    return StepNeuralNetwork(l_rate, input_count, momentum_factor, variable_learning_rate_factor=variable_learing_rate_factor)
+
+def _get_linear_perceptron(l_rate: float, input_count: int, momentum_factor: float, variable_learing_rate_factor: float, params: Param) -> NeuralNetwork:
+    return LinearNeuralNetwork(l_rate, input_count, momentum_factor, variable_learning_rate_factor=variable_learing_rate_factor)
 
 
 def _validate_non_linear_perceptron_params(params: Param) -> Param:
@@ -45,14 +44,14 @@ def _validate_non_linear_perceptron_params(params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def _get_non_linear_perceptron(l_rate: float, input_count: int, params: Param) -> NeuralNetwork:
+def _get_non_linear_perceptron(l_rate: float, input_count: int, momentum_factor: float, variable_learing_rate_factor: float, params: Param) -> NeuralNetwork:
     params = _validate_non_linear_perceptron_params(params)
     activation_function, activation_derivative = _sigmoid_activation_function_map[params['activation_function']]
 
     real_activation_function: ActivationFunction = lambda x: activation_function(x, params['slope_factor'])
     real_activation_derivative: ActivationFunction = lambda x: activation_derivative(x, params['slope_factor'])
 
-    return NonLinearSinglePerceptronNeuralNetwork(l_rate, input_count, real_activation_function, real_activation_derivative)
+    return NonLinearSinglePerceptronNeuralNetwork(l_rate, input_count, real_activation_function, real_activation_derivative, momentum_factor, variable_learning_rate_factor=variable_learing_rate_factor)
 
 
 def _validate_multi_layered_perceptron_params(params: Param) -> Param:
@@ -63,7 +62,7 @@ def _validate_multi_layered_perceptron_params(params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def _get_multi_layered_perceptron(l_rate: float, input_count: int, params: Param) -> NeuralNetwork:
+def _get_multi_layered_perceptron(l_rate: float, input_count: int, momentum_factor: float, variable_learing_rate_factor: float, params: Param) -> NeuralNetwork:
     params = _validate_multi_layered_perceptron_params(params)
     activation_function, activation_derivative = _sigmoid_activation_function_map[params['activation_function']]
 
@@ -71,7 +70,7 @@ def _get_multi_layered_perceptron(l_rate: float, input_count: int, params: Param
     real_activation_derivative: ActivationFunction = lambda x: activation_derivative(x, params['slope_factor'])
 
     return MultilayeredNeuralNetwork(l_rate, input_count, real_activation_function, real_activation_derivative,
-                                  params['layer_sizes'])
+                                  params['layer_sizes'], momentum_factor, variable_learning_rate_factor=variable_learing_rate_factor)
 
 
 # Sigmoid Activation Functions And Derivatives
