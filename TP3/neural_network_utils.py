@@ -6,7 +6,8 @@ from schema import And, Schema, Or, Optional
 from config import Param, Config
 from neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
     LinearSinglePerceptronNeuralNetwork, \
-    NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork, NeuralNetworkBaseConfiguration
+    NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork, NeuralNetworkBaseConfiguration, \
+    NeuralNetworkErrorFunction
 
 NeuralNetworkFactory = Callable[[NeuralNetworkBaseConfiguration, Param], NeuralNetwork]
 SigmoidFunction = Callable[[float, float], float]
@@ -15,7 +16,7 @@ SigmoidDerivativeFunction = SigmoidFunction
 
 def _validate_base_network_params(perceptron_params: Param) -> Param:
     return Config.validate_param(perceptron_params, Schema({
-        'type': And(str, Or(*tuple(_perceptron_factory_map.keys()))),
+        'type': And(str, Or(*tuple(_neural_network_factory_map.keys()))),
         Optional('max_training_iterations', default=None): And(int, lambda i: i > 0),
         Optional('weight_reset_threshold', default=None): And(int, lambda i: i > 0),
         Optional('max_stale_error_iterations', default=None): And(int, lambda i: i > 0),
@@ -67,7 +68,7 @@ def get_neural_network(base_network_params: Param, input_count: int) -> NeuralNe
 
     base_network_config: NeuralNetworkBaseConfiguration = _build_base_network_config(base_network_params, input_count)
 
-    factory: NeuralNetworkFactory = _perceptron_factory_map[base_network_params['type']]
+    factory: NeuralNetworkFactory = _neural_network_factory_map[base_network_params['type']]
 
     return factory(base_network_config, base_network_params['network_params'])
 
@@ -83,7 +84,8 @@ def _get_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, params: 
 def _validate_non_linear_perceptron_params(params: Param) -> Param:
     return Config.validate_param(params, Schema({
         'activation_function': And(str, Or(*tuple(_sigmoid_activation_function_map.keys()))),
-        'activation_slope_factor': And(Or(float, int), lambda b: b > 0)
+        'activation_slope_factor': And(Or(float, int), lambda b: b > 0),
+        'error_function': And(str, Or(*tuple(_neural_network_error_function_map.keys())))
     }, ignore_extra_keys=True))
 
 
@@ -91,16 +93,18 @@ def _get_non_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, para
     params = _validate_non_linear_perceptron_params(params)
     activation_function, activation_derivative = _sigmoid_activation_function_map[params['activation_function']]
 
+    error_function: NeuralNetworkErrorFunction = _neural_network_error_function_map[params['error_function']]
     base_config.activation_fn = lambda x: activation_function(x, params['activation_slope_factor'])
     real_activation_derivative: ActivationFunction = lambda x: activation_derivative(x, params['activation_slope_factor'])
 
-    return NonLinearSinglePerceptronNeuralNetwork(base_config, real_activation_derivative)
+    return NonLinearSinglePerceptronNeuralNetwork(base_config, real_activation_derivative, error_function)
 
 
 def _validate_multi_layered_perceptron_params(params: Param) -> Param:
     return Config.validate_param(params, Schema({
         'activation_function': And(str, Or(*tuple(_sigmoid_activation_function_map.keys()))),
         'activation_slope_factor': And(Or(float, int), lambda b: b > 0),
+        'error_function': And(str, Or(*tuple(_neural_network_error_function_map.keys()))),
         'layer_sizes': And(list)  # Se puede validar que sean int > 0 aca con una funcion. Ya se hace en el proceso de validacion interno de la libreria
     }, ignore_extra_keys=True))
 
@@ -109,10 +113,11 @@ def _get_multi_layered_perceptron(base_config: NeuralNetworkBaseConfiguration, p
     params = _validate_multi_layered_perceptron_params(params)
     activation_function, activation_derivative = _sigmoid_activation_function_map[params['activation_function']]
 
+    error_function: NeuralNetworkErrorFunction = _neural_network_error_function_map[params['error_function']]
     base_config.activation_fn = lambda x: activation_function(x, params['activation_slope_factor'])
     real_activation_derivative: ActivationFunction = lambda x: activation_derivative(x, params['activation_slope_factor'])
 
-    return MultilayeredNeuralNetwork(base_config, real_activation_derivative, params['layer_sizes'])
+    return MultilayeredNeuralNetwork(base_config, real_activation_derivative, error_function, params['layer_sizes'])
 
 
 # Sigmoid Activation Functions And Derivatives
@@ -135,11 +140,18 @@ def logistic_derivative(x: float, b: float) -> float:
     return 2 * b * logistic(x, b) * (1 - logistic(x, b))
 
 
-_perceptron_factory_map: Dict[str, NeuralNetworkFactory] = {
+# Name to Implementation maps
+
+_neural_network_factory_map: Dict[str, NeuralNetworkFactory] = {
     'simple': _get_simple_perceptron,
     'linear': _get_linear_perceptron,
     'non_linear': _get_non_linear_perceptron,
     'multi_layered': _get_multi_layered_perceptron,
+}
+
+_neural_network_error_function_map: Dict[str, NeuralNetworkErrorFunction] = {
+    'quadratic': NeuralNetworkErrorFunction.QUADRATIC,
+    'logarithmic': NeuralNetworkErrorFunction.LOGARITHMIC,
 }
 
 _sigmoid_activation_function_map: Dict[str, Tuple[SigmoidFunction, SigmoidDerivativeFunction]] = {

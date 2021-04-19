@@ -2,6 +2,8 @@ import functools
 import itertools
 import math
 from abc import ABC, abstractmethod
+from enum import Enum
+
 import attr
 from typing import Callable, Optional, List
 
@@ -9,6 +11,8 @@ import numpy as np
 from scipy.optimize import minimize_scalar, OptimizeResult
 
 ActivationFunction = Callable[[float], float]
+_ErrorFunction = Callable[[np.ndarray, np.ndarray], float]
+_ErrorFactorCalculator = Callable[[float, float], float]
 
 DEFAULT_MAX_ITERATIONS: int = 100
 DEFAULT_ERROR_TOLERANCE: float = 1e-9
@@ -17,10 +21,48 @@ DEFAULT_L_RATE_LINEAR_SEARCH_ERROR_TOLERANCE: float = 1e-5
 
 
 @attr.s(auto_attribs=True)
+class _ErrorFunction:
+    error_function: _ErrorFunction
+    error_factor_calculator: _ErrorFactorCalculator
+
+    def calculate_error(self, values: np.ndarray, activations: np.ndarray) -> float:
+        return self.error_function(values, activations)
+
+    def calculate_error_factor(self, value: float, activation: float) -> float:
+        return self.error_factor_calculator(value, activation)
+
+
+class NeuralNetworkErrorFunction(Enum):
+    ABSOLUTE = _ErrorFunction(
+        lambda values, activations: sum(abs(values - activations)),
+        lambda value, activation: value - activation
+    )
+
+    QUADRATIC = _ErrorFunction(
+        lambda values, activations: sum((values - activations) ** 2) / 2,
+        lambda value, activation: value - activation
+    )
+
+    LOGARITHMIC = _ErrorFunction(
+        lambda values, activations:  # Numpy Magic
+        sum((1 + values) * np.log((1 + values)/(1 + activations)) + (1 - values) * np.log((1 - values)/(1 - activations))) / 2,
+
+        lambda value, activation: (value - activation)/(1 - activation ** 2)
+    )
+
+    def calculate_error(self, values: np.ndarray, activations: np.ndarray) -> float:
+        return self.value.calculate_error(values, activations)
+
+    def calculate_error_factor(self, value: float, activation: float) -> float:
+        return self.value.calculate_error_factor(value, activation)
+
+
+@attr.s(auto_attribs=True)
 class NeuralNetworkBaseConfiguration:
     input_count: Optional[int] = None
     output_count: Optional[int] = None
     activation_fn: Optional[ActivationFunction] = None
+    error_function: Optional[NeuralNetworkErrorFunction] = None
     max_training_iterations: int = DEFAULT_MAX_ITERATIONS
     soft_reset_threshold: int = max_training_iterations
     max_stale_error_iterations: int = max_training_iterations
@@ -39,7 +81,8 @@ class NeuralNetworkBaseConfiguration:
         valid: bool = (
             (self.input_count is not None and self.input_count > 0) and
             (self.output_count is not None and self.output_count > 0) and
-            (self.activation_fn is not None) and
+            self.activation_fn is not None and
+            self.error_function is not None and
             self.max_training_iterations > 0 and
             self.soft_reset_threshold > 0 and
             self.max_stale_error_iterations > 0 and
@@ -71,6 +114,7 @@ class NeuralNetwork(ABC):
         self.input_count: int = base_config.input_count
         self.output_count: int = base_config.output_count
         self.activation_fn: ActivationFunction = base_config.activation_fn
+        self.error_function: NeuralNetworkErrorFunction = base_config.error_function
         self.max_training_iterations: int = base_config.max_training_iterations
         self.soft_reset_threshold: int = base_config.soft_reset_threshold
         self.max_stale_error_iterations: int = base_config.max_stale_error_iterations
@@ -255,7 +299,7 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
     def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> np.ndarray:
         if insert_identity_column:
             point = NeuralNetwork.with_identity_dimension(point, 0)
-        return np.array([self._perceptron.predict(point, training)])
+        return np.array([self._perceptron.predict(point, training)])  # TODO(tobi): Mejor manera??
 
     def train(self, training_points: np.ndarray, training_values: np.ndarray,
               status_callback: Optional[Callable[['NeuralNetwork'], None]] = None, insert_identity_column: bool = True) -> None:
@@ -300,63 +344,56 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
         return current_error
 
     @abstractmethod
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
-        pass
-
-    @abstractmethod
     def _calculate_delta(self, training_value: float, activation: float) -> float:
         pass
+
+    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
+        return self.error_function.calculate_error(values, np.squeeze(self.predict_points(points, training)))
+
+    def _test_l_rate(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray) -> float:
+        tests: np.ndarray = np.apply_along_axis(self._perceptron.test_l_rate, 1, training_points, l_rate)
+        return self.error_function.calculate_error(training_values, tests)
 
 
 class SimpleSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
     def __init__(self, base_config: NeuralNetworkBaseConfiguration) -> None:
         base_config.activation_fn = np.sign
+        base_config.error_function = NeuralNetworkErrorFunction.ABSOLUTE
         super().__init__(base_config)
 
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
-        return sum(abs(values - np.squeeze(self.predict_points(points, training))))
-
-    def _test_l_rate(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray) -> float:
-        tests: np.ndarray = np.apply_along_axis(self._perceptron.test_l_rate, 1, training_points, l_rate)
-        return 0.5 * sum(abs(tests - training_values))
-
     def _calculate_delta(self, training_value: float, activation: float) -> float:
-        return training_value - activation
+        return self.error_function.calculate_error_factor(training_value, activation)
 
 
 class LinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
     def __init__(self, base_config: NeuralNetworkBaseConfiguration) -> None:
         base_config.activation_fn = lambda x: x
+        base_config.error_function = NeuralNetworkErrorFunction.QUADRATIC
         super().__init__(base_config)
 
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
-        return sum(0.5 * (values - np.squeeze(self.predict_points(points, training))) ** 2)
-
-    def _test_l_rate(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray) -> float:
-        tests: np.ndarray = np.apply_along_axis(self._perceptron.test_l_rate, 1, training_points, l_rate)
-        return 0.5 * sum((tests - training_values) ** 2)
-
     def _calculate_delta(self, training_value: float, activation: float) -> float:
-        return training_value - activation
+        return self.error_function.calculate_error_factor(training_value, activation)
 
 
 class NonLinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
-    def __init__(self, base_config: NeuralNetworkBaseConfiguration, activation_derivative: ActivationFunction) -> None:
+    def __init__(self,
+                 base_config: NeuralNetworkBaseConfiguration,
+                 activation_derivative: ActivationFunction,
+                 error_function: NeuralNetworkErrorFunction) -> None:
+        base_config.error_function = error_function
         super().__init__(base_config)
         self.activation_derivative: ActivationFunction = activation_derivative
-
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
-        return sum(0.5 * (values - np.squeeze(self.predict_points(points, training))) ** 2)
-
-    def _test_l_rate(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray) -> float:
-        tests: np.ndarray = np.apply_along_axis(self._perceptron.test_l_rate, 1, training_points, l_rate)
-        return 0.5 * sum((tests - training_values) ** 2)
+        if self.error_function == NeuralNetworkErrorFunction.ABSOLUTE:
+            raise ValueError(f'Invalid error function {self.error_function.name} for {repr(type(self))}')
 
     def _calculate_delta(self, training_value: float, activation: float) -> float:
-        return (training_value - activation) * self.activation_derivative(self._perceptron.last_excitement)
+        return (
+            self.error_function.calculate_error_factor(training_value, activation) *
+            self.activation_derivative(self._perceptron.last_excitement)
+        )
 
 
 class _PerceptronLayer:
@@ -433,11 +470,15 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
 
     def __init__(self, base_config: NeuralNetworkBaseConfiguration,
                  activation_derivative: ActivationFunction,
+                 error_function: NeuralNetworkErrorFunction,
                  layer_sizes: List[int]) -> None:
 
+        base_config.error_function = error_function
         self._validate_layer_config(layer_sizes)
         base_config.output_count = layer_sizes[-1]
         super().__init__(base_config)
+        if self.error_function == NeuralNetworkErrorFunction.ABSOLUTE:
+            raise ValueError(f'Invalid error function {self.error_function.name} for {repr(type(self))}')
 
         perceptron_factory: Callable[[], _Perceptron] = \
             lambda input_count: _Perceptron(
@@ -492,19 +533,23 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
         return current_error
 
     def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
-        return 0.5 * sum((self.predict_points(points, training).flatten() - values.flatten()) ** 2)
+        return self.error_function.calculate_error(values.flatten(), self.predict_points(points, training).flatten())
 
-    def _update_deltas(self, training_values: np.ndarray, prediction: np.ndarray) -> None:
+    def _update_deltas(self, training_value: np.ndarray, prediction: np.ndarray) -> None:
 
-        delta_multiplier: np.ndarray = training_values - prediction
+        # TODO(tobi): Se puede hacer mejor?
+        delta_multiplier: np.ndarray = np.fromiter(
+            (self.error_function.calculate_error_factor(training_value[i], prediction[i]) for i in range(len(training_value))),
+            float
+        )
 
         for m in range(len(self._layers) - 1, -1, -1):
             self._layers[m].update_perceptrons_delta(delta_multiplier)
             delta_multiplier = self._layers[m].calculate_previous_layer_delta_multiplier()
 
-    def _update_weights(self, training_points: np.ndarray) -> None:
+    def _update_weights(self, training_point: np.ndarray) -> None:
 
-        previous_activation: np.ndarray = training_points
+        previous_activation: np.ndarray = training_point
 
         for m in range(len(self._layers)):
             self._layers[m].update_w(self.l_rate, previous_activation)
@@ -528,7 +573,6 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
 
         return last_test[1:]  # Viene con la identity column
 
-    # TODO(tobi): Cambiar por funcion de error
     def _test_l_rate(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray) -> float:
         tests: np.ndarray = np.apply_along_axis(self._test_l_rate_one_point, 1, training_points, l_rate)
-        return 0.5 * sum((tests.flatten() - training_values.flatten()) ** 2)
+        return self.error_function.calculate_error(training_values.flatten(), tests.flatten())
