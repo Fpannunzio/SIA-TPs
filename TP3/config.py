@@ -1,11 +1,12 @@
 import sys
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
+import typing
 import yaml
-from schema import Schema, SchemaError
+from schema import Schema, SchemaError, Optional, And
 
 Param = Dict[str, Any]
-ParamValidator = Optional[Schema]
+ParamValidator = typing.Optional[Schema]
 
 
 def print_error_and_exit(error_msg: str, exit_code: int):
@@ -37,8 +38,18 @@ class Config:
                              f'appropriate')
 
         args = Config.validate_param(args, Schema({
-            'training_set': dict,
-            'validation_set': dict,
+            'training_set': {
+                'inputs': str,
+                Optional('input_line_count', default=1): And(int, lambda i: i > 0),
+                'outputs': str,
+                Optional('output_line_count', default=1): And(int, lambda i: i > 0),
+                Optional('normalize_values', default=False): bool,
+            },
+            'validation_set': {
+                'inputs': str,
+                'outputs': str,
+                Optional('normalize_values', default=False): bool,
+            },
             'network': dict,
         }, ignore_extra_keys=True))
 

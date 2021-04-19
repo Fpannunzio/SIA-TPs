@@ -1,41 +1,51 @@
 import sys
-from typing import Dict
+from typing import List
 
 import numpy as np
 import pandas as pd
 
-from TP3.perceptron_utils import get_neural_network
-from TP3.plot import plot_error
-from config import Config
-from perceptron import NeuralNetwork, MultilayeredNeuralNetwork
+from perceptron_utils import get_neural_network
+from plot import plot_error
+from config import Config, Param
+from perceptron import NeuralNetwork
+
+
+def get_training_set(file_name: str, line_count: int, normalize: bool) -> np.ndarray:
+    training_set: np.ndarray = pd.read_csv(file_name, delim_whitespace=True, header=None).values
+    if normalize:
+        training_set = training_set / 100
+
+    if line_count > 1:
+        elem_size: int = len(training_set[0]) * line_count
+        training_set = np.reshape(training_set, (np.size(training_set) // elem_size, elem_size))
+
+    return training_set
 
 
 def main(config_file: str):
     print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)
 
-    training_set: Dict[str, str] = config.training_set
+    training_set: Param = config.training_set
 
-    training_points: np.ndarray = pd.read_csv(training_set['inputs'], delim_whitespace=True, header=None).values / 100
+    training_points: np.ndarray = get_training_set(training_set['inputs'], training_set['input_line_count'], training_set['normalize_values'])
 
-    if training_set['input_rows'] > 1:
-        elem_size: int = len(training_points[0]) * int(training_set['input_rows'])
-        training_points = np.reshape(training_points, (int(np.size(training_points)/elem_size), elem_size))
+    training_values: np.ndarray = get_training_set(training_set['outputs'], training_set['output_line_count'], training_set['normalize_values'])
 
-    training_values: np.ndarray = pd.read_csv(training_set['outputs'], delim_whitespace=True, header=None).values / 100
+    neural_network: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
 
-    if training_set['output_rows'] > 1:
-        elem_size: int = len(training_points[0]) * int(training_set['input_rows'])
-        training_values = np.reshape(training_values, (int(np.size(training_values) / elem_size), elem_size))
+    network_error_by_iteration: List[float] = []
 
-      # Turn n x 1 matrix into array with length n
+    def get_network_error(network: NeuralNetwork) -> None:
+        network_error_by_iteration.append(network.error)
+        print(network.error)
+        print(network.training_iteration)
 
-    nn: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
+    neural_network.train(training_points, training_values, get_network_error)
 
-    plot_error(nn.train(training_points, training_values))
+    plot_error(network_error_by_iteration)
 
-    print(nn.error)
-    print(nn.training_iteration)
+    print(neural_network.l_rate, neural_network.error, neural_network.training_iteration)
     # Get Perceptron according to config, and as many inputs as training points dimension
     # perceptron: Perceptron = get_perceptron(config.perceptron, len(training_points[0]))
     #
@@ -73,17 +83,17 @@ if __name__ == "__main__":
     if len(argv) > 1:
         config_file = argv[1]
 
-    # try:
-    main(config_file)
+    try:
+        main(config_file)
 
-    # except KeyboardInterrupt:
-    #     sys.exit(0)
-    #
-    # except (ValueError, FileNotFoundError) as ex:
-    #     print('\nAn Error Was Found!!')
-    #     print(ex)
-    #     sys.exit(1)
-    #
-    # except Exception as ex:
-    #     print('An unexpected error occurred')
-    #     raise ex
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+    except (ValueError, FileNotFoundError) as ex:
+        print('\nAn Error Was Found!!')
+        print(ex)
+        sys.exit(1)
+
+    except Exception as ex:
+        print('An unexpected error occurred')
+        raise ex
