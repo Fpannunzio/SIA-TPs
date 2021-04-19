@@ -4,7 +4,7 @@ import numpy as np
 from schema import And, Schema, Or, Optional
 
 from config import Param, Config
-from perceptron import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
+from neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
     LinearSinglePerceptronNeuralNetwork, \
     NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork, NeuralNetworkBaseConfiguration
 

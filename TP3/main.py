@@ -4,10 +4,10 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from perceptron_utils import get_neural_network
+from neural_network_utils import get_neural_network
 from plot import plot_error
 from config import Config, Param
-from perceptron import NeuralNetwork
+from neural_network import NeuralNetwork
 
 
 def get_training_set(file_name: str, line_count: int, normalize: bool) -> np.ndarray:
