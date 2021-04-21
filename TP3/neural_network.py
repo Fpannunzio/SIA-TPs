@@ -369,8 +369,8 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
         return self._perceptron.predict(point, training)
 
     def _update_delta_direction(self, training_value: Union[np.ndarray, float], activation: Union[float, np.ndarray]) -> None:
-        if not isinstance(training_value, float):
-            raise TypeError('training value mast be a float')
+        if not isinstance(training_value, float) or not isinstance(activation, float):
+            raise TypeError('training value and activation mast be a float')
         self._perceptron.delta = self._calculate_delta(training_value, activation)
 
     @abstractmethod
@@ -546,10 +546,10 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
 
         return last_prediction[1:]  # Viene con la identity column agregada de mas
 
-    def _update_delta_direction(self, training_value: Union[np.ndarray, float], prediction: Union[float, np.ndarray]) -> None:
-        if not isinstance(training_value, np.ndarray):
-            raise TypeError('training value mast be an ndarray')
-        self._update_deltas(training_value, prediction)
+    def _update_delta_direction(self, training_value: Union[np.ndarray, float], activation: Union[float, np.ndarray]) -> None:
+        if not isinstance(training_value, np.ndarray) or not isinstance(activation, np.ndarray):
+            raise TypeError('training value and activation must be an ndarray')
+        self._update_deltas(training_value, activation)
 
     def _update_training_weight(self, training_point: np.ndarray) -> None:
         previous_activation: np.ndarray = training_point
