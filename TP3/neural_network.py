@@ -65,24 +65,31 @@ class NeuralNetworkErrorFunction(Enum):
 
 @attr.s(auto_attribs=True)
 class NeuralNetworkBaseConfiguration:
-    input_count: Optional[int] = None
-    output_count: Optional[int] = None
-    activation_fn: Optional[ActivationFunction] = None
-    error_function: Optional[NeuralNetworkErrorFunction] = None
+    input_count: Optional[int] = None  # Required
+    output_count: Optional[int] = None  # Required
+    activation_fn: Optional[ActivationFunction] = None  # Required
+    error_function: Optional[NeuralNetworkErrorFunction] = None  # Required
     max_training_iterations: int = DEFAULT_MAX_ITERATIONS
-    soft_reset_threshold: int = max_training_iterations
-    max_stale_error_iterations: int = max_training_iterations
+    soft_reset_threshold: Optional[int] = None  # max_training_iterations
+    max_stale_error_iterations: Optional[int] = None  # max_training_iterations
     training_error_goal: float = 0
     training_error_tolerance: float = DEFAULT_ERROR_TOLERANCE
     momentum_factor: float = 0
     linear_search_l_rate: bool = False
     linear_search_l_rate_max_iterations: int = DEFAULT_L_RATE_LINEAR_SEARCH_MAX_ITERATIONS
     linear_search_l_rate_error_tolerance: float = DEFAULT_L_RATE_LINEAR_SEARCH_ERROR_TOLERANCE
-    base_l_rate: Optional[float] = None
+    base_l_rate: Optional[float] = None  # Required
     l_rate_up_scaling_factor: float = 0
     l_rate_down_scaling_factor: float = 0
-    error_positive_trend_threshold: int = max_training_iterations
-    error_negative_trend_threshold: int = max_training_iterations
+    error_positive_trend_threshold: Optional[int] = None  # max_training_iterations
+    error_negative_trend_threshold: Optional[int] = None  # max_training_iterations
+
+    def set_runtime_defaults(self):
+        # Runtime Defaults
+        if self.soft_reset_threshold is None          : self.soft_reset_threshold           = self.max_training_iterations
+        if self.max_stale_error_iterations is None    : self.max_stale_error_iterations     = self.max_training_iterations
+        if self.error_positive_trend_threshold is None: self.error_positive_trend_threshold = self.max_training_iterations
+        if self.error_negative_trend_threshold is None: self.error_negative_trend_threshold = self.max_training_iterations
 
     def valid_or_fail(self) -> None:
         valid: bool = (
@@ -118,6 +125,7 @@ class NeuralNetwork(ABC):
 
     def __init__(self, base_config: NeuralNetworkBaseConfiguration) -> None:
 
+        base_config.set_runtime_defaults()
         base_config.valid_or_fail()
         self.input_count: int = assert_not_none(base_config.input_count)
         self.output_count: int = assert_not_none(base_config.output_count)
