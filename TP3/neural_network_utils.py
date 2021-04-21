@@ -20,6 +20,7 @@ def _validate_base_network_params(perceptron_params: Param) -> Param:
         Optional('max_training_iterations', default=None): And(int, lambda i: i > 0),
         Optional('weight_reset_threshold', default=None): And(int, lambda i: i > 0),
         Optional('max_stale_error_iterations', default=None): And(int, lambda i: i > 0),
+        Optional('error_goal', default=None): And(Or(float, int), lambda i: i > 0),
         Optional('error_tolerance', default=None): And(Or(float, int), lambda i: i > 0),
         Optional('momentum_factor', default=None): And(Or(float, int), lambda i: i >= 0),
         Optional('learning_rate_strategy', default='variable'): Or('fixed', 'variable', 'linear_search'),
@@ -43,6 +44,7 @@ def _build_base_network_config(network_params: Param, input_count: int) -> Neura
     if network_params['max_training_iterations'] is not None: ret.max_training_iterations = network_params['max_training_iterations']
     if network_params['weight_reset_threshold'] is not None: ret.soft_reset_threshold = network_params['weight_reset_threshold']
     if network_params['max_stale_error_iterations'] is not None: ret.max_stale_error_iterations = network_params['max_stale_error_iterations']
+    if network_params['error_goal'] is not None: ret.training_error_goal = network_params['error_goal']
     if network_params['error_tolerance'] is not None: ret.training_error_tolerance = network_params['error_tolerance']
     if network_params['momentum_factor'] is not None: ret.momentum_factor = network_params['momentum_factor']
     if network_params['base_learning_rate'] is not None: ret.base_l_rate = network_params['base_learning_rate']
@@ -64,7 +66,7 @@ def _build_base_network_config(network_params: Param, input_count: int) -> Neura
 
 
 def get_neural_network(base_network_params: Param, input_count: int) -> NeuralNetwork:
-    base_network_params: Param = _validate_base_network_params(base_network_params)
+    base_network_params = _validate_base_network_params(base_network_params)
 
     base_network_config: NeuralNetworkBaseConfiguration = _build_base_network_config(base_network_params, input_count)
 

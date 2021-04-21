@@ -36,10 +36,9 @@ def main(config_file: str):
 
     network_error_by_iteration: List[float] = []
 
-    def get_network_error(network: NeuralNetwork) -> None:
+    def get_network_error(network: NeuralNetwork, selected_training_point: int) -> None:
         network_error_by_iteration.append(network.error)
-        print(network.error)
-        print(network.training_iteration)
+        print(network.l_rate, network.error, network.training_iteration)
 
     neural_network.train(training_points, training_values, get_network_error)
 

@@ -67,18 +67,22 @@ def child_creation(couple: Couple, parent_seq_gen: Callable[[], Iterator[int]]) 
 
     children_type: CharacterType = couple[0].type
 
-    assert isinstance(children_genes[0]['height'], float)
-    assert isinstance(children_genes[1]['height'], float)
+    if not isinstance(children_genes[0]['height'], float) or isinstance(children_genes[1]['height'], float):
+        raise TypeError()
     return [Character(children_type, float(children_genes[0]['height']), children_item_sets[0]),
             Character(children_type, float(children_genes[1]['height']), children_item_sets[1])]
 
 
 def _item_set_from_gene_map(gene_map: Dict[str, Union[float, Item]]) -> ItemSet:
-    assert isinstance(gene_map['weapon'], Item)
-    assert isinstance(gene_map['boots'], Item)
-    assert isinstance(gene_map['helmet'], Item)
-    assert isinstance(gene_map['gauntlets'], Item)
-    assert isinstance(gene_map['chest_piece'], Item)
+    if (
+        not isinstance(gene_map['weapon'], Item) or
+        not isinstance(gene_map['boots'], Item) or
+        not isinstance(gene_map['helmet'], Item) or
+        not isinstance(gene_map['gauntlets'], Item) or
+        not isinstance(gene_map['chest_piece'], Item)
+    ):
+        raise TypeError()
+
     return ItemSet(gene_map['weapon'], gene_map['boots'], gene_map['helmet'],
                    gene_map['gauntlets'], gene_map['chest_piece'])
 
