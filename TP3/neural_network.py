@@ -210,7 +210,7 @@ class NeuralNetwork(ABC):
         self._update_training_weight(training_points[point])
 
         # Calculate error
-        current_error: float = self.calculate_error(training_points, training_values)
+        current_error: float = self.calculate_error(training_points, training_values, training=True)
 
         # Update how many iterations the error has been the same
         if math.isclose(self.last_training_error, current_error, abs_tol=self.training_error_tolerance):
@@ -233,6 +233,7 @@ class NeuralNetwork(ABC):
 
         # Increment iteration count
         self.training_iteration += 1
+        self.iters_since_soft_reset += 1
 
         return point
 
@@ -309,6 +310,41 @@ class NeuralNetwork(ABC):
     @abstractmethod
     def _test_l_rate(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray) -> float:
         pass
+
+
+    def get_accuracy(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int, classify: Callable[[float], float], insert_identity_column: bool = False) -> float:
+        classified_points: np.ndarray = np.vectorize(classify)(self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
+        classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
+        confusion_matrix: np.ndarray = np.zeros((class_count, class_count))
+        for prediction, value in zip(classified_points, classified_values):
+            confusion_matrix[value][prediction] += 1
+
+        return confusion_matrix.trace()/np.sum(confusion_matrix)
+
+    def get_precision(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int, classify: Callable[[float], float], insert_identity_column: bool = False) -> np.ndarray:
+        classified_points: np.ndarray = np.vectorize(classify)(self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
+        classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
+        confusion_matrix: np.ndarray = np.zeros((class_count, class_count))
+        for prediction, value in zip(classified_points, classified_values):
+            confusion_matrix[value][prediction] += 1
+
+        return np.fromiter((confusion_matrix[i][i]/np.sum(confusion_matrix[:, i]) if confusion_matrix[i][i] != 0 else 0 for i in range(class_count)), float)
+
+    def get_recall(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int, classify: Callable[[float], float], insert_identity_column: bool = False) -> np.ndarray:
+        classified_points: np.ndarray = np.vectorize(classify)(self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
+        classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
+        confusion_matrix: np.ndarray = np.zeros((class_count, class_count))
+        for prediction, value in zip(classified_points, classified_values):
+            confusion_matrix[value][prediction] += 1
+
+        return np.fromiter((confusion_matrix[i][i]/np.sum(confusion_matrix[i]) if confusion_matrix[i][i] != 0 else 0 for i in range(class_count)), float)
+
+    def get_f1_score(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
+                   classify: Callable[[float], float], insert_identity_column: bool = False) -> np.ndarray:
+        precision: np.ndarray = self.get_precision(validation_points, validation_values, class_count, classify, insert_identity_column)
+        recall: np.ndarray = self.get_recall(validation_points, validation_values, class_count, classify, insert_identity_column)
+
+        return np.fromiter((2 * precision[i] * recall[i] / (precision[i] + recall[i]) if (precision[i] + recall[i]) != 0 else 0 for i in range(class_count)), float)
 
 
 # Clase interna de las NeuralNetworks
@@ -500,7 +536,6 @@ class _PerceptronLayer:
     def training_weights_reset(self) -> None:
         for perceptron in self.perceptrons:
             perceptron.training_weights_reset()
-
 
 class MultilayeredNeuralNetwork(NeuralNetwork):
 

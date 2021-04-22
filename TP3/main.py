@@ -1,3 +1,4 @@
+import math
 import sys
 from typing import List
 
@@ -38,41 +39,48 @@ def main(config_file: str):
 
     def get_network_error(network: NeuralNetwork, selected_training_point: int) -> None:
         network_error_by_iteration.append(network.error)
-        print(network.l_rate, network.error, network.training_iteration)
+        #print(network.l_rate, network.error, network.last_training_error, network.training_iteration)
+
+    def classify(number: float) -> int:
+        if number < 0:
+            return 0
+        return 1
 
     neural_network.train(training_points, training_values, get_network_error)
 
-    plot_error(network_error_by_iteration)
+    for _ in range(10):
+        possible_values: np.ndarray = np.arange(len(training_points))
+        gt_points: np.ndarray
+        gt_values: np.ndarray
+        gv_points: np.ndarray
+        gv_values: np.ndarray
+        best_indexes: np.ndarray
+        best_param: float = 0
+        best_neural_network: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
+        neural_network: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
+        size: int = 2
+        classes: int = 2
 
-    print(neural_network.l_rate, neural_network.error, neural_network.training_iteration)
-    # Get Perceptron according to config, and as many inputs as training points dimension
-    # perceptron: Perceptron = get_perceptron(config.perceptron, len(training_points[0]))
-    #
-    # # Train Perceptron with training data!
-    # iteration_count, last_w = perceptron.train(training_points, training_values)
-    #
-    # print(iteration_count)
-    # print(last_w)
-    # print(perceptron.w)
-    # print(perceptron.error)
-    #
-    # if len(training_points[0]) == 2:
-    #     plot_2d_hyperplane(training_points, training_values, perceptron.w)
-    #
-    # validation_set: Dict[str, str] = config.validation_set
-    #
-    # validation_points: np.ndarray = pd.read_csv(validation_set['inputs'], delim_whitespace=True, header=None).values
-    # validation_values: np.ndarray = pd.read_csv(validation_set['outputs'], delim_whitespace=True, header=None).values
-    # validation_values = np.squeeze(validation_values)  # Turn n x 1 matrix into array with length n
-    #
-    # # Validate Perceptron with Validation Points
-    # failed_points: np.ndarray = perceptron.validate_points(validation_points, validation_values)
-    #
-    # if len(failed_points) > 0:
-    #     print('La solucion encontrada no paso la prueba de validacion. No pude precedir correctamente el valor de los siguientes puntos:')
-    #     print(failed_points)
-    # else:
-    #     print('La solucion encontrada paso la prueba de validacion')
+        for i in range(math.floor(np.size(training_values)/size)):
+            indexes = np.random.choice(possible_values, size=size, replace=False)
+            possible_values = possible_values[~np.isin(possible_values, indexes)]
+            gv_points = np.take(training_points, indexes, axis=0)
+            gv_values = np.take(training_values, indexes, axis=0)
+
+            gt_points = np.delete(training_points, indexes, axis=0)
+            gt_values = np.delete(training_values, indexes, axis=0)
+
+            neural_network.train(gt_points, gt_values)
+            values: np.ndarray = neural_network.get_f1_score(gv_points, gv_values, classes, classify, insert_identity_column=True)
+            current_param = np.sum(values) / size
+            print(current_param, best_param)
+            if best_param < current_param:
+
+                best_param = current_param
+                best_neural_network = neural_network
+
+    #plot_error(network_error_by_iteration)
+
 
 
 if __name__ == "__main__":
