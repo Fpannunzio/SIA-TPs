@@ -18,6 +18,7 @@ DEFAULT_MAX_ITERATIONS: int = 100
 DEFAULT_ERROR_TOLERANCE: float = 1e-9
 DEFAULT_L_RATE_LINEAR_SEARCH_MAX_ITERATIONS: int = 500
 DEFAULT_L_RATE_LINEAR_SEARCH_ERROR_TOLERANCE: float = 1e-5
+DEFAULT_LINEAR_SEARCH_MAX_VALUE: int = 5
 
 
 def assert_not_none(obj: Optional[Any]) -> Any:
@@ -77,6 +78,7 @@ class NeuralNetworkBaseConfiguration:
     training_error_tolerance: float = DEFAULT_ERROR_TOLERANCE
     momentum_factor: float = 0
     linear_search_l_rate: bool = False
+    linear_search_max_value: int = DEFAULT_LINEAR_SEARCH_MAX_VALUE
     linear_search_l_rate_max_iterations: int = DEFAULT_L_RATE_LINEAR_SEARCH_MAX_ITERATIONS
     linear_search_l_rate_error_tolerance: float = DEFAULT_L_RATE_LINEAR_SEARCH_ERROR_TOLERANCE
     base_l_rate: Optional[float] = None  # Required
@@ -104,6 +106,7 @@ class NeuralNetworkBaseConfiguration:
                 self.training_error_goal > 0 and
                 self.training_error_tolerance > 0 and
                 self.momentum_factor >= 0 and
+                self.linear_search_max_value > 0 and
                 (self.linear_search_l_rate or self.base_l_rate is not None) and  # Base l_rate or linear search
                 self.linear_search_l_rate_max_iterations > 0 and
                 self.linear_search_l_rate_error_tolerance > 0 and
@@ -139,6 +142,7 @@ class NeuralNetwork(ABC):
         self.training_error_tolerance: float = base_config.training_error_tolerance
         self.momentum_factor: float = base_config.momentum_factor
         self.linear_search_l_rate: bool = base_config.linear_search_l_rate
+        self.linear_search_max_value: int = base_config.linear_search_max_value
         self.linear_search_l_rate_max_iterations: int = base_config.linear_search_l_rate_max_iterations
         self.linear_search_l_rate_error_tolerance: float = base_config.linear_search_l_rate_error_tolerance
         self.l_rate: float = (base_config.base_l_rate if base_config.base_l_rate is not None else -1)
@@ -260,7 +264,7 @@ class NeuralNetwork(ABC):
 
     @abstractmethod
     def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray,
-                        training: bool = False) -> float:
+                        training: bool = False, insert_identity_column: bool = False) -> float:
         pass
 
     @abstractmethod
@@ -299,7 +303,7 @@ class NeuralNetwork(ABC):
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize_scalar.html#scipy.optimize.minimize_scalar
         result: OptimizeResult = minimize_scalar(
             self._test_l_rate,
-            bounds=(0, 1),
+            bounds=(0, self.linear_search_max_value),
             args=(training_points, training_values),
             method='bounded',
             options={
@@ -320,7 +324,7 @@ class NeuralNetwork(ABC):
         pass
 
     def get_accuracy(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                     classify: Callable[[float], float], insert_identity_column: bool = False) -> float:
+                     classify: Callable[[float], int], insert_identity_column: bool = False) -> float:
         classified_points: np.ndarray = np.vectorize(classify)(
             self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
         classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
@@ -331,7 +335,7 @@ class NeuralNetwork(ABC):
         return confusion_matrix.trace() / np.sum(confusion_matrix)
 
     def get_precision(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                      classify: Callable[[float], float], insert_identity_column: bool = False) -> np.ndarray:
+                      classify: Callable[[float], int], insert_identity_column: bool = False) -> np.ndarray:
         classified_points: np.ndarray = np.vectorize(classify)(
             self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
         classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
@@ -344,7 +348,7 @@ class NeuralNetwork(ABC):
              range(class_count)), float)
 
     def get_recall(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                   classify: Callable[[float], float], insert_identity_column: bool = False) -> np.ndarray:
+                   classify: Callable[[float], int], insert_identity_column: bool = False) -> np.ndarray:
         classified_points: np.ndarray = np.vectorize(classify)(
             self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
         classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
@@ -357,7 +361,7 @@ class NeuralNetwork(ABC):
              range(class_count)), float)
 
     def get_f1_score(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                     classify: Callable[[float], float], insert_identity_column: bool = False) -> np.ndarray:
+                     classify: Callable[[float], int], insert_identity_column: bool = False) -> np.ndarray:
         precision: np.ndarray = self.get_precision(validation_points, validation_values, class_count, classify,
                                                    insert_identity_column)
         recall: np.ndarray = self.get_recall(validation_points, validation_values, class_count, classify,
@@ -448,8 +452,8 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
     def _update_training_weight(self, training_point: np.ndarray) -> None:
         self._perceptron.update_training_weights(self.l_rate, training_point)
 
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
-        return self.error_function.calculate_error(values, self.predict_points(points, training))
+    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> float:
+        return self.error_function.calculate_error(values, self.predict_points(points, training, insert_identity_column))
 
     def _persist_training_weight(self) -> None:
         self._perceptron.persist_weights()
@@ -630,8 +634,8 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
             self._layers[m].update_w(self.l_rate, previous_activation)
             previous_activation = self._layers[m].activation_cache
 
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False) -> float:
-        return self.error_function.calculate_error(values.flatten(), self.predict_points(points, training).flatten())
+    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> float:
+        return self.error_function.calculate_error(values.flatten(), self.predict_points(points, training, insert_identity_column).flatten())
 
     def _persist_training_weight(self) -> None:
         for m in range(len(self._layers)):

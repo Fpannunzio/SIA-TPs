@@ -12,7 +12,7 @@ from neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeur
 NeuralNetworkFactory = Callable[[NeuralNetworkBaseConfiguration, Param], NeuralNetwork]
 SigmoidFunction = Callable[[float, float], float]
 SigmoidDerivativeFunction = SigmoidFunction
-
+MetricCalculator = Callable[[NeuralNetwork, np.ndarray, np.ndarray], float]
 
 def _validate_base_network_params(perceptron_params: Param) -> Param:
     return Config.validate_param(perceptron_params, Schema({
@@ -34,6 +34,7 @@ def _validate_base_network_params(perceptron_params: Param) -> Param:
         Optional('learning_rate_linear_search_params', default=dict): {
             Optional('max_iterations', default=None): And(int, lambda i: i > 0),
             Optional('error_tolerance', default=None): And(Or(int, float), lambda i: i > 0),
+            Optional('max_value', default=None): And(int, lambda i: i > 0),
         },
         Optional('network_params', default=dict): dict,
     }, ignore_extra_keys=True))
@@ -53,6 +54,7 @@ def _build_base_network_config(network_params: Param, input_count: int) -> Neura
     if ret.linear_search_l_rate:
         l_rate_linear_search_params: Param = network_params['learning_rate_linear_search_params']
         if l_rate_linear_search_params['max_iterations'] is not None: ret.linear_search_l_rate_max_iterations = l_rate_linear_search_params['max_iterations']
+        if l_rate_linear_search_params['max_value'] is not None: ret.linear_search_max_value = l_rate_linear_search_params['max_value']
         if l_rate_linear_search_params['error_tolerance'] is not None: ret.linear_search_l_rate_error_tolerance = l_rate_linear_search_params['error_tolerance']
         # Variable Learning Rate Params
     if network_params['learning_rate_strategy'] == 'variable':
@@ -159,4 +161,48 @@ _neural_network_error_function_map: Dict[str, NeuralNetworkErrorFunction] = {
 _sigmoid_activation_function_map: Dict[str, Tuple[SigmoidFunction, SigmoidDerivativeFunction]] = {
     'tanh': (tanh, tanh_derivative),
     'logistic': (logistic, logistic_derivative),
+}
+
+
+def _error(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.calculate_error(points, values, training=False, insert_identity_column=True)
+
+
+def _accuracy(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.get_accuracy(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)
+
+
+def _positive_precision(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.get_precision(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
+
+
+def _negative_precision(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.get_precision(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
+
+
+def _positive_recall(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.get_recall(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
+
+
+def _negative_recall(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.get_recall(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
+
+
+def _positive_f1score(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.get_f1_score(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
+
+
+def _negative_f1score(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.get_f1_score(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
+
+
+_neural_network_metrics: Dict[str, MetricCalculator] = {
+    'error': _error,
+    'accuracy': _accuracy,
+    'positive_precision': _positive_precision,
+    'negative_precision': _negative_precision,
+    'positive_recall': _positive_recall,
+    'negative_recall': _negative_recall,
+    'positive_f1score': _positive_f1score,
+    'negative_f1score': _negative_f1score,
 }

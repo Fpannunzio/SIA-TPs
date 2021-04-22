@@ -1,6 +1,6 @@
 import math
 import sys
-from typing import List, Dict, Any, Callable
+from typing import List, Dict, Any, Callable, Tuple
 
 import numpy as np
 import pandas as pd
@@ -23,8 +23,9 @@ def get_training_set(file_name: str, line_count: int, normalize: bool) -> np.nda
     return training_set
 
 
-def cross_validation(config_network: Dict[str, Any], training_points: np.ndarray, training_values: np.ndarray, get_metric: Callable[[NeuralNetwork, np.ndarray, np.ndarray], float], size: int, iteration: int) -> [NeuralNetwork, np.ndarray]:
-
+def cross_validation(config_network: Dict[str, Any], training_points: np.ndarray, training_values: np.ndarray,
+                     get_metric: Callable[[NeuralNetwork, np.ndarray, np.ndarray], float],
+                     size: int, iteration: int) -> Tuple[NeuralNetwork, np.ndarray]:
     while len(training_values) % size != 0:
         size += 1
 
@@ -44,7 +45,7 @@ def cross_validation(config_network: Dict[str, Any], training_points: np.ndarray
     for _ in range(iteration):
         possible_values: np.ndarray = np.arange(len(training_points))
 
-        for i in range(math.floor(np.size(training_values)/size)):
+        for i in range(math.floor(np.size(training_values) / size)):
             indexes = np.random.choice(possible_values, size=size, replace=False)
             possible_values = possible_values[~np.isin(possible_values, indexes)]
             gt_points = np.delete(training_points, indexes, axis=0)
@@ -61,6 +62,7 @@ def cross_validation(config_network: Dict[str, Any], training_points: np.ndarray
 
     return best_neural_network, best_indexes
 
+
 def main(config_file: str):
     print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)
@@ -73,21 +75,17 @@ def main(config_file: str):
 
     neural_network: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
 
+    # cross_validation(config.network, training_points, training_values, _neural_network_metrics['error'], 10, 10)
+
     network_error_by_iteration: List[float] = []
 
     def get_network_error(network: NeuralNetwork, selected_training_point: int) -> None:
         network_error_by_iteration.append(network.error)
-        #print(network.l_rate, network.error, network.last_training_error, network.training_iteration)
-
-    def classify(number: float) -> int:
-        if number < 0:
-            return 0
-        return 1
+        print(network.l_rate, network.error, network.last_training_error, network.training_iteration)
 
     neural_network.train(training_points, training_values, get_network_error)
 
-    #plot_error(network_error_by_iteration)
-
+    # plot_error(network_error_by_iteration)
 
 
 if __name__ == "__main__":
