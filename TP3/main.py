@@ -32,6 +32,7 @@ def cross_validation(config_network: Dict[str, Any], training_points: np.ndarray
     if size == len(training_values):
         iteration = 1
 
+    results: List[float] = []
     gt_points: np.ndarray
     gt_values: np.ndarray
     gv_points: np.ndarray
@@ -55,10 +56,15 @@ def cross_validation(config_network: Dict[str, Any], training_points: np.ndarray
 
             neural_network.train(gt_points, gt_values)
             current_param = get_metric(neural_network, gv_points, gv_values)
+            results.append(current_param)
             if best_param < current_param:
                 best_param = current_param
                 best_indexes = indexes
                 best_neural_network = neural_network
+
+    statistics_results: np.ndarray = np.array(results)
+    statistics_results.mean()
+    statistics_results.std()
 
     return best_neural_network, best_indexes
 
