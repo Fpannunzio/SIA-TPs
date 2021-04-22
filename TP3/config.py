@@ -45,14 +45,8 @@ class Config:
                 Optional('output_line_count', default=1): And(int, lambda i: i > 0),
                 Optional('normalize_values', default=False): bool,
             },
-            'validation_set': {
-                'inputs': str,
-                'outputs': str,
-                Optional('normalize_values', default=False): bool,
-            },
             'network': dict,
         }, ignore_extra_keys=True))
 
         self.training_set: Param = args['training_set']
-        self.validation_set: Param = args['validation_set']
         self.network: Param = args['network']
