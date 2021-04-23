@@ -23,7 +23,7 @@ def _validate_base_network_params(perceptron_params: Param) -> Param:
         Optional('max_training_iterations', default=None): And(int, lambda i: i > 0),
         Optional('weight_reset_threshold', default=None): And(int, lambda i: i > 0),
         Optional('max_stale_error_iterations', default=None): And(int, lambda i: i > 0),
-        Optional('error_goal', default=None): And(Or(float, int), lambda i: i > 0),
+        Optional('error_goal', default=None): And(Or(float, int), lambda i: i >= 0),
         Optional('error_tolerance', default=None): And(Or(float, int), lambda i: i > 0),
         Optional('momentum_factor', default=None): And(Or(float, int), lambda i: i >= 0),
         Optional('learning_rate_strategy', default='variable'): Or('fixed', 'variable', 'linear_search'),

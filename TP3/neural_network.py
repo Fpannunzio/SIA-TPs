@@ -107,7 +107,7 @@ class NeuralNetworkBaseConfiguration:
                 self.max_training_iterations > 0 and
                 (self.soft_reset_threshold is not None and self.soft_reset_threshold > 0) and
                 (self.max_stale_error_iterations is not None and self.max_stale_error_iterations > 0) and
-                self.training_error_goal > 0 and
+                self.training_error_goal >= 0 and
                 self.training_error_tolerance > 0 and
                 self.momentum_factor >= 0 and
                 self.linear_search_max_value > 0 and
