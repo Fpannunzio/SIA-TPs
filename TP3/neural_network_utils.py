@@ -1,7 +1,10 @@
-from typing import Dict, Callable, Tuple
+import bisect
+from typing import Dict, Callable, Tuple, List, TypeVar
 
 import numpy as np
+import typing
 from schema import And, Schema, Or, Optional
+import attr
 
 from config import Param, Config
 from neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
@@ -9,14 +12,90 @@ from neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeur
     NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork, NeuralNetworkBaseConfiguration, \
     NeuralNetworkErrorFunction
 
-NeuralNetworkFactory = Callable[[NeuralNetworkBaseConfiguration, Param], NeuralNetwork]
+_NeuralNetworkFactoryBuilder = Callable[[NeuralNetworkBaseConfiguration, Param], Callable[[], NeuralNetwork]]
+
+NeuralNetworkFactory = Callable[[], NeuralNetwork]
 SigmoidFunction = Callable[[float, float], float]
 SigmoidDerivativeFunction = SigmoidFunction
 MetricCalculator = Callable[[NeuralNetwork, np.ndarray, np.ndarray], float]
 
+# Generic Internal Variable
+_T = TypeVar('_T')
+
+
+def _assert_not_none(obj: typing.Optional[_T]) -> _T:
+    if obj is None:
+        raise TypeError()
+    return obj
+
+
+@attr.s(auto_attribs=True)
+class CrossValidationResult:
+    best_neural_network: NeuralNetwork
+    best_test_points: np.ndarray
+    best_test_values: np.ndarray
+    metrics_mean: float
+    metrics_std: float
+
+
+def cross_validation(neural_network_factory: NeuralNetworkFactory,
+                     training_points: np.ndarray, training_values: np.ndarray,
+                     get_metric: MetricCalculator,
+                     test_points_count: int,
+                     iteration_count: int) -> CrossValidationResult:
+    if (
+        test_points_count > len(training_values)//2 or
+        test_points_count <= 0 or
+        len(training_values) != len(training_points) or
+        iteration_count <= 0
+    ):
+        raise ValueError('Invalid cross validation parameters')
+
+    gt_points: np.ndarray
+    gt_values: np.ndarray
+    gv_points: np.ndarray
+    gv_values: np.ndarray
+    current_metric: float
+    neural_network: NeuralNetwork
+    best_metric: typing.Optional[float] = None
+    best_indexes: np.ndarray = np.zeros((1, 1))
+    best_neural_network: typing.Optional[NeuralNetwork] = None
+    all_metrics: List[float] = []
+
+    for _ in range(iteration_count):
+        possible_values: np.ndarray = np.arange(len(training_points))
+
+        while len(possible_values) // test_points_count > 0:
+            neural_network = neural_network_factory()
+
+            indexes = np.random.choice(possible_values, size=test_points_count, replace=False)
+            possible_values = possible_values[~np.isin(possible_values, indexes)]
+            gt_points = np.delete(training_points, indexes, axis=0)
+            gt_values = np.delete(training_values, indexes, axis=0)
+            gv_points = np.take(training_points, indexes, axis=0)
+            gv_values = np.take(training_values, indexes, axis=0)
+
+            neural_network.train(gt_points, gt_values)
+            current_metric = get_metric(neural_network, gv_points, gv_values)
+            all_metrics.append(current_metric)
+            if best_metric is None or best_metric < current_metric:
+                best_metric = current_metric
+                best_indexes = indexes
+                best_neural_network = neural_network
+
+    all_metrics_np: np.ndarray = np.array(all_metrics)
+    return CrossValidationResult(
+        _assert_not_none(best_neural_network),
+        np.take(training_points, best_indexes, axis=0),
+        np.take(training_values, best_indexes, axis=0),
+        all_metrics_np.mean(),
+        all_metrics_np.std(),
+    )
+
+
 def _validate_base_network_params(perceptron_params: Param) -> Param:
     return Config.validate_param(perceptron_params, Schema({
-        'type': And(str, Or(*tuple(_neural_network_factory_map.keys()))),
+        'type': And(str, Or(*tuple(_neural_network_factory_builder_map.keys()))),
         Optional('max_training_iterations', default=None): And(int, lambda i: i > 0),
         Optional('weight_reset_threshold', default=None): And(int, lambda i: i > 0),
         Optional('max_stale_error_iterations', default=None): And(int, lambda i: i > 0),
@@ -67,22 +146,27 @@ def _build_base_network_config(network_params: Param, input_count: int) -> Neura
     return ret
 
 
-def get_neural_network(base_network_params: Param, input_count: int) -> NeuralNetwork:
+def get_neural_network_factory(base_network_params: Param, input_count: int) -> NeuralNetworkFactory:
     base_network_params = _validate_base_network_params(base_network_params)
 
     base_network_config: NeuralNetworkBaseConfiguration = _build_base_network_config(base_network_params, input_count)
 
-    factory: NeuralNetworkFactory = _neural_network_factory_map[base_network_params['type']]
+    factory_builder: _NeuralNetworkFactoryBuilder = _neural_network_factory_builder_map[base_network_params['type']]
 
-    return factory(base_network_config, base_network_params['network_params'])
-
-
-def _get_simple_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> NeuralNetwork:
-    return SimpleSinglePerceptronNeuralNetwork(base_config)
+    return factory_builder(base_network_config, base_network_params['network_params'])
 
 
-def _get_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> NeuralNetwork:
-    return LinearSinglePerceptronNeuralNetwork(base_config)
+def get_neural_network(base_network_params: Param, input_count: int) -> NeuralNetwork:
+    neural_network_factory: NeuralNetworkFactory = get_neural_network_factory(base_network_params, input_count)
+    return neural_network_factory()
+
+
+def _get_simple_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> Callable[[], NeuralNetwork]:
+    return lambda: SimpleSinglePerceptronNeuralNetwork(base_config)
+
+
+def _get_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> Callable[[], NeuralNetwork]:
+    return lambda: LinearSinglePerceptronNeuralNetwork(base_config)
 
 
 def _validate_non_linear_perceptron_params(params: Param) -> Param:
@@ -93,7 +177,7 @@ def _validate_non_linear_perceptron_params(params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def _get_non_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> NeuralNetwork:
+def _get_non_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> Callable[[], NeuralNetwork]:
     params = _validate_non_linear_perceptron_params(params)
     activation_function, activation_derivative = _sigmoid_activation_function_map[params['activation_function']]
 
@@ -101,7 +185,7 @@ def _get_non_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, para
     base_config.activation_fn = lambda x: activation_function(x, params['activation_slope_factor'])
     real_activation_derivative: ActivationFunction = lambda x: activation_derivative(x, params['activation_slope_factor'])
 
-    return NonLinearSinglePerceptronNeuralNetwork(base_config, real_activation_derivative, error_function)
+    return lambda: NonLinearSinglePerceptronNeuralNetwork(base_config, real_activation_derivative, error_function)
 
 
 def _validate_multi_layered_perceptron_params(params: Param) -> Param:
@@ -113,7 +197,7 @@ def _validate_multi_layered_perceptron_params(params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def _get_multi_layered_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> NeuralNetwork:
+def _get_multi_layered_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> Callable[[], NeuralNetwork]:
     params = _validate_multi_layered_perceptron_params(params)
     activation_function, activation_derivative = _sigmoid_activation_function_map[params['activation_function']]
 
@@ -121,7 +205,7 @@ def _get_multi_layered_perceptron(base_config: NeuralNetworkBaseConfiguration, p
     base_config.activation_fn = lambda x: activation_function(x, params['activation_slope_factor'])
     real_activation_derivative: ActivationFunction = lambda x: activation_derivative(x, params['activation_slope_factor'])
 
-    return MultilayeredNeuralNetwork(base_config, real_activation_derivative, error_function, params['layer_sizes'])
+    return lambda: MultilayeredNeuralNetwork(base_config, real_activation_derivative, error_function, params['layer_sizes'])
 
 
 # Sigmoid Activation Functions And Derivatives
@@ -146,7 +230,7 @@ def logistic_derivative(x: float, b: float) -> float:
 
 # Name to Implementation maps
 
-_neural_network_factory_map: Dict[str, NeuralNetworkFactory] = {
+_neural_network_factory_builder_map: Dict[str, _NeuralNetworkFactoryBuilder] = {
     'simple': _get_simple_perceptron,
     'linear': _get_linear_perceptron,
     'non_linear': _get_non_linear_perceptron,
@@ -168,41 +252,44 @@ def _error(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
     return nn.calculate_error(points, values, training=False, insert_identity_column=True)
 
 
-def _accuracy(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-    return nn.get_accuracy(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)
+def _accuracy(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray, class_separators: List[float]) -> float:
+    return NeuralNetwork.get_accuracy(
+        nn.get_confusion_matrix(points, values, len(class_separators), lambda x: bisect.bisect_left(class_separators, x), insert_identity_column=True)
+    )
 
-
-def _positive_precision(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-    return nn.get_precision(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
-
-
-def _negative_precision(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-    return nn.get_precision(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
-
-
-def _positive_recall(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-    return nn.get_recall(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
-
-
-def _negative_recall(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-    return nn.get_recall(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
-
-
-def _positive_f1score(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-    return nn.get_f1_score(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
-
-
-def _negative_f1score(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-    return nn.get_f1_score(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
+# TODO: Para mi (tobi) va a estar dificil generalizar esta parte a config.
+#  Yo primero me centraria en elegir una opcion muy buena para cada ejercicio.
+# def _positive_precision(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+#     return nn.get_precision(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
+#
+#
+# def _negative_precision(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+#     return nn.get_precision(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
+#
+#
+# def _positive_recall(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+#     return nn.get_recall(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
+#
+#
+# def _negative_recall(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+#     return nn.get_recall(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
+#
+#
+# def _positive_f1score(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+#     return nn.get_f1_score(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[0]
+#
+#
+# def _negative_f1score(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+#     return nn.get_f1_score(points, values, 2, lambda x: 1 if x >= 0 else 0, insert_identity_column=True)[1]
 
 
 _neural_network_metrics: Dict[str, MetricCalculator] = {
     'error': _error,
     'accuracy': _accuracy,
-    'positive_precision': _positive_precision,
-    'negative_precision': _negative_precision,
-    'positive_recall': _positive_recall,
-    'negative_recall': _negative_recall,
-    'positive_f1score': _positive_f1score,
-    'negative_f1score': _negative_f1score,
+    # 'positive_precision': _positive_precision,
+    # 'negative_precision': _negative_precision,
+    # 'positive_recall': _positive_recall,
+    # 'negative_recall': _negative_recall,
+    # 'positive_f1score': _positive_f1score,
+    # 'negative_f1score': _negative_f1score,
 }

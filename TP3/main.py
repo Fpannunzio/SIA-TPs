@@ -1,12 +1,10 @@
-import math
 import sys
-from typing import List, Dict, Any, Callable, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd
 
 from neural_network_utils import get_neural_network
-from plot import plot_error
 from config import Config, Param
 from neural_network import NeuralNetwork
 
@@ -21,52 +19,6 @@ def get_training_set(file_name: str, line_count: int, normalize: bool) -> np.nda
         training_set = np.reshape(training_set, (np.size(training_set) // elem_size, elem_size))
 
     return training_set
-
-
-def cross_validation(config_network: Dict[str, Any], training_points: np.ndarray, training_values: np.ndarray,
-                     get_metric: Callable[[NeuralNetwork, np.ndarray, np.ndarray], float],
-                     size: int, iteration: int) -> Tuple[NeuralNetwork, np.ndarray]:
-    while len(training_values) % size != 0:
-        size += 1
-
-    if size == len(training_values):
-        iteration = 1
-
-    results: List[float] = []
-    gt_points: np.ndarray
-    gt_values: np.ndarray
-    gv_points: np.ndarray
-    gv_values: np.ndarray
-    best_indexes: np.ndarray = np.zeros((1, 1))
-    best_param: float = 0
-    current_param: float = 0
-    best_neural_network: NeuralNetwork = get_neural_network(config_network, len(training_points[0]))
-    neural_network: NeuralNetwork = get_neural_network(config_network, len(training_points[0]))
-
-    for _ in range(iteration):
-        possible_values: np.ndarray = np.arange(len(training_points))
-
-        for i in range(math.floor(np.size(training_values) / size)):
-            indexes = np.random.choice(possible_values, size=size, replace=False)
-            possible_values = possible_values[~np.isin(possible_values, indexes)]
-            gt_points = np.delete(training_points, indexes, axis=0)
-            gt_values = np.delete(training_values, indexes, axis=0)
-            gv_points = np.take(training_points, indexes, axis=0)
-            gv_values = np.take(training_values, indexes, axis=0)
-
-            neural_network.train(gt_points, gt_values)
-            current_param = get_metric(neural_network, gv_points, gv_values)
-            results.append(current_param)
-            if best_param < current_param:
-                best_param = current_param
-                best_indexes = indexes
-                best_neural_network = neural_network
-
-    statistics_results: np.ndarray = np.array(results)
-    statistics_results.mean()
-    statistics_results.std()
-
-    return best_neural_network, best_indexes
 
 
 def main(config_file: str):

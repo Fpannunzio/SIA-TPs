@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 import attr
-from typing import Callable, Optional, List, Union, Any
+from typing import Callable, Optional, List, Union, TypeVar
 
 import numpy as np
 from scipy.optimize import minimize_scalar, OptimizeResult
@@ -21,7 +21,11 @@ DEFAULT_L_RATE_LINEAR_SEARCH_ERROR_TOLERANCE: float = 1e-5
 DEFAULT_LINEAR_SEARCH_MAX_VALUE: int = 5
 
 
-def assert_not_none(obj: Optional[Any]) -> Any:
+# Generic Internal Variable
+_T = TypeVar('_T')
+
+
+def _assert_not_none(obj: Optional[_T]) -> _T:
     if obj is None:
         raise TypeError()
     return obj
@@ -101,8 +105,8 @@ class NeuralNetworkBaseConfiguration:
                 self.activation_fn is not None and
                 self.error_function is not None and
                 self.max_training_iterations > 0 and
-                self.soft_reset_threshold > 0 and
-                self.max_stale_error_iterations > 0 and
+                (self.soft_reset_threshold is not None and self.soft_reset_threshold > 0) and
+                (self.max_stale_error_iterations is not None and self.max_stale_error_iterations > 0) and
                 self.training_error_goal > 0 and
                 self.training_error_tolerance > 0 and
                 self.momentum_factor >= 0 and
@@ -113,8 +117,8 @@ class NeuralNetworkBaseConfiguration:
                 (self.base_l_rate is None or self.base_l_rate > 0) and
                 self.l_rate_up_scaling_factor >= 0 and
                 self.l_rate_down_scaling_factor >= 0 and
-                self.error_positive_trend_threshold > 0 and
-                self.error_negative_trend_threshold > 0
+                (self.error_positive_trend_threshold is not None and self.error_positive_trend_threshold > 0) and
+                (self.error_negative_trend_threshold is not None and self.error_negative_trend_threshold > 0)
         )
 
         if not valid:
@@ -127,17 +131,47 @@ class NeuralNetwork(ABC):
     def with_identity_dimension(points: np.ndarray, axis: int = 1) -> np.ndarray:
         return np.insert(points, 0, 1, axis=axis)
 
+    @staticmethod
+    def get_accuracy(confusion_matrix: np.ndarray) -> float:
+        return confusion_matrix.trace() / np.sum(confusion_matrix)
+
+    # Suma la columna
+    @staticmethod
+    def get_precision(confusion_matrix: np.ndarray) -> np.ndarray:
+        return np.fromiter(
+            (confusion_matrix[i][i] / np.sum(confusion_matrix[:, i]) if confusion_matrix[i][i] != 0 else 0 for i in range(len(confusion_matrix))),
+            float
+        )
+
+    # Suma la fila
+    @staticmethod
+    def get_recall(confusion_matrix: np.ndarray) -> np.ndarray:
+        return np.fromiter(
+            (confusion_matrix[i][i] / np.sum(confusion_matrix[i]) if confusion_matrix[i][i] != 0 else 0 for i in range(len(confusion_matrix))),
+            float
+        )
+
+    @staticmethod
+    def get_f1_score(confusion_matrix: np.ndarray) -> np.ndarray:
+        precision: np.ndarray = NeuralNetwork.get_precision(confusion_matrix)
+        recall: np.ndarray = NeuralNetwork.get_recall(confusion_matrix)
+
+        return np.fromiter(
+            (2 * precision[i] * recall[i] / (precision[i] + recall[i]) if (precision[i] != 0 and recall[i] != 0) else 0 for i in range(len(confusion_matrix))),
+            float
+        )
+
     def __init__(self, base_config: NeuralNetworkBaseConfiguration) -> None:
 
         base_config.set_runtime_defaults()
         base_config.valid_or_fail()
-        self.input_count: int = assert_not_none(base_config.input_count)
-        self.output_count: int = assert_not_none(base_config.output_count)
-        self.activation_fn: ActivationFunction = assert_not_none(base_config.activation_fn)
-        self.error_function: NeuralNetworkErrorFunction = assert_not_none(base_config.error_function)
+        self.input_count: int = _assert_not_none(base_config.input_count)
+        self.output_count: int = _assert_not_none(base_config.output_count)
+        self.activation_fn: ActivationFunction = _assert_not_none(base_config.activation_fn)
+        self.error_function: NeuralNetworkErrorFunction = _assert_not_none(base_config.error_function)
         self.max_training_iterations: int = base_config.max_training_iterations
-        self.soft_reset_threshold: int = base_config.soft_reset_threshold
-        self.max_stale_error_iterations: int = base_config.max_stale_error_iterations
+        self.soft_reset_threshold: int = _assert_not_none(base_config.soft_reset_threshold)
+        self.max_stale_error_iterations: int = _assert_not_none(base_config.max_stale_error_iterations)
         self.training_error_goal: float = base_config.training_error_goal
         self.training_error_tolerance: float = base_config.training_error_tolerance
         self.momentum_factor: float = base_config.momentum_factor
@@ -148,8 +182,8 @@ class NeuralNetwork(ABC):
         self.l_rate: float = (base_config.base_l_rate if base_config.base_l_rate is not None else -1)
         self.l_rate_up_scaling_factor: float = base_config.l_rate_up_scaling_factor
         self.l_rate_down_scaling_factor: float = base_config.l_rate_down_scaling_factor
-        self.error_positive_trend_threshold: float = base_config.error_positive_trend_threshold
-        self.error_negative_trend_threshold: float = base_config.error_negative_trend_threshold
+        self.error_positive_trend_threshold: float = _assert_not_none(base_config.error_positive_trend_threshold)
+        self.error_negative_trend_threshold: float = _assert_not_none(base_config.error_negative_trend_threshold)
 
         self.error: float = np.inf
         self.last_training_error: float = self.error
@@ -191,11 +225,11 @@ class NeuralNetwork(ABC):
             training_points = NeuralNetwork.with_identity_dimension(training_points)
 
         while not self.has_training_ended():
-            selected_training_point: int = self.do_training_iteration(training_points, training_values)
+            selected_training_point: int = self._do_training_iteration(training_points, training_values)
             if status_callback:
                 status_callback(self, selected_training_point)
 
-    def do_training_iteration(self, training_points: np.ndarray, training_values: np.ndarray) -> int:
+    def _do_training_iteration(self, training_points: np.ndarray, training_values: np.ndarray) -> int:
         # Every (soft_reset_threshold * len(training_points)) iterations, reset weight
         if self.iters_since_soft_reset > self.soft_reset_threshold * len(training_points):
             self.soft_training_reset()
@@ -299,6 +333,21 @@ class NeuralNetwork(ABC):
             if self.error_negative_trend >= self.error_negative_trend_threshold:
                 self.l_rate -= self.l_rate_down_scaling_factor * self.l_rate
 
+    def get_confusion_matrix(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
+                             classifier: Callable[[float], int], insert_identity_column: bool = False) -> np.ndarray:
+
+        predictions: np.ndarray = self.predict_points(validation_points, insert_identity_column=insert_identity_column)
+
+        vectorized_classifier = np.vectorize(classifier)
+        classified_points: np.ndarray = vectorized_classifier(predictions).flatten()
+        classified_values: np.ndarray = vectorized_classifier(validation_values).flatten()
+
+        confusion_matrix: np.ndarray = np.zeros((class_count, class_count))
+        for prediction, value in zip(classified_points, classified_values):
+            confusion_matrix[value][prediction] += 1
+
+        return confusion_matrix
+
     def _recalculate_l_rate_with_linear_search(self, training_points: np.ndarray, training_values: np.ndarray) -> None:
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize_scalar.html#scipy.optimize.minimize_scalar
         result: OptimizeResult = minimize_scalar(
@@ -322,54 +371,6 @@ class NeuralNetwork(ABC):
     @abstractmethod
     def _test_l_rate(self, l_rate: float, training_points: np.ndarray, training_values: np.ndarray) -> float:
         pass
-
-    def get_accuracy(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                     classify: Callable[[float], int], insert_identity_column: bool = False) -> float:
-        classified_points: np.ndarray = np.vectorize(classify)(
-            self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
-        classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
-        confusion_matrix: np.ndarray = np.zeros((class_count, class_count))
-        for prediction, value in zip(classified_points, classified_values):
-            confusion_matrix[value][prediction] += 1
-
-        return confusion_matrix.trace() / np.sum(confusion_matrix)
-
-    def get_precision(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                      classify: Callable[[float], int], insert_identity_column: bool = False) -> np.ndarray:
-        classified_points: np.ndarray = np.vectorize(classify)(
-            self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
-        classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
-        confusion_matrix: np.ndarray = np.zeros((class_count, class_count))
-        for prediction, value in zip(classified_points, classified_values):
-            confusion_matrix[value][prediction] += 1
-
-        return np.fromiter(
-            (confusion_matrix[i][i] / np.sum(confusion_matrix[:, i]) if confusion_matrix[i][i] != 0 else 0 for i in
-             range(class_count)), float)
-
-    def get_recall(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                   classify: Callable[[float], int], insert_identity_column: bool = False) -> np.ndarray:
-        classified_points: np.ndarray = np.vectorize(classify)(
-            self.predict_points(validation_points, insert_identity_column=insert_identity_column)).flatten()
-        classified_values: np.ndarray = np.vectorize(classify)(validation_values).flatten()
-        confusion_matrix: np.ndarray = np.zeros((class_count, class_count))
-        for prediction, value in zip(classified_points, classified_values):
-            confusion_matrix[value][prediction] += 1
-
-        return np.fromiter(
-            (confusion_matrix[i][i] / np.sum(confusion_matrix[i]) if confusion_matrix[i][i] != 0 else 0 for i in
-             range(class_count)), float)
-
-    def get_f1_score(self, validation_points: np.ndarray, validation_values: np.ndarray, class_count: int,
-                     classify: Callable[[float], int], insert_identity_column: bool = False) -> np.ndarray:
-        precision: np.ndarray = self.get_precision(validation_points, validation_values, class_count, classify,
-                                                   insert_identity_column)
-        recall: np.ndarray = self.get_recall(validation_points, validation_values, class_count, classify,
-                                             insert_identity_column)
-
-        return np.fromiter(
-            (2 * precision[i] * recall[i] / (precision[i] + recall[i]) if (precision[i] + recall[i]) != 0 else 0 for i
-             in range(class_count)), float)
 
 
 # Clase interna de las NeuralNetworks
