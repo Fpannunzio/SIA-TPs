@@ -5,21 +5,23 @@ import numpy as np
 import pandas as pd
 
 from TP3.config import Param
-from TP3.config_to_network import get_neural_network
+from TP3.config_to_network import get_neural_network, get_neural_network_factory, _error
 from TP3.neural_network import NeuralNetwork
+from TP3.neural_network_utils import cross_validation
 
 
 def generate_config() -> Param:
     network_params: Param = {}
 
-    network_params['max_training_iterations'] = 10000
+    network_params['max_training_iterations'] = 1000
     network_params['weight_reset_threshold'] = network_params['max_training_iterations']
     network_params['max_stale_error_iterations'] = network_params['max_training_iterations']
     network_params['error_goal'] = 0.01
     network_params['error_tolerance'] = 0.01
-    network_params['momentum_factor'] = 0.5
-    network_params['base_learning_rate'] = None
-    network_params['learning_rate_strategy'] = None
+    network_params['momentum_factor'] = 0.8
+    network_params['base_learning_rate'] = 0.8
+    network_params['learning_rate_strategy'] = 'fixed'
+    network_params['type'] = 'linear'
 
     # Learning Rate Linear Search Params
     network_params['learning_rate_linear_search_params'] = {}
@@ -33,7 +35,7 @@ def generate_config() -> Param:
     network_params['variable_learning_rate_params'] = {}
     variable_l_rate_params: Param = network_params['variable_learning_rate_params']
 
-    variable_l_rate_params['down_scaling_factor'] = 0.1
+    variable_l_rate_params['down_scaling_factor'] = 0.2
     variable_l_rate_params['up_scaling_factor'] = 0.1 # Cuando se use lo setea cada uno
     variable_l_rate_params['positive_trend_threshold'] = 10
     variable_l_rate_params['negative_trend_threshold'] = variable_l_rate_params['positive_trend_threshold'] * 50
@@ -96,7 +98,7 @@ class EJ2:
         self.last_error.append(network.last_training_error)
 
     def linear(self):
-        self.network_params['type'] = 'linear'
+        self.network_params['type'] = 'non_linear'
         neural_network: NeuralNetwork
 
         self.predictions['linear'] = {}
@@ -119,6 +121,9 @@ class EJ2:
         # Medium
         self.network_params['learning_rate_strategy'] = 'fixed'
         self.network_params['base_learning_rate'] = 0.05
+        self.network_params['variable_learning_rate_params']['up_scaling_factor'] = \
+            self.network_params['variable_learning_rate_params']['down_scaling_factor'] \
+            * self.network_params['base_learning_rate']
         neural_network = get_neural_network(self.network_params, len(self.training_points[0]))
         self.min_error = []
         self.last_error = []
@@ -132,6 +137,9 @@ class EJ2:
         # Big
         self.network_params['learning_rate_strategy'] = 'fixed'
         self.network_params['base_learning_rate'] = 0.8
+        # self.network_params['variable_learning_rate_params']['up_scaling_factor'] = \
+        #     self.network_params['variable_learning_rate_params']['down_scaling_factor'] \
+        #     * self.network_params['base_learning_rate']
         neural_network = get_neural_network(self.network_params, len(self.training_points[0]))
         self.min_error = []
         self.last_error = []
@@ -141,16 +149,41 @@ class EJ2:
         self.predictions['linear']['big_min'] = self.min_error
         self.predictions['linear']['big_last'] = self.last_error
 
-        plt.plot(self.predictions['linear']['big_last'], color=lighten_color('g', 0.3),  label='big_last')
-        plt.plot(self.predictions['linear']['medium_last'], color=lighten_color('m', 0.3), label='medium_last')
-        plt.plot(self.predictions['linear']['small_last'], color=lighten_color('k', 0.3), label='small_last')
-        plt.plot(self.predictions['linear']['big_min'], 'g-', label='big_min', lw=2)
-        plt.plot(self.predictions['linear']['medium_min'], 'm-', label='medium_min', lw=2)
-        plt.plot(self.predictions['linear']['small_min'], 'k-', label='small_min', lw=2)
-        plt.legend()
+        fig = plt.figure(figsize=(16, 10))
+        ax = plt.subplot(111)
 
-        plt.semilogy()
-        plt.title('loss per model - momentum: 0.5')
-        plt.ylabel('loss')
-        plt.xlabel('epoch')
+        ax.plot(self.predictions['linear']['big_last'], color=lighten_color('g', 0.3),  label='big_last')
+        ax.plot(self.predictions['linear']['medium_last'], color=lighten_color('m', 0.3), label='medium_last')
+        ax.plot(self.predictions['linear']['small_last'], color=lighten_color('k', 0.3), label='small_last')
+        ax.plot(self.predictions['linear']['big_min'], 'g-', label='big_min', lw=2)
+        ax.plot(self.predictions['linear']['medium_min'], 'm-', label='medium_min', lw=2)
+        ax.plot(self.predictions['linear']['small_min'], 'k-', label='small_min', lw=2)
+        ax.legend(bbox_to_anchor=(1, 0.7), fancybox=True, shadow=True)
+
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.95, box.height])
+
+        ax.semilogy()
+        plt.title(f'Error minimo y actual. Momentum: {self.network_params["momentum_factor"]}', pad=20)
+        plt.ylabel('Error')
+        plt.xlabel('Iteracion')
         plt.show()
+
+        print(self.predictions['linear']['small_min'][-1], self.predictions['linear']['medium_min'][-1], self.predictions['linear']['big_min'][-1])
+
+
+def main():
+
+    training_points: np.ndarray = get_training_set('trainingset/inputs/Ej2.tsv', 1, True)
+    training_values: np.ndarray = get_training_set('trainingset/outputs/Ej2.tsv', 1, True).flatten()
+
+    neural_network: NeuralNetwork = get_neural_network(generate_config(), len(training_points[0]))
+
+    cv = cross_validation(get_neural_network_factory(generate_config(), 3), training_points, training_values, _error, np.size(training_points, axis=0)//20, 1)
+
+    print(cv.best_neural_network.calculate_error(training_points, training_values, insert_identity_column=True))
+    print(cv.best_neural_network.calculate_error(cv.best_test_points, cv.best_test_values, insert_identity_column=True))
+    print(cv)
+
+if __name__ == "__main__":
+    main()

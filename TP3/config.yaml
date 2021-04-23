@@ -1,0 +1,37 @@
+training_set:
+  inputs: trainingset/inputs/Ej2.tsv
+  input_line_count: 1
+  outputs: trainingset/outputs/Ej2.tsv
+  output_line_count: 1
+  normalize_values: false
+
+network:
+
+  type: linear
+  max_training_iterations: 10000
+  weight_reset_threshold: 10000
+  max_stale_error_iterations: 10000
+  error_tolerance: 0.00001
+  error_goal: 0.0001
+  momentum_factor: 0.5
+  learning_rate_strategy: fixed  # o variable o linear_search. Por default variable
+  base_learning_rate: 0.6
+
+  variable_learning_rate_params:
+    up_scaling_factor: 0.1
+    down_scaling_factor: 0.25
+    positive_trend_threshold: 1
+    negative_trend_threshold: 100000
+
+  learning_rate_linear_search_params:
+    max_iterations: 500
+    error_tolerance: 0.00001
+
+  network_params:
+    error_function: quadratic # quadratic # o logarithmic
+    activation_function: tanh
+    activation_slope_factor: 0.8
+    layer_sizes: [10, 1]
+
+plotting:
+  render: true

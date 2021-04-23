@@ -1,7 +1,7 @@
 from typing import Callable, List, TypeVar, Optional
 
-import numpy as np
 import attr
+import numpy as np
 
 from neural_network import NeuralNetwork
 
@@ -71,6 +71,9 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
                 best_metric = current_metric
                 best_indexes = indexes
                 best_neural_network = neural_network
+
+            print('iter', current_metric)
+        print('ITER')
 
     all_metrics_np: np.ndarray = np.array(all_metrics)
     return CrossValidationResult(
