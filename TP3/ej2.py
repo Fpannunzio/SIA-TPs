@@ -1,12 +1,14 @@
+import sys
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
-from TP3.config import Param
-from TP3.config_to_network import get_neural_network
-from TP3.neural_network import NeuralNetwork
+from plot import plot_error
+from neural_network_utils import NeuralNetworkFactory, cross_validation, CrossValidationResult
+from config import Param, Config
+from config_to_network import get_neural_network, get_neural_network_factory, get_training_set
+from neural_network import NeuralNetwork
 
 
 def generate_config() -> Param:
@@ -46,18 +48,6 @@ def generate_config() -> Param:
     network_params_params['error_function'] = 'quadratic'
 
     return network_params
-
-
-def get_training_set(file_name: str, line_count: int, normalize: bool) -> np.ndarray:
-    training_set: np.ndarray = pd.read_csv(file_name, delim_whitespace=True, header=None).values
-    if normalize:
-        training_set = training_set / 100
-
-    if line_count > 1:
-        elem_size: int = len(training_set[0]) * line_count
-        training_set = np.reshape(training_set, (np.size(training_set) // elem_size, elem_size))
-
-    return training_set
 
 # https://stackoverflow.com/a/49601444/12270520
 def lighten_color(color, amount=0.5):
@@ -128,7 +118,6 @@ class EJ2:
         self.predictions['linear']['medium_min'] = self.min_error
         self.predictions['linear']['medium_last'] = self.last_error
 
-
         # Big
         self.network_params['learning_rate_strategy'] = 'fixed'
         self.network_params['base_learning_rate'] = 0.8
@@ -154,3 +143,68 @@ class EJ2:
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.show()
+
+
+def ej2(config_file: str):
+    print(f'Loading config file {config_file}...')
+    config: Config = Config(config_file)
+
+    training_set: Param = config.training_set
+
+    training_points: np.ndarray = get_training_set(training_set['inputs'], training_set['input_line_count'], training_set['normalize_values'])
+
+    training_values: np.ndarray = get_training_set(training_set['outputs'], training_set['output_line_count'], training_set['normalize_values'])
+
+    neural_network_factory: NeuralNetworkFactory = get_neural_network_factory(config.network, len(training_points[0]))
+
+    def error_metric(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+        return nn.calculate_error(points, values, training=False, insert_identity_column=True)
+
+    validation_result: CrossValidationResult = cross_validation(neural_network_factory, training_points, training_values,
+                                                                error_metric, len(training_points)//10, 1)
+
+    print(validation_result)
+
+    best_neural_network: NeuralNetwork = validation_result.best_neural_network
+
+    best_points: np.ndarray = validation_result.best_test_points
+    best_values: np.ndarray = validation_result.best_test_values
+
+    error_count: int = len(best_neural_network.validate_points(best_points, best_values, error_tolerance=0.001))
+    close_count: int = len(best_values) - error_count
+
+    print(f'Correct Values: {close_count}\nError Values:{error_count}')
+
+    neural_network2: NeuralNetwork = neural_network_factory()
+
+    errors_over_iter: List[float] = []
+
+    def error_over_iterations(neural_network: NeuralNetwork, point: int):
+        errors_over_iter.append(neural_network.error)
+
+    neural_network2.train(best_points, best_values, error_over_iterations)
+
+    plot_error(errors_over_iter)
+
+
+if __name__ == '__main__':
+    argv = sys.argv
+
+    config_file: str = 'config.yaml'
+    if len(argv) > 1:
+        config_file = argv[1]
+
+    try:
+        ej2(config_file)
+
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+    except (ValueError, FileNotFoundError) as ex:
+        print('\nAn Error Was Found!!')
+        print(ex)
+        sys.exit(1)
+
+    except Exception as ex:
+        print('An unexpected error occurred')
+        raise ex

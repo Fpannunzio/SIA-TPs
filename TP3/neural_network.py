@@ -283,13 +283,11 @@ class NeuralNetwork(ABC):
         self.iters_since_soft_reset = 0
 
     @abstractmethod
-    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[
-        float, np.ndarray]:
+    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[float, np.ndarray]:
         pass
 
     @abstractmethod
-    def _update_delta_direction(self, training_value: Union[np.ndarray, float],
-                                prediction: Union[float, np.ndarray]) -> None:
+    def _update_delta_direction(self, training_value: Union[np.ndarray, float], prediction: Union[float, np.ndarray]) -> None:
         pass
 
     @abstractmethod
@@ -297,8 +295,8 @@ class NeuralNetwork(ABC):
         pass
 
     @abstractmethod
-    def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray,
-                        training: bool = False, insert_identity_column: bool = False) -> float:
+    def calculate_error(self, training_points: np.ndarray, training_values: np.ndarray, training: bool = False,
+                        insert_identity_column: bool = False) -> float:
         pass
 
     @abstractmethod
@@ -357,8 +355,7 @@ class NeuralNetwork(ABC):
             method='bounded',
             options={
                 'xatol': self.linear_search_l_rate_error_tolerance,
-                'maxiter': self.linear_search_l_rate_max_iterations,
-                'disp': 1,  # Imprime cuando no converge. Lo dejo en uno por ahora para ver que onda TODO(tobi): Sacarlo
+                'maxiter': self.linear_search_l_rate_max_iterations
             }
         )
 

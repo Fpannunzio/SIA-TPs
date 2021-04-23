@@ -2,6 +2,7 @@ import bisect
 from typing import Dict, Callable, Tuple, List
 
 import numpy as np
+import pandas as pd
 from schema import And, Schema, Or, Optional
 
 from neural_network_utils import NeuralNetworkFactory, MetricCalculator
@@ -15,6 +16,18 @@ _NeuralNetworkFactoryBuilder = Callable[[NeuralNetworkBaseConfiguration, Param],
 
 SigmoidFunction = Callable[[float, float], float]
 SigmoidDerivativeFunction = SigmoidFunction
+
+
+def get_training_set(file_name: str, line_count: int, normalize: bool) -> np.ndarray:
+    training_set: np.ndarray = pd.read_csv(file_name, delim_whitespace=True, header=None).values
+    if normalize:
+        training_set = training_set / 100
+
+    if line_count > 1:
+        elem_size: int = len(training_set[0]) * line_count
+        training_set = np.reshape(training_set, (np.size(training_set) // elem_size, elem_size))
+
+    return training_set
 
 
 def _validate_base_network_params(perceptron_params: Param) -> Param:
