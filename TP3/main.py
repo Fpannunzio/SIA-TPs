@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from neural_network_utils import get_neural_network
+from config_to_network import get_neural_network
 from config import Config, Param
 from neural_network import NeuralNetwork
 
