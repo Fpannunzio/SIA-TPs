@@ -5,8 +5,7 @@ import numpy as np
 
 from neural_network import NeuralNetwork
 from config_to_network import get_training_set, get_neural_network
-from config import Param
-from config import Config
+from config import Param, Config
 
 
 def main(config_file: str):

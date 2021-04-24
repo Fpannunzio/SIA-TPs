@@ -1,3 +1,4 @@
+import math
 import sys
 from typing import Dict, List
 
@@ -40,6 +41,9 @@ def main(config_file: str):
                                                    training_set['normalize_values'])
 
     neural_network: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
+
+    def metric_comparator(prev: float, curr: float) -> int:
+        return 0 if math.isclose(prev, curr) else np.sign(curr - prev)
 
     results: CrossValidationResult = cross_validation(
         get_neural_network_factory(config.network, len(training_points[0])), training_points, training_values,

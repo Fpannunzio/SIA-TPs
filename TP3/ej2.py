@@ -1,3 +1,4 @@
+import math
 import sys
 from typing import Dict, List
 
@@ -89,6 +90,10 @@ class EJ2:
 
 
 def ej2(config_file: str):
+
+    PARTITIONS_COUNT: int = 10
+    ROUNDS: int = 20
+
     print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)
 
@@ -103,31 +108,54 @@ def ej2(config_file: str):
     def error_metric(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
         return nn.calculate_error(points, np.squeeze(values), training=False, insert_identity_column=True)
 
+    error_history: np.ndarray = np.zeros((PARTITIONS_COUNT * ROUNDS, config.network['max_training_iterations']))
+
+    def save_errors(network: NeuralNetwork, selected_training_point: int, partition: int) -> None:
+        error_history[partition][network.training_iteration - 1] = network.error
+
+    def error_comparator(prev: float, curr: float) -> int:
+        return 0 if math.isclose(prev, curr) else np.sign(prev - curr)
+
     validation_result: CrossValidationResult = cross_validation(neural_network_factory, training_points, training_values,
-                                                                error_metric, len(training_points)//10, 1)
+                                                                error_metric, len(training_points)//PARTITIONS_COUNT, ROUNDS, metric_comparator=error_comparator, status_callback=save_errors)
 
-    print(validation_result)
+    fig = plt.figure(figsize=(16, 10))
 
-    best_neural_network: NeuralNetwork = validation_result.best_neural_network
+    for error in error_history:
+        plt.plot(error, color=lighten_color('g', 0.3))
 
-    best_points: np.ndarray = validation_result.best_test_points
-    best_values: np.ndarray = validation_result.best_test_values
+    plt.plot(np.mean(error_history, axis=0), color='g', lw=3)
+    plt.plot(error_history[validation_result.best_partition_index], color='k', lw=3)
+    plt.semilogy()
+    plt.show()
 
-    error_count: int = len(best_neural_network.validate_points(best_points, best_values, error_tolerance=0.001))
-    close_count: int = len(best_values) - error_count
+    plt.boxplot(validation_result.all_metrics)
+    plt.show()
 
-    print(f'Correct Values: {close_count}\nError Values:{error_count}')
+    plt.scatter(error_history[:, -1], validation_result.all_metrics)
+    # plt.plot(np.unique(error_history[:, -1]), np.poly1d(np.polyfit(error_history[:, -1], validation_result.all_metrics, 1))(np.unique(error_history[:, -1])), color='k', lw=3)
+    plt.show()
 
-    neural_network2: NeuralNetwork = neural_network_factory()
-
-    errors_over_iter: List[float] = []
-
-    def error_over_iterations(neural_network: NeuralNetwork, point: int):
-        errors_over_iter.append(neural_network.error)
-
-    neural_network2.train(best_points, best_values, error_over_iterations)
-
-    plot_error(errors_over_iter)
+    # best_neural_network: NeuralNetwork = validation_result.best_neural_network
+    #
+    # best_points: np.ndarray = validation_result.best_test_points
+    # best_values: np.ndarray = validation_result.best_test_values
+    #
+    # error_count: int = len(best_neural_network.validate_points(best_points, best_values, error_tolerance=0.001))
+    # close_count: int = len(best_values) - error_count
+    #
+    # print(f'Correct Values: {close_count}\nError Values:{error_count}')
+    #
+    # neural_network2: NeuralNetwork = neural_network_factory()
+    #
+    # errors_over_iter: List[float] = []
+    #
+    # def error_over_iterations(neural_network: NeuralNetwork, point: int):
+    #     errors_over_iter.append(neural_network.error)
+    #
+    # neural_network2.train(best_points, best_values, error_over_iterations)
+    #
+    # plot_error(errors_over_iter)
 
 
 if __name__ == '__main__':
@@ -143,10 +171,10 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         sys.exit(0)
 
-    # except (ValueError, FileNotFoundError) as ex:
-    #     print('\nAn Error Was Found!!')
-    #     print(ex)
-    #     sys.exit(1)
+    except (ValueError, FileNotFoundError) as ex:
+        print('\nAn Error Was Found!!')
+        print(ex)
+        sys.exit(1)
 
     except Exception as ex:
         print('An unexpected error occurred')
