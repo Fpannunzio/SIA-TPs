@@ -191,7 +191,7 @@ def _error(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
 
 def _accuracy(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray, class_separators: List[float]) -> float:
     return NeuralNetwork.get_accuracy(
-        nn.get_confusion_matrix(points, values, len(class_separators), lambda x: bisect.bisect_left(class_separators, x), insert_identity_column=True)
+        nn.get_confusion_matrix(points, values, len(class_separators) + 1, lambda x: bisect.bisect_left(class_separators, x), insert_identity_column=True)
     )
 
 # TODO: Para mi (tobi) va a estar dificil generalizar esta parte a config.
