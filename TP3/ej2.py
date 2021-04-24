@@ -100,7 +100,7 @@ def ej2(config_file: str):
     neural_network_factory: NeuralNetworkFactory = get_neural_network_factory(config.network, len(training_points[0]))
 
     def error_metric(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
-        return nn.calculate_error(points, values, training=False, insert_identity_column=True)
+        return nn.calculate_error(points, np.squeeze(values), training=False, insert_identity_column=True)
 
     validation_result: CrossValidationResult = cross_validation(neural_network_factory, training_points, training_values,
                                                                 error_metric, len(training_points)//10, 1)
@@ -142,10 +142,10 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         sys.exit(0)
 
-    except (ValueError, FileNotFoundError) as ex:
-        print('\nAn Error Was Found!!')
-        print(ex)
-        sys.exit(1)
+    # except (ValueError, FileNotFoundError) as ex:
+    #     print('\nAn Error Was Found!!')
+    #     print(ex)
+    #     sys.exit(1)
 
     except Exception as ex:
         print('An unexpected error occurred')

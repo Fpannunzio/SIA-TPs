@@ -60,9 +60,8 @@ def plot_error(error_values: List[float]) -> None:
     plt.show()
 
 
-# Idea
 def plot_confusion_matrix(confusion_matrix: np.ndarray):
-    fig= plt.figure(figsize=(20, 8))
+    fig = plt.figure(figsize=(20, 8))
     fig.set_figwidth(20)
     fig.set_figheight(8)
     fig.tight_layout(pad=3)
@@ -74,3 +73,6 @@ def plot_confusion_matrix(confusion_matrix: np.ndarray):
     for i, j in np.ndindex(confusion_matrix.shape):
         c = confusion_matrix[j][i]
         plt.text(i, j, str(c), va='center', ha='center')
+
+    plt.show()
+
