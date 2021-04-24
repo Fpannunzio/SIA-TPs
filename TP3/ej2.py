@@ -4,11 +4,12 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 
-from TP3.config import Param
-from TP3.config_to_network import get_neural_network
-from TP3.exercises_utils import get_training_set, generate_config, lighten_color
-from TP3.neural_network import NeuralNetwork
-
+from plot import plot_error
+from config import Param, Config
+from config_to_network import get_neural_network, get_neural_network_factory
+from exercises_utils import get_training_set, generate_config, lighten_color
+from neural_network import NeuralNetwork
+from neural_network_utils import NeuralNetworkFactory, CrossValidationResult, cross_validation
 
 
 class EJ2:

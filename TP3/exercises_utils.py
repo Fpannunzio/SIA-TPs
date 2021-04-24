@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from TP3.config import Param
+from config import Param
 
 
 def generate_config() -> Param:
