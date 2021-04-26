@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 from schema import And, Schema, Or, Optional
 
-from neural_network_utils import NeuralNetworkFactory
+from neural_network_lib.neural_network_utils import NeuralNetworkFactory
 from config import Param, Config
-from neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
+from neural_network_lib.neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
     LinearSinglePerceptronNeuralNetwork, \
     NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork, NeuralNetworkBaseConfiguration, \
     NeuralNetworkErrorFunction

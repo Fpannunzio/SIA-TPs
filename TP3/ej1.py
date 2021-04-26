@@ -5,7 +5,7 @@ import numpy as np
 
 from config import Config, Param
 from config_to_network import get_training_set, get_neural_network
-from neural_network import NeuralNetwork, SinglePerceptronNeuralNetwork
+from neural_network_lib.neural_network import NeuralNetwork, SinglePerceptronNeuralNetwork
 from plot import plot_error, plot_2d_hyperplane
 
 

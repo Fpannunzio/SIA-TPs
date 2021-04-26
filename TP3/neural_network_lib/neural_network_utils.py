@@ -4,7 +4,7 @@ from typing import Callable, List, TypeVar, Optional
 import numpy as np
 import attr
 
-from neural_network import NeuralNetwork
+from .neural_network import NeuralNetwork
 
 NeuralNetworkFactory = Callable[[], NeuralNetwork]
 MetricCalculator = Callable[[NeuralNetwork, np.ndarray, np.ndarray], float]

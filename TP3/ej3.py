@@ -9,8 +9,8 @@ from plot import plot_confusion_matrix, lighten_color
 from config import Param, Config
 from config_to_network import get_neural_network, get_neural_network_factory, get_training_set
 from exercises_utils import generate_config
-from neural_network import NeuralNetwork
-from neural_network_utils import cross_validation, CrossValidationResult, accuracy_metric
+from neural_network_lib.neural_network import NeuralNetwork
+from neural_network_lib.neural_network_utils import cross_validation, CrossValidationResult, accuracy_metric
 
 
 def main(config_file: str):

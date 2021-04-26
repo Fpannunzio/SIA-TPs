@@ -9,8 +9,8 @@ from plot import lighten_color
 from config import Param, Config
 from config_to_network import get_neural_network, get_neural_network_factory, get_training_set
 from exercises_utils import generate_config
-from neural_network import NeuralNetwork
-from neural_network_utils import NeuralNetworkFactory, CrossValidationResult, cross_validation
+from neural_network_lib.neural_network import NeuralNetwork
+from neural_network_lib.neural_network_utils import NeuralNetworkFactory, CrossValidationResult, cross_validation
 
 
 class EJ2:
