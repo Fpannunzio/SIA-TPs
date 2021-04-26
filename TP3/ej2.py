@@ -5,10 +5,10 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 
-from plot import plot_error
+from plot import lighten_color
 from config import Param, Config
-from config_to_network import get_neural_network, get_neural_network_factory
-from exercises_utils import get_training_set, generate_config, lighten_color
+from config_to_network import get_neural_network, get_neural_network_factory, get_training_set
+from exercises_utils import generate_config
 from neural_network import NeuralNetwork
 from neural_network_utils import NeuralNetworkFactory, CrossValidationResult, cross_validation
 
@@ -118,23 +118,23 @@ def ej2(config_file: str):
 
     validation_result: CrossValidationResult = cross_validation(neural_network_factory, training_points, training_values,
                                                                 error_metric, len(training_points)//PARTITIONS_COUNT, ROUNDS, metric_comparator=error_comparator, status_callback=save_errors)
+    if config.plot:
+        plt.figure(figsize=(16, 10))
 
-    fig = plt.figure(figsize=(16, 10))
+        for error in error_history:
+            plt.plot(error, color=lighten_color('g', 0.3))
 
-    for error in error_history:
-        plt.plot(error, color=lighten_color('g', 0.3))
+        plt.plot(np.mean(error_history, axis=0), color='g', lw=3)
+        plt.plot(error_history[validation_result.best_partition_index], color='k', lw=3)
+        plt.semilogy()
+        plt.show()
 
-    plt.plot(np.mean(error_history, axis=0), color='g', lw=3)
-    plt.plot(error_history[validation_result.best_partition_index], color='k', lw=3)
-    plt.semilogy()
-    plt.show()
+        plt.boxplot(validation_result.all_metrics)
+        plt.show()
 
-    plt.boxplot(validation_result.all_metrics)
-    plt.show()
-
-    plt.scatter(error_history[:, -1], validation_result.all_metrics)
-    # plt.plot(np.unique(error_history[:, -1]), np.poly1d(np.polyfit(error_history[:, -1], validation_result.all_metrics, 1))(np.unique(error_history[:, -1])), color='k', lw=3)
-    plt.show()
+        plt.scatter(error_history[:, -1], validation_result.all_metrics)
+        # plt.plot(np.unique(error_history[:, -1]), np.poly1d(np.polyfit(error_history[:, -1], validation_result.all_metrics, 1))(np.unique(error_history[:, -1])), color='k', lw=3)
+        plt.show()
 
     # best_neural_network: NeuralNetwork = validation_result.best_neural_network
     #

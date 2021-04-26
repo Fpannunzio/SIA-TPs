@@ -1,3 +1,4 @@
+import bisect
 from typing import Callable, List, TypeVar, Optional
 
 import numpy as np
@@ -35,13 +36,14 @@ class CrossValidationResult:
     metrics_std: float
 
 
+# TODO(tobi): Ver de mejorar funcion
 def cross_validation(neural_network_factory: NeuralNetworkFactory,
                      training_points: np.ndarray, training_values: np.ndarray,
                      get_metric: MetricCalculator,
                      test_points_count: int,
                      iteration_count: int,
                      metric_comparator: Callable[[float, float], int],
-                     status_callback: Optional[Callable[['NeuralNetwork', int, float, int], None]] = None) -> CrossValidationResult:
+                     status_callback: Optional[Callable[['NeuralNetwork', int, int], None]] = None) -> CrossValidationResult:
     if (
         test_points_count > len(training_values)//2 or
         test_points_count <= 0 or
@@ -65,6 +67,10 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
     partitions_tested_count: int = 0
     best_partitions_index: int = 0
 
+    total_rounds: int = iteration_count * len(training_points) // test_points_count
+
+    print(f'Starting Cross Validation. Total rounds: {total_rounds}')
+
     for _ in range(iteration_count):
         possible_values: np.ndarray = np.arange(len(training_points))
 
@@ -78,7 +84,11 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
             gv_points = np.take(training_points, indexes, axis=0)
             gv_values = np.take(training_values, indexes, axis=0)
 
-            neural_network.train(gt_points, gt_values, status_callback=lambda nn, stp: status_callback(nn, stp, partitions_tested_count))
+            neural_network_status_callback: Optional[Callable[[NeuralNetwork, int], None]] = None
+            if status_callback is not None:
+                neural_network_status_callback = lambda nn, stp: status_callback(nn, stp, partitions_tested_count)
+
+            neural_network.train(gt_points, gt_values, status_callback=neural_network_status_callback)
             current_metric = get_metric(neural_network, gv_points, gv_values)
             all_metrics.append(current_metric)
 
@@ -94,6 +104,7 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
                 best_partitions_index = partitions_tested_count
 
             partitions_tested_count += 1
+            print(f'Cross Validation Round {partitions_tested_count}/{total_rounds} Done. Current best metric: {best_metric}')
 
     all_metrics_np: np.ndarray = np.array(all_metrics)
     return CrossValidationResult(
@@ -110,4 +121,14 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
         all_metrics_np,
         all_metrics_np.mean(),
         all_metrics_np.std(),
+    )
+
+
+def error_metric(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray) -> float:
+    return nn.calculate_error(points, values, training=False, insert_identity_column=True)
+
+
+def accuracy_metric(nn: NeuralNetwork, points: np.ndarray, values: np.ndarray, class_separators: List[float]) -> float:
+    return NeuralNetwork.get_accuracy(
+        nn.get_confusion_matrix(points, values, len(class_separators) + 1, lambda x: bisect.bisect_left(class_separators, x), insert_identity_column=True)
     )

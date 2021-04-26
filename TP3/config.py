@@ -37,16 +37,21 @@ class Config:
             raise ValueError(f'There was a problem parsing the configuration file {config_path}. Make sure syntax is '
                              f'appropriate')
 
+
+# TODO(tobi): Agregar deshabilitacion de plotting
+# TODO(tobi): Agregar a los ejercicios una configuracion default para training set
         args = Config.validate_param(args, Schema({
             'training_set': {
-                'inputs': str,
+                Optional('inputs', default=None): str,
                 Optional('input_line_count', default=1): And(int, lambda i: i > 0),
-                'outputs': str,
+                Optional('outputs', default=None): str,
                 Optional('output_line_count', default=1): And(int, lambda i: i > 0),
                 Optional('normalize_values', default=False): bool,
             },
+            Optional('plot', default=True): bool,
             'network': dict,
         }, ignore_extra_keys=True))
 
         self.training_set: Param = args['training_set']
+        self.plot: bool = args['plot']
         self.network: Param = args['network']

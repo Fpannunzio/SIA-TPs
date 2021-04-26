@@ -31,6 +31,13 @@ def _assert_not_none(obj: Optional[_T]) -> _T:
     return obj
 
 
+def _assert_not_nan(num: _T, msg: str = 'Result is not a number') -> _T:
+    if math.isnan(num):
+        raise ValueError(msg)
+
+    return num
+
+
 @attr.s(auto_attribs=True)
 class _ErrorFunctionContainer:
     error_function: _ErrorFunction
@@ -55,10 +62,14 @@ class NeuralNetworkErrorFunction(Enum):
     )
 
     LOGARITHMIC = _ErrorFunctionContainer(
-        lambda values, activations:  # Numpy Magic
-        sum((1 + values) * np.log((1 + values) / (1 + activations)) + (1 - values) * np.log(
-            (1 - values) / (1 - activations))) / 2,
-
+        lambda values, activations: _assert_not_nan(
+            # Numpy Magic
+            sum(
+                (1 + values) * np.log((1 + values) / (1 + activations)) +
+                (1 - values) * np.log((1 - values) / (1 - activations))
+            ) / 2,
+            'Logarithmic error can only be used with functions and point values between (-1, 1)'
+        ),
         lambda value, activation: (value - activation) / (1 - activation ** 2)
     )
 
@@ -439,8 +450,8 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
 
     def _update_delta_direction(self, training_value: Union[np.ndarray, float],
                                 activation: Union[float, np.ndarray]) -> None:
-        if not isinstance(training_value, float) or not isinstance(activation, float):
-            raise TypeError('training value and activation mast be a float')
+        if isinstance(training_value, np.ndarray) or isinstance(activation, np.ndarray):
+            raise TypeError('training value and activation must be a float')
         self._perceptron.delta = self._calculate_delta(training_value, activation)
 
     @abstractmethod
@@ -474,10 +485,12 @@ class SimpleSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
 class LinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
-    def __init__(self, base_config: NeuralNetworkBaseConfiguration) -> None:
+    def __init__(self, base_config: NeuralNetworkBaseConfiguration, error_function: NeuralNetworkErrorFunction) -> None:
         base_config.activation_fn = lambda x: x
-        base_config.error_function = NeuralNetworkErrorFunction.QUADRATIC
+        base_config.error_function = error_function
         super().__init__(base_config)
+        if self.error_function == NeuralNetworkErrorFunction.ABSOLUTE:
+            raise ValueError(f'Invalid error function {self.error_function.name} for {repr(type(self))}')
 
     def _calculate_delta(self, training_value: float, activation: float) -> float:
         return self.error_function.calculate_error_factor(training_value, activation)

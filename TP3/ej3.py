@@ -5,28 +5,13 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 
+from plot import plot_confusion_matrix, lighten_color
 from config import Param, Config
-from config_to_network import get_neural_network, get_neural_network_factory, _accuracy
-from exercises_utils import get_training_set, generate_config, lighten_color
+from config_to_network import get_neural_network, get_neural_network_factory, get_training_set
+from exercises_utils import generate_config
 from neural_network import NeuralNetwork
-from neural_network_utils import cross_validation, CrossValidationResult
+from neural_network_utils import cross_validation, CrossValidationResult, accuracy_metric
 
-
-def plot_confusion_matrix(confusion_matrix: np.ndarray):
-    fig = plt.figure(figsize=(20, 8))
-    fig.set_figwidth(20)
-    fig.set_figheight(8)
-    fig.tight_layout(pad=3)
-
-    plt.imshow(confusion_matrix, cmap=plt.cm.Blues)
-    # plt.set_title(f'Validation {k}')
-
-    # Adds number to heatmap matrix
-    for i, j in np.ndindex(confusion_matrix.shape):
-        c = confusion_matrix[j][i]
-        plt.text(i, j, str(c), va='center', ha='center')
-
-    plt.show()
 
 def main(config_file: str):
     print(f'Loading config file {config_file}...')
@@ -34,31 +19,42 @@ def main(config_file: str):
 
     training_set: Param = config.training_set
 
+    # Defaults
+    if training_set['inputs'] is None:
+        training_set['inputs'] = 'trainingset/inputs/Ej3-numbers.tsv'
+    if training_set['outputs'] is None:
+        training_set['outputs'] = 'trainingset/outputs/Ej3-numbers.tsv'
+    if training_set['normalize_values'] is None:
+        training_set['normalize_values'] = False
+
     training_points: np.ndarray = get_training_set(training_set['inputs'], training_set['input_line_count'],
                                                    training_set['normalize_values'])
 
     training_values: np.ndarray = get_training_set(training_set['outputs'], training_set['output_line_count'],
                                                    training_set['normalize_values'])
 
-    neural_network: NeuralNetwork = get_neural_network(config.network, len(training_points[0]))
-
     def metric_comparator(prev: float, curr: float) -> int:
         return 0 if math.isclose(prev, curr) else np.sign(curr - prev)
 
     results: CrossValidationResult = cross_validation(
         get_neural_network_factory(config.network, len(training_points[0])), training_points, training_values,
-        lambda nn, tp, tv: _accuracy(nn, tp, tv, [0]), 4, 15)
+        lambda nn, tp, tv: accuracy_metric(nn, tp, tv, [0]), 4, 1, metric_comparator
+    )
 
     print(f'Best accuracy = {results.best_metric} Mean = {results.metrics_mean} Standard dev= {results.metrics_std}')
 
-    plot_confusion_matrix(
-        results.best_error_network.get_confusion_matrix(results.best_error_points, results.best_error_values, 2,
-                                                         lambda x: 1 if x >= 0 else 0, True))
+    if config.plot:
+        # TODO: Ver que mas imprimir y agregar un grafico del error a lo largo del tiempo capaz (?)
 
-    plot_confusion_matrix(results.best_neural_network.get_confusion_matrix(results.best_training_points, results.best_training_values, 2,
-                                                                           lambda x: 1 if x >= 0 else 0, True))
+        # TODO: Agregar titulos a los graficos
+        plot_confusion_matrix(
+            results.best_error_network.get_confusion_matrix(results.best_error_points, results.best_error_values, 2,
+                                                            lambda x: 1 if x >= 0 else 0, True))
 
-    plot_confusion_matrix(results.best_neural_network.get_confusion_matrix(training_points, training_values, 2, lambda x: 1 if x >= 0 else 0, True))
+        plot_confusion_matrix(results.best_neural_network.get_confusion_matrix(results.best_training_points, results.best_training_values, 2,
+                                                                               lambda x: 1 if x >= 0 else 0, True))
+
+        plot_confusion_matrix(results.best_neural_network.get_confusion_matrix(training_points, training_values, 2, lambda x: 1 if x >= 0 else 0, True))
 
 
 if __name__ == "__main__":

@@ -70,24 +70,23 @@ La configuración de ejecución es realizada via un archivo de extensión [YAML]
       - Esta red solo es util para problemas de clasificación linealmente separables.
       - `type: simple`
     - **Linear**
-      - `linear`
-        - Red neuronal de un solo perceptron cuya función de activación es la función identidad.
-        - Red util para el cálculo de regresiones lineales
-        - `type: linear`
-        - `network_params: ` *Opcional*
-          - `error_function: <str>`
-            - Parámetro donde se especifica la función de error a utilizar. 
-            - Los posibles valores son:
-              - `quadratic`
-                - Muy similar al error cuadrático medio ([mse](https://en.wikipedia.org/wiki/Mean_squared_error)), pero siempre dividido por 2.
-                - Definido como `sum((real_values - predicted_values) ** 2) / 2`
-                - Es usado generalmente en problemas de aproximación.
-                - Posee el problema de que cuanto más cerca del objetivo se está, menor será el nuevo delta_w.
-                - Valor default
-              - `logarithmic`
-                - Definido como `sum((1 + real_values)*ln((1 + real_values)/(1 + predicted_values)) + (1 - real_values)*ln((1 - real_values)/(1 - predicted_values)))/2`.
-                - Cuanto más cerca del objetivo se está, mayor será el delta_w.
-                - En general usado en problemas de clasificación.
+      - Red neuronal de un solo perceptron cuya función de activación es la función identidad.
+      - Red util para el cálculo de regresiones lineales
+      - `type: linear`
+      - `network_params: `
+        - `error_function: <str>`
+          - Parámetro donde se especifica la función de error a utilizar. 
+          - Los posibles valores son:
+            - `quadratic`
+              - Muy similar al error cuadrático medio ([mse](https://en.wikipedia.org/wiki/Mean_squared_error)), pero siempre dividido por 2.
+              - Definido como `sum((real_values - predicted_values) ** 2) / 2`
+              - Es usado generalmente en problemas de aproximación.
+              - Posee el problema de que cuanto más cerca del objetivo se está, menor será el nuevo delta_w.
+              - Valor default
+            - `logarithmic`
+              - Definido como `sum((1 + real_values)*ln((1 + real_values)/(1 + predicted_values)) + (1 - real_values)*ln((1 - real_values)/(1 - predicted_values)))/2`.
+              - Cuanto más cerca del objetivo se está, mayor será el delta_w.
+              - En general usado en problemas de clasificación.
     - **No Lineal**
       - Red neuronal de un solo perceptron que soporta cualquier tipo de función de activación derivable, por lo que puede resolver problemas más complejos.
       - En general es utilizado con funciones sigmoideas.
@@ -164,7 +163,7 @@ La configuración de ejecución es realizada via un archivo de extensión [YAML]
         - `learning_rate_strategy: variable`
         - `base_learning_rate: <float>`
           - El learning rate inicial.
-        - `variable_learning_rate_params: ` *Opcional*
+        - `variable_learning_rate_params: `
           - `up_scaling_factor: <float>` *Opcional*
             - Valor fijo por el que se aumenta el learning rate.
             - Debe ser un decimal positivo. Por default, es 0.
@@ -181,7 +180,7 @@ La configuración de ejecución es realizada via un archivo de extensión [YAML]
         - Busca el learning rate óptimo para cada iteración mediante búsqueda lineal con el método del gradiente descendiente.
         - De esta manera, no es necesario adivinar ningún learning rate, sino que se intentara buscar el mejor.
         - `learning_rate_strategy: linear_search`
-        - `learning_rate_linear_search_params: ` *Opcional*
+        - `learning_rate_linear_search_params: `
           - `max_iterations: <int>`
             - Máxima cantidad de iteraciones del método de búsqueda lineal. Se queda con el mejor que encontró.
             - Debe ser un entero positivo. Por default, es 500.
