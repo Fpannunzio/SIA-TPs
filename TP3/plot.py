@@ -60,7 +60,7 @@ def plot_error(error_values: List[float]) -> None:
     plt.show()
 
 
-def plot_confusion_matrix(confusion_matrix: np.ndarray):
+def plot_confusion_matrix(confusion_matrix: np.ndarray, graph_title: str):
     fig = plt.figure(figsize=(20, 8))
     fig.set_figwidth(20)
     fig.set_figheight(8)
@@ -73,6 +73,10 @@ def plot_confusion_matrix(confusion_matrix: np.ndarray):
     for i, j in np.ndindex(confusion_matrix.shape):
         c = confusion_matrix[j][i]
         plt.text(i, j, str(c), va='center', ha='center')
+
+    plt.title(graph_title)
+    plt.ylabel('Guess')
+    plt.xlabel('True value')
 
     plt.show()
 
