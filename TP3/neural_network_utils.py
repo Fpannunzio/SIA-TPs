@@ -69,6 +69,10 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
 
     total_rounds: int = iteration_count * len(training_points) // test_points_count
 
+    def neural_network_status_callback(neural_network: NeuralNetwork, selected_training_point: int) -> None:
+        if status_callback is not None:
+            status_callback(neural_network, selected_training_point, partitions_tested_count)
+
     print(f'Starting Cross Validation. Total rounds: {total_rounds}')
 
     for _ in range(iteration_count):
@@ -84,10 +88,6 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
             gv_points = np.take(training_points, indexes, axis=0)
             gv_values = np.take(training_values, indexes, axis=0)
 
-            neural_network_status_callback: Optional[Callable[[NeuralNetwork, int], None]] = None
-            if status_callback is not None:
-                neural_network_status_callback = lambda nn, stp: status_callback(nn, stp, partitions_tested_count)
-
             neural_network.train(gt_points, gt_values, status_callback=neural_network_status_callback)
             current_metric = get_metric(neural_network, gv_points, gv_values)
             all_metrics.append(current_metric)
@@ -97,7 +97,10 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
                 be_points = gt_points
                 be_values = gt_values
 
-            if best_metric is None or metric_comparator(best_metric, current_metric) > 0 or (metric_comparator(best_metric, current_metric) == 0 and neural_network.error < best_neural_network.error):
+            if (
+                best_metric is None or metric_comparator(best_metric, current_metric) > 0 or
+                (metric_comparator(best_metric, current_metric) == 0 and best_neural_network is not None and neural_network.error < best_neural_network.error)
+            ):
                 best_metric = current_metric
                 best_indexes = indexes
                 best_neural_network = neural_network
@@ -117,7 +120,7 @@ def cross_validation(neural_network_factory: NeuralNetworkFactory,
         be_points,
         be_values,
         best_partitions_index,
-        best_metric,
+        _assert_not_none(best_metric),
         all_metrics_np,
         all_metrics_np.mean(),
         all_metrics_np.std(),

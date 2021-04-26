@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 import attr
-from typing import Callable, Optional, List, Union, TypeVar
+from typing import Callable, Optional, List, Union, TypeVar, SupportsFloat
 
 import numpy as np
 from scipy.optimize import minimize_scalar, OptimizeResult
@@ -31,7 +31,11 @@ def _assert_not_none(obj: Optional[_T]) -> _T:
     return obj
 
 
-def _assert_not_nan(num: _T, msg: str = 'Result is not a number') -> _T:
+# Generic Internal Variable
+_N = TypeVar('_N', bound=SupportsFloat)
+
+
+def _assert_not_nan(num: _N, msg: str = 'Result is not a number') -> _N:
     if math.isnan(num):
         raise ValueError(msg)
 

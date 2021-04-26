@@ -66,13 +66,13 @@ def _build_base_network_config(network_params: Param, input_count: int) -> Neura
     if network_params['base_learning_rate'] is not None: ret.base_l_rate = network_params['base_learning_rate']
     ret.linear_search_l_rate = network_params['learning_rate_strategy'] == 'linear_search'
     # Learning Rate Linear Search Params
-    if ret.linear_search_l_rate:
+    if ret.linear_search_l_rate and network_params['learning_rate_linear_search_params']:
         l_rate_linear_search_params: Param = network_params['learning_rate_linear_search_params']
         if l_rate_linear_search_params['max_iterations'] is not None: ret.linear_search_l_rate_max_iterations = l_rate_linear_search_params['max_iterations']
         if l_rate_linear_search_params['max_value'] is not None: ret.linear_search_max_value = l_rate_linear_search_params['max_value']
         if l_rate_linear_search_params['error_tolerance'] is not None: ret.linear_search_l_rate_error_tolerance = l_rate_linear_search_params['error_tolerance']
         # Variable Learning Rate Params
-    if network_params['learning_rate_strategy'] == 'variable':
+    if network_params['learning_rate_strategy'] == 'variable' and network_params['variable_learning_rate_params']:
         variable_l_rate_params: Param = network_params['variable_learning_rate_params']
         if variable_l_rate_params['up_scaling_factor'] is not None: ret.l_rate_up_scaling_factor = variable_l_rate_params['up_scaling_factor']
         if variable_l_rate_params['down_scaling_factor'] is not None: ret.l_rate_down_scaling_factor = variable_l_rate_params['down_scaling_factor']

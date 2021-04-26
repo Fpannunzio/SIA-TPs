@@ -20,11 +20,11 @@ def main(config_file: str):
     training_set: Param = config.training_set
 
     # Defaults
-    if training_set['inputs'] is None:
+    if not training_set or training_set['inputs'] is None:
         training_set['inputs'] = 'trainingset/inputs/Ej3-numbers.tsv'
-    if training_set['outputs'] is None:
+    if not training_set or training_set['outputs'] is None:
         training_set['outputs'] = 'trainingset/outputs/Ej3-numbers.tsv'
-    if training_set['normalize_values'] is None:
+    if not training_set or training_set['normalize_values'] is None:
         training_set['normalize_values'] = False
 
     training_points: np.ndarray = get_training_set(training_set['inputs'], training_set['input_line_count'],
