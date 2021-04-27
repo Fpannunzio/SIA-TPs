@@ -38,8 +38,6 @@ class Config:
                              f'appropriate')
 
 
-# TODO(tobi): Agregar deshabilitacion de plotting
-# TODO(tobi): Agregar a los ejercicios una configuracion default para training set
         args = Config.validate_param(args, Schema({
             Optional('training_set', default=dict): {
                 Optional('inputs', default=None): str,

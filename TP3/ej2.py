@@ -14,7 +14,7 @@ from neural_network_lib.neural_network_utils import NeuralNetworkFactory, CrossV
 def ej2(config_file: str):
 
     PARTITIONS_COUNT: int = 10
-    ROUNDS: int = 5
+    ROUNDS: int = 100
 
     print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)

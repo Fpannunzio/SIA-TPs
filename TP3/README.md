@@ -224,9 +224,9 @@ plotting:
 
 #### Ejemplo 2
 
-En este ejemplo se hace un cross validation con la métrica error (dado que es un problema de aproximación) y particionando el conjunto de entrenamiento en 10 (es decir en conjuntos de 20) durante 5 iteraciones. Una vez finalizado, se imprime el mejor error alcanzado y la media y desviación estándar de todos los errores obtenidos. 
+En este ejemplo se hace un cross validation con la métrica error (dado que es un problema de aproximación) y particionando el conjunto de entrenamiento en 10 (es decir en conjuntos de 20) durante 100 iteraciones (para un total de 1000 rounds). Una vez finalizado, se imprime el mejor error alcanzado y la media y desviación estándar de todos los errores obtenidos. 
 
-Luego, se grafican los errores durante el entrenamiento de cada red de la cross validation, remarcando la media y la que tuvo menor error. Por último, se hace un scatter plot entre el error durante el entrenamiento y su error en el conjunto de validación (un punto por cada red del cross validation).  
+Luego, se grafican los errores durante el entrenamiento de cada red del cross validation, remarcando la media y la que tuvo menor error. Por último, se hace un scatter plot entre el error durante el entrenamiento y su error en el conjunto de validación (un punto por cada red del cross validation).  
 
 ##### Configuración recomendada
 ```yaml
@@ -240,7 +240,7 @@ training_set:
 network:
 
   type: linear
-  max_training_iterations: 300
+  max_training_iterations: 100
   error_tolerance: 0.0001
   max_stale_error_iterations: 10
   momentum_factor: 0.2
@@ -257,7 +257,7 @@ plotting:
 
 #### Ejemplo 3
 
-En este ejemplo se hace un cross validation con la métrica accuracy (cantidad total de aciertos sobre la cantidad de puntos totales) y particionando el conjunto de entrenamiento en 2 (es decir en conjuntos de 5) durante 10 iteraciones. Una vez finalizado, se imprime la mejor accuracy alcanzada y la media y desviación estándar de todas las accuracies obtenidas. 
+En este ejemplo se hace un cross validation con la métrica accuracy (cantidad total de aciertos sobre la cantidad de puntos totales) y particionando el conjunto de entrenamiento en 2 (es decir en conjuntos de 5) durante 10 iteraciones (para un total de 20 rounds). Una vez finalizado, se imprime la mejor accuracy alcanzada y la media y desviación estándar de todas las accuracies obtenidas. 
 
 Por último, se calculan y grafican las matrices de confusión de: la red de mayor accuracy obtenido con todos los puntos, la red de mayor accuracy obtenido con solo los puntos de entrenamiento y la red con menor error durante el entrenamiento con solo los puntos de entrenamiento.
 

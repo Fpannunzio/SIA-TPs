@@ -5,7 +5,7 @@ from typing import Dict, List
 import numpy as np
 from matplotlib import pyplot as plt
 
-from TP3.neural_network_lib.neural_network import NeuralNetwork
+from neural_network_lib.neural_network import NeuralNetwork
 from neural_network_lib.neural_network_utils import CrossValidationResult, accuracy_metric, cross_validation
 from plot import plot_confusion_matrix, lighten_color
 from config import Param, Config

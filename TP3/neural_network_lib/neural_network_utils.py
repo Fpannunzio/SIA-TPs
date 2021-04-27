@@ -36,7 +36,6 @@ class CrossValidationResult:
     metrics_std: float
 
 
-# TODO(tobi): Ver de mejorar funcion
 def cross_validation(neural_network_factory: NeuralNetworkFactory,
                      training_points: np.ndarray, training_values: np.ndarray,
                      get_metric: MetricCalculator,

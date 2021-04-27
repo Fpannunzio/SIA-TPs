@@ -36,17 +36,23 @@ def ej1(config_file: str):
     def get_network_error(network: NeuralNetwork, selected_training_point: int) -> None:
         network_error_by_iteration.append(network.error)
 
-    neural_network.train(training_points, training_values, get_network_error)
+    neural_network.train(training_points, training_values, status_callback=get_network_error)
+
+    if isinstance(neural_network, SinglePerceptronNeuralNetwork):
+        print(f'Perceptron Weights: {neural_network._perceptron.w}')
+    else:
+        print('ej1.py is better suited for a simple single perceptron neural network. Consider using it next time!')
 
     if config.plot:
         plot_error(network_error_by_iteration)
 
-    if isinstance(neural_network, SinglePerceptronNeuralNetwork):
-        print(f'Perceptron Weights: {neural_network._perceptron.w}')
-        if isinstance(neural_network, SimpleSinglePerceptronNeuralNetwork) and len(training_points[0]) == 2 and len(training_values[0]) == 1 and config.plot:
+        # Plot simple perceptron line
+        if (
+            isinstance(neural_network, SimpleSinglePerceptronNeuralNetwork) and
+            len(training_points[0]) == 2 and
+            len(training_values[0]) == 1
+        ):
             plot_2d_hyperplane(training_points, training_values, neural_network._perceptron.w)
-    else:
-        print('ej1.py is better suited for a simple single perceptron neural network. Consider using it next time!')
 
 
 if __name__ == "__main__":

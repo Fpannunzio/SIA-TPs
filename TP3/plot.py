@@ -61,13 +61,10 @@ def plot_error(error_values: List[float]) -> None:
 
 
 def plot_confusion_matrix(confusion_matrix: np.ndarray, graph_title: str):
-    fig = plt.figure(figsize=(20, 8))
-    fig.set_figwidth(20)
-    fig.set_figheight(8)
-    fig.tight_layout(pad=3)
+    fig = plt.figure()
+    fig.tight_layout()
 
     plt.imshow(confusion_matrix, cmap=plt.cm.Blues)
-    # plt.set_title(f'Validation {k}')
 
     # Adds number to heatmap matrix
     for i, j in np.ndindex(confusion_matrix.shape):
@@ -79,6 +76,7 @@ def plot_confusion_matrix(confusion_matrix: np.ndarray, graph_title: str):
     plt.xlabel('True value')
 
     plt.show()
+
 
 # https://stackoverflow.com/a/49601444/12270520
 def lighten_color(color, amount=0.5):
@@ -99,4 +97,3 @@ def lighten_color(color, amount=0.5):
         c = color
     c = colorsys.rgb_to_hls(*mc.to_rgb(c))
     return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
-
