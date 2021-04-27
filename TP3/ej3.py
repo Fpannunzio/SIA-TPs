@@ -5,10 +5,10 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 
+from TP3.neural_network_lib.neural_network import NeuralNetwork
 from plot import plot_confusion_matrix, lighten_color
 from config import Param, Config
 from config_to_network import get_neural_network, get_neural_network_factory, get_training_set
-from neural_network import NeuralNetwork
 
 
 def one_layer(config_file: str):
