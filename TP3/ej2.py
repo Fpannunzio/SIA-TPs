@@ -38,12 +38,15 @@ def ej2(config_file: str):
     def error_comparator(prev: float, curr: float) -> int:
         return 0 if math.isclose(prev, curr) else np.sign(prev - curr)
 
-    validation_result: CrossValidationResult = cross_validation(neural_network_factory, training_points, training_values,
-                                                                error_metric, len(training_points)//PARTITIONS_COUNT, ROUNDS, metric_comparator=error_comparator, status_callback=save_errors)
+    validation_result: CrossValidationResult = cross_validation(
+        neural_network_factory, training_points, training_values,
+        error_metric, len(training_points)//PARTITIONS_COUNT, ROUNDS,
+        metric_comparator=error_comparator, status_callback=save_errors
+    )
 
     print(f'STD: {validation_result.metrics_std}')
     print(f'Mean: {validation_result.metrics_mean}')
-    print(f'Best: {validation_result.best_metric}')
+    print(f'Best Error: {validation_result.best_metric}')
 
     if config.plot:
 

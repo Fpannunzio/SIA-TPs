@@ -2,15 +2,17 @@ import math
 import sys
 from typing import Dict, List
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 from TP3.neural_network_lib.neural_network import NeuralNetwork
+from neural_network_lib.neural_network_utils import CrossValidationResult, accuracy_metric, cross_validation
 from plot import plot_confusion_matrix, lighten_color
 from config import Param, Config
-from config_to_network import get_neural_network, get_neural_network_factory, get_training_set
+from config_to_network import get_neural_network_factory, get_training_set, get_neural_network
 
 
+# Funcion de ejemplo - No se utiliza
 def one_layer(config_file: str):
     min_error: List[float] = []
     last_error: List[float] = []
@@ -112,7 +114,7 @@ def one_layer(config_file: str):
     plt.xlabel('epoch')
     plt.show()
 
-
+# Funcion de ejemplo - No se utiliza
 def multiple_layer(config_file: str):
     min_error: List[float] = []
     last_error: List[float] = []
@@ -249,7 +251,6 @@ def multiple_layer(config_file: str):
 
 def main(config_file: str):
     PARTITIONS_COUNT: int = 2
-    ROUNDS: int = 10
 
     print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)
@@ -279,23 +280,40 @@ def main(config_file: str):
         metric_comparator
     )
 
-    print(f'Best accuracy = {results.best_metric} Mean = {results.metrics_mean} Standard dev= {results.metrics_std}')
+    print(f'STD: {results.metrics_std}')
+    print(f'Mean: {results.metrics_mean}')
+    print(f'Best Accuracy: {results.best_metric}')
 
     if config.plot:
         plot_confusion_matrix(
-            results.best_error_network.get_confusion_matrix(results.best_error_points, results.best_error_values, 2,
-                                                            lambda x: 1 if x >= 0 else 0, True),
-            'Confusion matrix for best error network with training points')
+            results.best_error_network.get_confusion_matrix(
+                results.best_error_points, results.best_error_values,
+                2,
+                lambda x: 1 if x >= 0 else 0,
+                True
+            ),
+            'Confusion matrix for best error network with training points'
+        )
 
         plot_confusion_matrix(
-            results.best_neural_network.get_confusion_matrix(results.best_training_points, results.best_training_values,
-                                                             2,
-                                                             lambda x: 1 if x >= 0 else 0, True),
-            'Confusion matrix for best metric network with training points')
+            results.best_neural_network.get_confusion_matrix(
+                results.best_training_points, results.best_training_values,
+                2,
+                lambda x: 1 if x >= 0 else 0,
+                True
+            ),
+            'Confusion matrix for best metric network with training points'
+        )
 
-        plot_confusion_matrix(results.best_neural_network.get_confusion_matrix(training_points, training_values, 2,
-                                                                               lambda x: 1 if x >= 0 else 0, True),
-                              'Confusion matrix for best metric network with all points')
+        plot_confusion_matrix(
+            results.best_neural_network.get_confusion_matrix(
+                training_points,
+                training_values,
+                2,
+                lambda x: 1 if x >= 0 else 0,
+                True),
+            'Confusion matrix for best metric network with all points'
+        )
 
 
 if __name__ == "__main__":
@@ -319,4 +337,3 @@ if __name__ == "__main__":
     except Exception as ex:
         print('An unexpected error occurred')
         raise ex
-

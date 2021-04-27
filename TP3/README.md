@@ -197,21 +197,103 @@ La configuración de ejecución es realizada via un archivo de extensión [YAML]
 
 En este ejemplo simplemente se entrena una red neuronal con la configuración indicada. Luego, se grafica el error a través de las iteraciones de entrenamiento. Si es una red de un único perceptron, se imprimen los pesos del perceptron. Si además, la red es una red neuronal simple de 2 entradas y una salida booleana, se graficará una representación del vector de pesos.
 
+##### Configuración recomendada
+```yaml
+training_set:
+  inputs: trainingset/inputs/Ej1-AND.tsv  # Tambien puede ser con Ej1-XOR.tsv
+  input_line_count: 1
+  outputs: trainingset/outputs/Ej1-AND.tsv  # Tambien puede ser con Ej1-XOR.tsv
+  output_line_count: 1
+  normalize_values: false
+
+network:
+
+  type: simple
+  max_training_iterations: 80
+#  weight_reset_threshold: 10
+  error_tolerance: 0.0001
+  max_stale_error_iterations: 500
+  momentum_factor: 0.2
+  error_goal: 0.000005
+  learning_rate_strategy: fixed  # o variable o linear_search. Por default fixed
+  base_learning_rate: 0.05
+
+plotting:
+  render: true
+```
+
 #### Ejemplo 2
 
-TODO
+En este ejemplo se hace un cross validation con la métrica error (dado que es un problema de aproximación) y particionando el conjunto de entrenamiento en 10 (es decir en conjuntos de 20) durante 5 iteraciones. Una vez finalizado, se imprime el mejor error alcanzado y la media y desviación estándar de todos los errores obtenidos. Luego, se grafican los errores durante el entrenamiento de cada red de la cross validation, remarcando la media y la que tuvo menor error. Por último, se hace un scatter plot entre el error durante el entrenamiento y su error en el conjunto de validación (un punto por cada red del cross validation).  
+
+##### Configuración recomendada
+```yaml
+training_set:
+  inputs: trainingset/inputs/Ej2.tsv
+  input_line_count: 1
+  outputs: trainingset/outputs/Ej2.tsv
+  output_line_count: 1
+  normalize_values: true
+
+network:
+
+  type: linear
+  max_training_iterations: 300
+  error_tolerance: 0.0001
+  max_stale_error_iterations: 10
+  momentum_factor: 0.2
+  error_goal: 0.000005
+  learning_rate_strategy: fixed
+  base_learning_rate: 0.02
+
+  network_params:
+    error_function: quadratic # o logarithmic
+
+plotting:
+  render: true
+```
 
 #### Ejemplo 3
 
-TODO
+En este ejemplo se hace un cross validation con la métrica accuracy (cantidad total de aciertos sobre la cantidad de puntos totales) y particionando el conjunto de entrenamiento en 2 (es decir en conjuntos de 5) durante 10 iteraciones. Una vez finalizado, se imprime la mejor accuracy alcanzada y la media y desviación estándar de todas las accuracies obtenidas. Por último, se calculan y grafican las matrices de confusión de: la red de mayor accuracy obtenido con todos los puntos, la red de mayor accuracy obtenido con solo los puntos de entrenamiento y la red con menor error durante el entrenamiento con solo los puntos de entrenamiento.
 
-#### Ejemplos de configuración
-
+##### Configuración recomendada
 ```yaml
-  TODO: PONER EJEMPLO 1
-```
-```yaml
-    TODO: PONER EJEMPLO 2
-```
+training_set:
+  inputs: trainingset/inputs/Ej3-numbers.tsv
+  input_line_count: 7
+  outputs: trainingset/outputs/Ej3-numbers.tsv
+  output_line_count: 1
+  normalize_values: false
 
+network:
 
+  type: multi_layered
+  max_training_iterations: 2500
+  weight_reset_threshold: 100
+  max_stale_error_iterations: 1000
+  error_tolerance: 0.0000001
+  error_goal: 0.000000001
+  momentum_factor: 0.8
+  learning_rate_strategy: variable
+  base_learning_rate: 0.05
+
+  variable_learning_rate_params:
+    up_scaling_factor: 0.05
+    down_scaling_factor: 0.25
+    positive_trend_threshold: 10
+    negative_trend_threshold: 150
+
+  learning_rate_linear_search_params:
+    max_iterations: 500
+    error_tolerance: 0.00001
+
+  network_params:
+    error_function: quadratic # quadratic o logarithmic
+    activation_function: tanh
+    activation_slope_factor: 0.8
+    layer_sizes: [10, 2, 3, 1]
+
+plotting:
+  render: true
+```
