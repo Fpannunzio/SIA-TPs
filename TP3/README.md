@@ -190,7 +190,22 @@ La configuración de ejecución es realizada via un archivo de extensión [YAML]
           - `max_value: <int>`
             - Valor maximo de learning rate buscado.
             - Entero positivo. Por default, 1.
-Ejemplos de configuracion
+
+### Ejemplos
+
+#### Ejemplo 1
+
+En este ejemplo simplemente se entrena una red neuronal con la configuración indicada. Luego, se grafica el error a través de las iteraciones de entrenamiento. Si es una red de un único perceptron, se imprimen los pesos del perceptron. Si además, la red es una red neuronal simple de 2 entradas y una salida booleana, se graficará una representación del vector de pesos.
+
+#### Ejemplo 2
+
+TODO
+
+#### Ejemplo 3
+
+TODO
+
+#### Ejemplos de configuración
 
 ```yaml
   TODO: PONER EJEMPLO 1
@@ -199,6 +214,4 @@ Ejemplos de configuracion
     TODO: PONER EJEMPLO 2
 ```
 
-### Resultado
 
-`TODO:` 

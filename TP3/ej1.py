@@ -5,7 +5,8 @@ import numpy as np
 
 from config import Config, Param
 from config_to_network import get_training_set, get_neural_network
-from neural_network_lib.neural_network import NeuralNetwork, SinglePerceptronNeuralNetwork
+from neural_network_lib.neural_network import NeuralNetwork, SinglePerceptronNeuralNetwork, \
+    SimpleSinglePerceptronNeuralNetwork
 from plot import plot_error, plot_2d_hyperplane
 
 
@@ -42,10 +43,10 @@ def ej1(config_file: str):
 
     if isinstance(neural_network, SinglePerceptronNeuralNetwork):
         print(f'Perceptron Weights: {neural_network._perceptron.w}')
-        if len(training_points[0]) == 2 and len(training_values[0]) == 1 and config.plot:
+        if isinstance(neural_network, SimpleSinglePerceptronNeuralNetwork) and len(training_points[0]) == 2 and len(training_values[0]) == 1 and config.plot:
             plot_2d_hyperplane(training_points, training_values, neural_network._perceptron.w)
     else:
-        print('ej1.py is better suited for a single perceptron neural networks. Consider using it next time!')
+        print('ej1.py is better suited for a simple single perceptron neural network. Consider using it next time!')
 
 
 if __name__ == "__main__":
