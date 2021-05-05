@@ -50,7 +50,7 @@ def oja(values: np.ndarray, eta: float, w: np.ndarray, epoch: int, tolerance: fl
 
 
 def exercise(config_file: str):
-    europe = pandas.read_csv('europe.csv')
+    europe = pandas.read_csv('../TP4/europe.csv')
     config: Config = Config(config_file)
     values = StandardScaler().fit_transform(europe.values[:, 1:])
     get_neural_network_factory(config.network, len(values[0]))
