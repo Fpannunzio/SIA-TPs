@@ -20,7 +20,6 @@ DEFAULT_L_RATE_LINEAR_SEARCH_MAX_ITERATIONS: int = 500
 DEFAULT_L_RATE_LINEAR_SEARCH_ERROR_TOLERANCE: float = 1e-5
 DEFAULT_LINEAR_SEARCH_MAX_VALUE: int = 5
 
-
 # Generic Internal Variable
 _T = TypeVar('_T')
 
@@ -154,7 +153,8 @@ class NeuralNetwork(ABC):
     @staticmethod
     def get_precision(confusion_matrix: np.ndarray) -> np.ndarray:
         return np.fromiter(
-            (confusion_matrix[i][i] / np.sum(confusion_matrix[:, i]) if confusion_matrix[i][i] != 0 else 0 for i in range(len(confusion_matrix))),
+            (confusion_matrix[i][i] / np.sum(confusion_matrix[:, i]) if confusion_matrix[i][i] != 0 else 0 for i in
+             range(len(confusion_matrix))),
             float
         )
 
@@ -162,7 +162,8 @@ class NeuralNetwork(ABC):
     @staticmethod
     def get_recall(confusion_matrix: np.ndarray) -> np.ndarray:
         return np.fromiter(
-            (confusion_matrix[i][i] / np.sum(confusion_matrix[i]) if confusion_matrix[i][i] != 0 else 0 for i in range(len(confusion_matrix))),
+            (confusion_matrix[i][i] / np.sum(confusion_matrix[i]) if confusion_matrix[i][i] != 0 else 0 for i in
+             range(len(confusion_matrix))),
             float
         )
 
@@ -172,7 +173,8 @@ class NeuralNetwork(ABC):
         recall: np.ndarray = NeuralNetwork.get_recall(confusion_matrix)
 
         return np.fromiter(
-            (2 * precision[i] * recall[i] / (precision[i] + recall[i]) if (precision[i] != 0 and recall[i] != 0) else 0 for i in range(len(confusion_matrix))),
+            (2 * precision[i] * recall[i] / (precision[i] + recall[i]) if (precision[i] != 0 and recall[i] != 0) else 0
+             for i in range(len(confusion_matrix))),
             float
         )
 
@@ -298,11 +300,13 @@ class NeuralNetwork(ABC):
         self.iters_since_soft_reset = 0
 
     @abstractmethod
-    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[float, np.ndarray]:
+    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[
+        float, np.ndarray]:
         pass
 
     @abstractmethod
-    def _update_delta_direction(self, training_value: Union[np.ndarray, float], prediction: Union[float, np.ndarray]) -> None:
+    def _update_delta_direction(self, training_value: Union[np.ndarray, float],
+                                prediction: Union[float, np.ndarray]) -> None:
         pass
 
     @abstractmethod
@@ -387,7 +391,7 @@ class NeuralNetwork(ABC):
 
 # Clase interna de las NeuralNetworks
 # Todos los puntos que se reciben en los métodos deben venir con la columna identidad
-class _Perceptron:
+class _Perceptron(ABC):
 
     def __init__(self, input_count: int, activation_fn: ActivationFunction, momentum_factor: float):
         self.input_count = input_count
@@ -413,13 +417,12 @@ class _Perceptron:
 
         return self.last_activation
 
+    @abstractmethod
+    def update_training_weights(self, l_rate: float, point: np.ndarray) -> None:
+        pass
+
     def persist_weights(self) -> None:
         self.w = self.training_w
-
-    def update_training_weights(self, l_rate: float, point: np.ndarray) -> None:
-        new_delta_w: np.ndarray = l_rate * self.delta * point + self.momentum_factor * self._last_delta_w
-        self.training_w += new_delta_w
-        self._last_delta_w = new_delta_w
 
     def test_l_rate(self, point: np.ndarray, l_rate: float) -> float:
         test_weight: np.ndarray = self.training_w + l_rate * self.delta * point + self.momentum_factor * self._last_delta_w
@@ -429,12 +432,31 @@ class _Perceptron:
         self.training_w = np.random.uniform(-1, 1, self.input_count + 1)
 
 
+class _SupervisedPerceptron(_Perceptron):
+
+    def update_training_weights(self, l_rate: float, point: np.ndarray) -> None:
+        new_delta_w: np.ndarray = l_rate * self.delta * point + self.momentum_factor * self._last_delta_w
+        self.training_w += new_delta_w
+        self._last_delta_w = new_delta_w
+
+
+class _UnsupervisedPerceptron(_Perceptron):
+
+    def update_training_weights(self, l_rate: float, point: np.ndarray) -> None:
+        new_delta_w: np.ndarray = l_rate * self.last_excitement * (point - self.last_excitement * self.training_w) #+ self.momentum_factor * self._last_delta_w
+        self.training_w += new_delta_w
+        self._last_delta_w = new_delta_w
+
+    def normalized_weight(self) -> float:
+        return self.training_w / np.linalg.norm(self.training_w)
+
+
 class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
 
     def __init__(self, base_config: NeuralNetworkBaseConfiguration) -> None:
         base_config.output_count = 1
         super().__init__(base_config)
-        self._perceptron = _Perceptron(self.input_count, self.activation_fn, self.momentum_factor)
+        self._perceptron = _SupervisedPerceptron(self.input_count, self.activation_fn, self.momentum_factor)
 
     def train(self, training_points: np.ndarray, training_values: np.ndarray,
               status_callback: Optional[Callable[['NeuralNetwork', int], None]] = None,
@@ -465,8 +487,10 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
     def _update_training_weight(self, training_point: np.ndarray) -> None:
         self._perceptron.update_training_weights(self.l_rate, training_point)
 
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> float:
-        return self.error_function.calculate_error(values, self.predict_points(points, training, insert_identity_column))
+    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False,
+                        insert_identity_column: bool = False) -> float:
+        return self.error_function.calculate_error(values,
+                                                   self.predict_points(points, training, insert_identity_column))
 
     def _persist_training_weight(self) -> None:
         self._perceptron.persist_weights()
@@ -485,6 +509,34 @@ class SimpleSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
     def _calculate_delta(self, training_value: float, activation: float) -> float:
         return self.error_function.calculate_error_factor(training_value, activation)
+
+
+class UnsupervisedLinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
+
+    def __init__(self, base_config: NeuralNetworkBaseConfiguration, error_function: NeuralNetworkErrorFunction) -> None:
+        base_config.activation_fn = lambda x: x
+        base_config.error_function = error_function
+        super().__init__(base_config)
+        self._perceptron = _UnsupervisedPerceptron(self.input_count, self.activation_fn, self.momentum_factor)
+        self.error_function = NeuralNetworkErrorFunction.ABSOLUTE
+
+    def train(self, training_points: np.ndarray, training_values: np.ndarray,
+              status_callback: Optional[Callable[['NeuralNetwork', int], None]] = None,
+              insert_identity_column: bool = True) -> None:
+
+        # falta el validate training data
+        for _ in range(self.max_training_iterations):
+            for i in range(np.shape(training_points)[0]):
+                self.predict(training_points[i])
+                self._update_training_weight(training_points[i])
+                self.training_iteration += 1
+
+
+    def _calculate_delta(self, training_value: float, activation: float) -> float:
+        pass
+
+    def get_normalized_weights(self) -> float:
+        return self._perceptron.normalized_weight()
 
 
 class LinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
@@ -588,7 +640,7 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
         valid: bool = (
                 len(layer_sizes) > 0 and
                 functools.reduce(lambda valid, layer_size: valid and layer_size > 0, layer_sizes, True)
-        # Todos valores positivos
+            # Todos valores positivos
         )
         if not valid:
             raise ValueError(f'Invalid Layer Sizes in {repr(type(self))}:\n{repr(layer_sizes)}')
@@ -605,8 +657,8 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
         if self.error_function == NeuralNetworkErrorFunction.ABSOLUTE:
             raise ValueError(f'Invalid error function {self.error_function.name} for {repr(type(self))}')
 
-        perceptron_factory: Callable[[int], _Perceptron] = \
-            lambda input_count: _Perceptron(
+        perceptron_factory: Callable[[int], _SupervisedPerceptron] = \
+            lambda input_count: _SupervisedPerceptron(
                 input_count, self.activation_fn, self.momentum_factor
             )
 
@@ -649,8 +701,10 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
             self._layers[m].update_w(self.l_rate, previous_activation)
             previous_activation = self._layers[m].activation_cache
 
-    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> float:
-        return self.error_function.calculate_error(values.flatten(), self.predict_points(points, training, insert_identity_column).flatten())
+    def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False,
+                        insert_identity_column: bool = False) -> float:
+        return self.error_function.calculate_error(values.flatten(), self.predict_points(points, training,
+                                                                                         insert_identity_column).flatten())
 
     def _persist_training_weight(self) -> None:
         for m in range(len(self._layers)):
