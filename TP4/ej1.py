@@ -5,7 +5,7 @@ import pandas
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from TP4.grid import Grid, QuadraticGrid
+from TP4.grid import Grid, QuadraticGrid, HexagonalGrid
 
 
 def exercise(config_file: str):
@@ -14,15 +14,16 @@ def exercise(config_file: str):
 
     pca = PCA()
     pca.fit(values)
-    learning_rate = 0.5
-    radius = 3
-    k = 10
+    learning_rate = 0.1
+    radius = 2
+    k = 5
 
     def distance(point1: np.ndarray, point2: np.ndarray) -> float:
         return np.linalg.norm(point1 - point2)
 
-    grid: QuadraticGrid = QuadraticGrid(learning_rate, radius, k, distance, 7)
+    grid: HexagonalGrid = HexagonalGrid(learning_rate, radius, k, distance, 7)
     grid.train(len(values)*100, values)
+    matrix: np.ndarray = grid.get_near_neurons_mean_distances_matrix()
     print(grid)
 
 
