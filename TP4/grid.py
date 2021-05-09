@@ -1,13 +1,23 @@
 import math
 from abc import ABC, abstractmethod
-from typing import Callable, List, Tuple, NamedTuple
+from typing import Callable, List, NamedTuple, Optional, TypeVar
 
+import attr
 import numpy as np
+
 
 from TP4.hexagonal_grid_utils import generate_indexes_matrix, offset_distance, OffsetCoord
 
 Index = NamedTuple('Index', [('x', int), ('y', int)])
 
+# Generic Internal Variable
+_T = TypeVar('_T')
+
+
+def _assert_not_none(obj: Optional[_T]) -> _T:
+    if obj is None:
+        raise TypeError()
+    return obj
 
 class _Neuron:
     def __init__(self, distance: Callable[[np.ndarray, np.ndarray], float], input_count: int,
@@ -24,13 +34,22 @@ class _Neuron:
         self.w += learning_rate * (selected_point - self.w)
 
 
+@attr.s(auto_attribs=True)
+class GridBaseConfiguration:
+    input_count: Optional[int] = None
+    learning_rate: Optional[float] = None
+    radius: Optional[float] = None
+    k: Optional[int] = None
+    distance: Callable[[np.ndarray, np.ndarray], float] = None
+
+
 class Grid(ABC):
-    def __init__(self, learning_rate: float, radius: float, k: int, distance: Callable[[np.ndarray, np.ndarray], float],
-                 input_count: int, initial_weights: np.ndarray = None):
-        self.radius = radius
-        self.learning_rate = learning_rate
-        self.k = k
-        self.grid: List[List[_Neuron]] = self._generate_grid(k, distance, input_count, initial_weights)
+    def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
+        self.radius = _assert_not_none(grid_config.radius)
+        self.learning_rate = _assert_not_none(grid_config.learning_rate)
+        self.k = _assert_not_none(grid_config.k)
+        self.grid: List[List[_Neuron]] = self._generate_grid(self.k, grid_config.distance, grid_config.input_count,
+                                                             initial_weights)
 
     @staticmethod
     def _generate_grid(k: int, distance: Callable[[np.ndarray, np.ndarray], float],
@@ -97,9 +116,8 @@ class Grid(ABC):
 
 class QuadraticGrid(Grid):
 
-    def __init__(self, learning_rate: float, radius: float, k: int, distance: Callable[[np.ndarray, np.ndarray], float],
-                 input_count: int, initial_weights: np.ndarray = None):
-        super().__init__(learning_rate, radius, k, distance, input_count, initial_weights)
+    def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
+        super().__init__(grid_config, initial_weights)
 
     def _get_near_neurons_indexes(self, index: Index, radius: float = 1.0) -> List[Index]:
         grid = np.zeros((self.k, self.k, 2), dtype=np.int32)
@@ -112,9 +130,8 @@ class QuadraticGrid(Grid):
 
 class HexagonalGrid(Grid):
 
-    def __init__(self, learning_rate: float, radius: float, k: int, distance: Callable[[np.ndarray, np.ndarray], float],
-                 input_count: int, initial_weights: np.ndarray = None):
-        super().__init__(learning_rate, radius, k, distance, input_count, initial_weights)
+    def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
+        super().__init__(grid_config, initial_weights)
 
     def _get_near_neurons_indexes(self, index: Index, radius: float = 1.0) -> List[Index]:
         grid = generate_indexes_matrix(self.k)
