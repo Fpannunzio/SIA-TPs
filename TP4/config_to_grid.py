@@ -6,10 +6,10 @@ from schema import Schema, And, Or
 from sklearn.preprocessing import StandardScaler
 
 from TP4.config import Param, Config
-from TP4.grid import Grid, QuadraticGrid, HexagonalGrid, GridBaseConfiguration
+from TP4.kohonen_grid import KohonenGrid, KohonenQuadraticGrid, KohonenHexagonalGrid, GridBaseConfiguration
 
-GridFactory = Callable[[], Grid]
-_GridFactoryBuilder = Callable[[GridBaseConfiguration], Callable[[], Grid]]
+GridFactory = Callable[[], KohonenGrid]
+_GridFactoryBuilder = Callable[[GridBaseConfiguration], Callable[[], KohonenGrid]]
 
 
 def get_normalized_values(file_name: str) -> np.ndarray:
@@ -18,7 +18,7 @@ def get_normalized_values(file_name: str) -> np.ndarray:
     return StandardScaler().fit_transform(file.values[:, 1:])
 
 
-def get_grid(base_grid_params: Param, input_count: int) -> Grid:
+def get_grid(base_grid_params: Param, input_count: int) -> KohonenGrid:
     grid_factory: GridFactory = get_grid_factory(base_grid_params, input_count)
     return grid_factory()
 
@@ -55,12 +55,12 @@ def get_grid_factory(base_grid_params: Param, input_count: int) -> GridFactory:
     return factory_builder(base_grid_config)
 
 
-def _get_quadratic_grid(base_config: GridBaseConfiguration) -> Callable[[], Grid]:
-    return lambda: QuadraticGrid(base_config)
+def _get_quadratic_grid(base_config: GridBaseConfiguration) -> Callable[[], KohonenGrid]:
+    return lambda: KohonenQuadraticGrid(base_config)
 
 
-def _get_hexagonal_grid(base_config: GridBaseConfiguration) -> Callable[[], Grid]:
-    return lambda: HexagonalGrid(base_config)
+def _get_hexagonal_grid(base_config: GridBaseConfiguration) -> Callable[[], KohonenGrid]:
+    return lambda: KohonenHexagonalGrid(base_config)
 
 
 def _euclidean_distance(point1: np.ndarray, point2: np.ndarray) -> float:

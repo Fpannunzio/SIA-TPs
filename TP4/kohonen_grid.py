@@ -50,7 +50,7 @@ class GridBaseConfiguration:
 #     TODO(tobi): Validar parametros
 
 
-class Grid(ABC):
+class KohonenGrid(ABC):
     def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
         self.radius = _assert_not_none(grid_config.radius)
         self.learning_rate = _assert_not_none(grid_config.learning_rate)
@@ -109,6 +109,7 @@ class Grid(ABC):
             ]
         ).mean()
 
+    # Matriz U
     def get_near_neurons_mean_distances_matrix(self) -> np.ndarray:
         mean_distance_matrix: np.ndarray = np.zeros((self.k, self.k))
 
@@ -125,7 +126,7 @@ class Grid(ABC):
         return mean_distance_matrix
 
 
-class QuadraticGrid(Grid):
+class KohonenQuadraticGrid(KohonenGrid):
 
     def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
         super().__init__(grid_config, initial_weights)
@@ -139,7 +140,7 @@ class QuadraticGrid(Grid):
         return [Index(value[0], value[1]) for value in grid[mask]]
 
 
-class HexagonalGrid(Grid):
+class KohonenHexagonalGrid(KohonenGrid):
 
     def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
         super().__init__(grid_config, initial_weights)

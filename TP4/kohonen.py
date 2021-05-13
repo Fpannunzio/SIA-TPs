@@ -4,7 +4,7 @@ import numpy as np
 
 from TP4.config import Config, Param
 from TP4.config_to_grid import get_grid, get_normalized_values
-from TP4.grid import Grid, QuadraticGrid, HexagonalGrid
+from TP4.kohonen_grid import KohonenGrid, KohonenQuadraticGrid, KohonenHexagonalGrid
 
 
 def exercise(config_file: str):
@@ -14,7 +14,7 @@ def exercise(config_file: str):
 
     values = get_normalized_values(training_set['input'])
 
-    grid: Grid = get_grid(config.grid, len(values[0]))
+    grid: KohonenGrid = get_grid(config.grid, len(values[0]))
     grid.train(len(values)*100, values)
     matrix: np.ndarray = grid.get_near_neurons_mean_distances_matrix()
     print(grid)
