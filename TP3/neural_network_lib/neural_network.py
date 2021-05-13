@@ -300,13 +300,11 @@ class NeuralNetwork(ABC):
         self.iters_since_soft_reset = 0
 
     @abstractmethod
-    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[
-        float, np.ndarray]:
+    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[float, np.ndarray]:
         pass
 
     @abstractmethod
-    def _update_delta_direction(self, training_value: Union[np.ndarray, float],
-                                prediction: Union[float, np.ndarray]) -> None:
+    def _update_delta_direction(self, training_value: Union[np.ndarray, float], prediction: Union[float, np.ndarray]) -> None:
         pass
 
     @abstractmethod
@@ -389,9 +387,8 @@ class NeuralNetwork(ABC):
         pass
 
 
-# Clase interna de las NeuralNetworks
-# Todos los puntos que se reciben en los métodos deben venir con la columna identidad
-class _Perceptron(ABC):
+# Clase de utilidad para implementar Neural Networks
+class Perceptron:
 
     def __init__(self, input_count: int, activation_fn: ActivationFunction, momentum_factor: float):
         self.input_count = input_count
@@ -417,9 +414,10 @@ class _Perceptron(ABC):
 
         return self.last_activation
 
-    @abstractmethod
     def update_training_weights(self, l_rate: float, point: np.ndarray) -> None:
-        pass
+        new_delta_w: np.ndarray = l_rate * self.delta * point + self.momentum_factor * self._last_delta_w
+        self.training_w += new_delta_w
+        self._last_delta_w = new_delta_w
 
     def persist_weights(self) -> None:
         self.w = self.training_w
@@ -432,31 +430,17 @@ class _Perceptron(ABC):
         self.training_w = np.random.uniform(-1, 1, self.input_count + 1)
 
 
-class _SupervisedPerceptron(_Perceptron):
-
-    def update_training_weights(self, l_rate: float, point: np.ndarray) -> None:
-        new_delta_w: np.ndarray = l_rate * self.delta * point + self.momentum_factor * self._last_delta_w
-        self.training_w += new_delta_w
-        self._last_delta_w = new_delta_w
-
-
-class _UnsupervisedPerceptron(_Perceptron):
-
-    def update_training_weights(self, l_rate: float, point: np.ndarray) -> None:
-        new_delta_w: np.ndarray = l_rate * self.last_excitement * (point - self.last_excitement * self.training_w) #+ self.momentum_factor * self._last_delta_w
-        self.training_w += new_delta_w
-        self._last_delta_w = new_delta_w
-
-    def normalized_weight(self) -> float:
-        return self.training_w / np.linalg.norm(self.training_w)
-
-
 class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
 
     def __init__(self, base_config: NeuralNetworkBaseConfiguration) -> None:
         base_config.output_count = 1
         super().__init__(base_config)
-        self._perceptron = _SupervisedPerceptron(self.input_count, self.activation_fn, self.momentum_factor)
+        self._perceptron = self._perceptron_instance()
+
+    # Funcion que permite configurar el perceptron usado por la Red Neuronal
+    # Para ser extendida
+    def _perceptron_instance(self):
+        return Perceptron(self.input_count, self.activation_fn, self.momentum_factor)
 
     def train(self, training_points: np.ndarray, training_values: np.ndarray,
               status_callback: Optional[Callable[['NeuralNetwork', int], None]] = None,
@@ -468,8 +452,7 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
         super().soft_training_reset()
         self._perceptron.training_weights_reset()
 
-    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[
-        float, np.ndarray]:
+    def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[float, np.ndarray]:
         if insert_identity_column:
             point = NeuralNetwork.with_identity_dimension(point, 0)
         return self._perceptron.predict(point, training)
@@ -489,8 +472,7 @@ class SinglePerceptronNeuralNetwork(NeuralNetwork, ABC):
 
     def calculate_error(self, points: np.ndarray, values: np.ndarray, training: bool = False,
                         insert_identity_column: bool = False) -> float:
-        return self.error_function.calculate_error(values,
-                                                   self.predict_points(points, training, insert_identity_column))
+        return self.error_function.calculate_error(values, self.predict_points(points, training, insert_identity_column))
 
     def _persist_training_weight(self) -> None:
         self._perceptron.persist_weights()
@@ -509,34 +491,6 @@ class SimpleSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
     def _calculate_delta(self, training_value: float, activation: float) -> float:
         return self.error_function.calculate_error_factor(training_value, activation)
-
-
-class UnsupervisedLinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
-
-    def __init__(self, base_config: NeuralNetworkBaseConfiguration, error_function: NeuralNetworkErrorFunction) -> None:
-        base_config.activation_fn = lambda x: x
-        base_config.error_function = error_function
-        super().__init__(base_config)
-        self._perceptron = _UnsupervisedPerceptron(self.input_count, self.activation_fn, self.momentum_factor)
-        self.error_function = NeuralNetworkErrorFunction.ABSOLUTE
-
-    def train(self, training_points: np.ndarray, training_values: np.ndarray,
-              status_callback: Optional[Callable[['NeuralNetwork', int], None]] = None,
-              insert_identity_column: bool = True) -> None:
-
-        # falta el validate training data
-        for _ in range(self.max_training_iterations):
-            for i in range(np.shape(training_points)[0]):
-                self.predict(training_points[i])
-                self._update_training_weight(training_points[i])
-                self.training_iteration += 1
-
-
-    def _calculate_delta(self, training_value: float, activation: float) -> float:
-        pass
-
-    def get_normalized_weights(self) -> float:
-        return self._perceptron.normalized_weight()
 
 
 class LinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
@@ -573,10 +527,10 @@ class NonLinearSinglePerceptronNeuralNetwork(SinglePerceptronNeuralNetwork):
 
 class _PerceptronLayer:
 
-    def __init__(self, size: int, perceptron_factory: Callable[[], _Perceptron],
+    def __init__(self, size: int, perceptron_factory: Callable[[], Perceptron],
                  activation_derivative: ActivationFunction) -> None:
         self.size = size
-        self.perceptrons: List[_Perceptron] = [perceptron_factory() for _ in range(self.size)]
+        self.perceptrons: List[Perceptron] = [perceptron_factory() for _ in range(self.size)]
         self.activation_derivative: ActivationFunction = activation_derivative
         self.activation_cache: np.ndarray = np.zeros(self.size + 1)
 
@@ -657,8 +611,8 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
         if self.error_function == NeuralNetworkErrorFunction.ABSOLUTE:
             raise ValueError(f'Invalid error function {self.error_function.name} for {repr(type(self))}')
 
-        perceptron_factory: Callable[[int], _SupervisedPerceptron] = \
-            lambda input_count: _SupervisedPerceptron(
+        perceptron_factory: Callable[[int], Perceptron] = \
+            lambda input_count: Perceptron(
                 input_count, self.activation_fn, self.momentum_factor
             )
 

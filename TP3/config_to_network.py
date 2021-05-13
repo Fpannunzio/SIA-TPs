@@ -10,7 +10,7 @@ from TP3.neural_network_lib.neural_network_utils import NeuralNetworkFactory
 from neural_network_lib.neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
     LinearSinglePerceptronNeuralNetwork, \
     NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork, NeuralNetworkBaseConfiguration, \
-    NeuralNetworkErrorFunction, UnsupervisedLinearSinglePerceptronNeuralNetwork
+    NeuralNetworkErrorFunction
 
 _NeuralNetworkFactoryBuilder = Callable[[NeuralNetworkBaseConfiguration, Param], Callable[[], NeuralNetwork]]
 
@@ -114,12 +114,6 @@ def _get_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, params: 
 
     return lambda: LinearSinglePerceptronNeuralNetwork(base_config, error_function)
 
-def _get_unsupervised_linear_perceptron(base_config: NeuralNetworkBaseConfiguration, params: Param) -> Callable[[], NeuralNetwork]:
-    params = _validate_linear_perceptron_params(params)
-    error_function: NeuralNetworkErrorFunction = _neural_network_error_function_map[params['error_function']]
-
-    return lambda: UnsupervisedLinearSinglePerceptronNeuralNetwork(base_config, error_function)
-
 
 def _validate_non_linear_perceptron_params(params: Param) -> Param:
     return Config.validate_param(params, Schema({
@@ -184,7 +178,6 @@ def logistic_derivative(x: float, b: float) -> float:
 
 _neural_network_factory_builder_map: Dict[str, _NeuralNetworkFactoryBuilder] = {
     'simple': _get_simple_perceptron,
-    'unsupervised_linear': _get_unsupervised_linear_perceptron,
     'linear': _get_linear_perceptron,
     'non_linear': _get_non_linear_perceptron,
     'multi_layered': _get_multi_layered_perceptron,
