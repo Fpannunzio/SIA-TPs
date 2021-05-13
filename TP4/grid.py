@@ -5,10 +5,14 @@ from typing import Callable, List, NamedTuple, Optional, TypeVar
 import attr
 import numpy as np
 
-
 from TP4.hexagonal_grid_utils import generate_indexes_matrix, offset_distance, OffsetCoord
 
-Index = NamedTuple('Index', [('x', int), ('y', int)])
+
+@attr.s(auto_attribs=True)
+class Index:
+    x: int
+    y: int
+
 
 # Generic Internal Variable
 _T = TypeVar('_T')
@@ -18,6 +22,7 @@ def _assert_not_none(obj: Optional[_T]) -> _T:
     if obj is None:
         raise TypeError()
     return obj
+
 
 class _Neuron:
     def __init__(self, distance: Callable[[np.ndarray, np.ndarray], float], input_count: int,
@@ -42,14 +47,15 @@ class GridBaseConfiguration:
     k: Optional[int] = None
     distance: Callable[[np.ndarray, np.ndarray], float] = None
 
+#     TODO(tobi): Validar parametros
+
 
 class Grid(ABC):
     def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
         self.radius = _assert_not_none(grid_config.radius)
         self.learning_rate = _assert_not_none(grid_config.learning_rate)
         self.k = _assert_not_none(grid_config.k)
-        self.grid: List[List[_Neuron]] = self._generate_grid(self.k, grid_config.distance, grid_config.input_count,
-                                                             initial_weights)
+        self.grid: List[List[_Neuron]] = self._generate_grid(self.k, grid_config.distance, grid_config.input_count, initial_weights)
 
     @staticmethod
     def _generate_grid(k: int, distance: Callable[[np.ndarray, np.ndarray], float],
@@ -69,13 +75,12 @@ class Grid(ABC):
 
     def update_near_neurons_weights(self, near_neurons_indexes: List[Index], current_point: np.ndarray) -> None:
         for i in range(len(near_neurons_indexes)):
-            self.grid[near_neurons_indexes[i][0]][near_neurons_indexes[i][1]].update_weights(self.learning_rate,
-                                                                                             current_point)
+            self.grid[near_neurons_indexes[i].x][near_neurons_indexes[i].y].update_weights(self.learning_rate, current_point)
 
     def train(self, epochs: int, initial_values: np.ndarray) -> None:
         min_distance: float
         current_distance: float
-        index: Index = (0, 0)
+        index: Index = Index(0, 0)
         near_neurons_indexes: List[Index]
         for _ in range(epochs):
             min_distance = current_distance = math.inf
@@ -88,16 +93,21 @@ class Grid(ABC):
                             min_distance = current_distance
                             index = Index(i, j)
 
-                self.update_near_neurons_weights(self._get_near_neurons_indexes(index, self.radius),
-                                                 initial_values[current_value])
+                self.update_near_neurons_weights(self._get_near_neurons_indexes(index, self.radius), initial_values[current_value])
                 self.grid[index.x][index.y].training_winning_count += 1
+    #     TODO(tobi): Donde se actualiza el radio y el learning rate??
+    #         radio PUEDE ser constante, pero l_rate debe tender a 0
 
     def _get_near_neurons_mean_distance(self, index: Index, near_neurons_indexes: List[Index]) -> float:
         # lista de distancias entre los pesos de la neurona 'index' y sus vecinos
         return np.array(
-            [self.grid[index.x][index.y].calculate_distance(
-                self.grid[near_neurons_indexes[i].x][near_neurons_indexes[i].y].w) for
-                i in range(len(near_neurons_indexes))]).mean()
+            [
+                self.grid[index.x][index.y].calculate_distance(
+                    self.grid[near_neurons_indexes[i].x][near_neurons_indexes[i].y].w
+                )
+                for i in range(len(near_neurons_indexes))
+            ]
+        ).mean()
 
     def get_near_neurons_mean_distances_matrix(self) -> np.ndarray:
         mean_distance_matrix: np.ndarray = np.zeros((self.k, self.k))
@@ -107,9 +117,10 @@ class Grid(ABC):
                 # Conseguir la media de las distancias de todos los nodos vecinos, no se le pasa el
                 # radio a _get_near_neurons_indexes porque
                 # quiero que sean sus vecinos próximos, de radio = 1
-                mean_distance_matrix[i][j] = self._get_near_neurons_mean_distance(Index(i, j),
-                                                                                  self._get_near_neurons_indexes(
-                                                                                      Index(i, j)))
+                mean_distance_matrix[i][j] = self._get_near_neurons_mean_distance(
+                    Index(i, j),
+                    self._get_near_neurons_indexes(Index(i, j))
+                )
 
         return mean_distance_matrix
 
