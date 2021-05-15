@@ -13,6 +13,8 @@ class Index:
     x: int
     y: int
 
+    def get_neuron_number(self, k: int) -> int:
+        return self.x * k + self.y
 
 # Generic Internal Variable
 _T = TypeVar('_T')
@@ -31,6 +33,9 @@ class _Neuron:
         self.input_count = input_count
         self.training_winning_count = 0
         self.w: np.ndarray = np.random.uniform(-1, 1, self.input_count) if init_w is None else init_w
+
+    def __repr__(self) -> str:
+        return f'{self.w.__str__()}\n'
 
     def calculate_distance(self, point: np.ndarray) -> float:
         return self.distance(self.w, point)
@@ -53,9 +58,12 @@ class GridBaseConfiguration:
 class KohonenGrid(ABC):
     def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
         self.radius = _assert_not_none(grid_config.radius)
-        self.learning_rate = _assert_not_none(grid_config.learning_rate)
+        self.learning_rate = 1
         self.k = _assert_not_none(grid_config.k)
         self.grid: List[List[_Neuron]] = self._generate_grid(self.k, grid_config.distance, grid_config.input_count, initial_weights)
+
+    def __str__(self) -> str:
+        return self.grid.__str__()
 
     @staticmethod
     def _generate_grid(k: int, distance: Callable[[np.ndarray, np.ndarray], float],
@@ -78,23 +86,19 @@ class KohonenGrid(ABC):
             self.grid[near_neurons_indexes[i].x][near_neurons_indexes[i].y].update_weights(self.learning_rate, current_point)
 
     def train(self, epochs: int, initial_values: np.ndarray) -> None:
-        min_distance: float
-        current_distance: float
-        index: Index = Index(0, 0)
+        index: Index
         near_neurons_indexes: List[Index]
-        for _ in range(epochs):
-            min_distance = current_distance = math.inf
-            for current_value in range(np.size(initial_values, axis=0)):
-                for i in range(self.k):
-                    for j in range(self.k):
-                        current_distance = self.grid[i][j].calculate_distance(initial_values[current_value])
 
-                        if current_distance < min_distance:
-                            min_distance = current_distance
-                            index = Index(i, j)
+        for epoch in range(epochs):
+            for current_value in range(np.size(initial_values, axis=0)):
+
+                index = self.predict_value(initial_values[current_value])
 
                 self.update_near_neurons_weights(self._get_near_neurons_indexes(index, self.radius), initial_values[current_value])
                 self.grid[index.x][index.y].training_winning_count += 1
+
+            self.learning_rate = 1 / (epoch + 1)
+
     #     TODO(tobi): Donde se actualiza el radio y el learning rate??
     #         radio PUEDE ser constante, pero l_rate debe tender a 0
 
@@ -124,6 +128,28 @@ class KohonenGrid(ABC):
                 )
 
         return mean_distance_matrix
+
+    def predict_value(self, value: np.ndarray):
+        index = Index(0, 0)
+
+        min_distance: float = math.inf
+        current_distance: float = math.inf
+
+        for i in range(self.k):
+            for j in range(self.k):
+                current_distance = self.grid[i][j].calculate_distance(value)
+
+                if current_distance < min_distance:
+                    min_distance = current_distance
+                    index = Index(i, j)
+        return index
+
+    def predict(self, values: np.ndarray) -> np.ndarray:
+        ans: List[int] = []
+        for value in values:
+            ans.append(self.predict_value(value).get_neuron_number(self.k))
+
+        return np.array(ans)
 
 
 class KohonenQuadraticGrid(KohonenGrid):

@@ -27,15 +27,24 @@ class HopfieldNetwork:
             raise ValueError("The dimension of the analyzed value is incorrect")
 
         previous_sign: np.ndarray = np.sign(analyzed_value @ self.weights)
+        previous_energy: float = self.calculate_energy(analyzed_value)
         next_sign: np.ndarray = np.sign(previous_sign @ self.weights)
+        next_energy: float = self.calculate_energy(previous_sign)
         iterations: int = 0
 
-        # TODO(tobi): Cortar tambien si el nivel de energia no baja por n iteraciones
-        while not (np.array_equal(previous_sign, next_sign) or iterations > DEFAULT_MAX_ITERATIONS):
+
+        while not (np.array_equal(previous_sign, next_sign) or iterations > DEFAULT_MAX_ITERATIONS or previous_energy == next_energy):
             previous_sign = next_sign
             next_sign = np.sign(previous_sign @ self.weights)
             iterations += 1
 
         return next_sign
 
-    # TODO(tobi): Graficar energia
+    def calculate_energy(self, analyzed_value: np.ndarray) -> float:
+        energy: float = 0
+        sign: np.ndarray = np.sign(analyzed_value @ self.weights)
+        for i in range(np.size(self.weights, 1)):
+            for j in range(np.size(self.weights, 1)):
+                energy += self.weights[i][j] * sign[i] * sign[j]
+
+        return energy / -2

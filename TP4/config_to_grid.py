@@ -1,15 +1,24 @@
-from typing import Dict, Callable
+import sys
+from typing import Dict, Callable, Any
 
 import numpy as np
 import pandas
-from schema import Schema, And, Or
+from schema import Schema, And, Or, SchemaError
 from sklearn.preprocessing import StandardScaler
 
-from TP4.config import Param, Config
 from TP4.kohonen_grid import KohonenGrid, KohonenQuadraticGrid, KohonenHexagonalGrid, GridBaseConfiguration
 
+Param = Dict[str, Any]
 GridFactory = Callable[[], KohonenGrid]
 _GridFactoryBuilder = Callable[[GridBaseConfiguration], Callable[[], KohonenGrid]]
+
+
+def validate_param(param: Param, schema: Schema) -> Param:
+    try:
+        return schema.validate(param)
+    except SchemaError as e:
+        print('A problem was found on the configuration file:\n')
+        sys.exit(e.code)
 
 
 def get_normalized_values(file_name: str) -> np.ndarray:
@@ -24,7 +33,7 @@ def get_grid(base_grid_params: Param, input_count: int) -> KohonenGrid:
 
 
 def _validate_base_grid_params(grid_params: Param) -> Param:
-    return Config.validate_param(grid_params, Schema({
+    return validate_param(grid_params, Schema({
         'connection': And(str, Or(*tuple(grid_factory_builder_map.keys()))),
         'distance_function': And(str, Or(*tuple(_distance_function_map.keys()))),
         'radius': And(int, lambda i: i > 0),
