@@ -5,7 +5,7 @@ from typing import Callable, List, NamedTuple, Optional, TypeVar
 import attr
 import numpy as np
 
-from TP4.hexagonal_grid_utils import generate_indexes_matrix, offset_distance, OffsetCoord
+from hexagonal_grid_utils import generate_indexes_matrix, offset_distance, OffsetCoord
 
 
 @attr.s(auto_attribs=True)

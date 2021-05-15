@@ -6,7 +6,7 @@ import pandas
 from schema import Schema, And, Or, SchemaError
 from sklearn.preprocessing import StandardScaler
 
-from TP4.kohonen_grid import KohonenGrid, KohonenQuadraticGrid, KohonenHexagonalGrid, GridBaseConfiguration
+from kohonen_grid import KohonenGrid, KohonenQuadraticGrid, KohonenHexagonalGrid, GridBaseConfiguration
 
 Param = Dict[str, Any]
 GridFactory = Callable[[], KohonenGrid]
