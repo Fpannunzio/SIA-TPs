@@ -1,3 +1,4 @@
+import math
 from typing import List, Tuple
 
 import numpy as np
@@ -35,6 +36,8 @@ class HopfieldNetwork:
         iterations: int = 0
         energies: List[float] = []
         similar_energies: List[float] = []
+        osilating_cache: List[float] = [previous_energy, next_energy]
+        osilating: int = 0
 
         energies.append(previous_energy)
         energies.append(next_energy)
@@ -43,7 +46,7 @@ class HopfieldNetwork:
             similar_energies.append(previous_energy)
         similar_energies.append(next_energy)
 
-        while not (np.array_equal(previous_sign, next_sign) or iterations > DEFAULT_MAX_ITERATIONS or len(similar_energies) >= 3):
+        while not (np.array_equal(previous_sign, next_sign) or iterations > DEFAULT_MAX_ITERATIONS or len(similar_energies) >= 3) or osilating >= 3:
             previous_sign = next_sign
             next_sign = np.sign(previous_sign @ self.weights)
             iterations += 1
@@ -53,6 +56,14 @@ class HopfieldNetwork:
                 similar_energies.clear()
             similar_energies.append(next_energy)
             energies.append(next_energy)
+
+            if math.isclose(next_energy, osilating_cache[0]):
+                osilating += 1
+            else:
+                osilating = 0
+
+            osilating_cache[2] = next_energy
+            osilating_cache.pop(0)
 
         return next_sign, energies
 
