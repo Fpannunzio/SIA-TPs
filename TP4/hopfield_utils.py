@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import numpy as np
 import pandas as pd
 
@@ -12,12 +14,12 @@ def get_training_set(file_name: str, line_count: int) -> np.ndarray:
     return training_set
 
 
-def print_letter_and_prediction(letter: np.ndarray, prediction: np.ndarray, row_size: int):
+def print_letter_and_prediction(letter: np.ndarray, prediction: Tuple[np.ndarray, List[float]], row_size: int):
     if np.size(letter) % row_size != 0:
         raise ValueError("La letra no es divisible por el tamaño de fila escogido")
 
     letter = letter.reshape(row_size, letter.size // row_size)
-    prediction = prediction.reshape(row_size, prediction.size // row_size)
+    aux: np.ndarray = prediction[0].reshape(row_size, prediction[0].size // row_size)
 
     ans: str = ''
 
@@ -31,7 +33,7 @@ def print_letter_and_prediction(letter: np.ndarray, prediction: np.ndarray, row_
         ans += '\t'
 
         for i in range(row_size):
-            if prediction[row][i] == 1:
+            if aux[row][i] == 1:
                 ans += '*'
             else:
                 ans += ' '
@@ -39,6 +41,7 @@ def print_letter_and_prediction(letter: np.ndarray, prediction: np.ndarray, row_
         ans += '\n'
 
     print(ans)
+    print("Energies:", prediction[1], '\n')
 
 
 def print_letter(letter: np.ndarray, row_size: int):

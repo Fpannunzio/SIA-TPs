@@ -42,7 +42,7 @@ def plot_map_with_countries(countriesAndHits, g_size: int, colormap: str, title:
     ax.set_ylim([0, g_size + 1.5])
     bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     width, height = bbox.width * fig.dpi, bbox.height * fig.dpi
-    hits = np.histogram(countriesAndHits['hits'].values, bins=g_size ** 2)[0]
+    hits = np.histogram(countriesAndHits['hits'].values, bins=g_size ** 2, range=(0, g_size ** 2))[0]
     # Discover difference between centers
     collection = RegularPolyCollection(
         numsides=6,  # a hexagon

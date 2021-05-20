@@ -58,7 +58,8 @@ class GridBaseConfiguration:
 class KohonenGrid(ABC):
     def __init__(self, grid_config: GridBaseConfiguration, initial_weights: np.ndarray = None):
         self.radius = _assert_not_none(grid_config.radius)
-        self.learning_rate = 1
+        self.init_learning_rate = grid_config.learning_rate
+        self.learning_rate = grid_config.learning_rate
         self.k = _assert_not_none(grid_config.k)
         self.grid: List[List[_Neuron]] = self._generate_grid(self.k, grid_config.distance, grid_config.input_count, initial_weights)
 
@@ -97,10 +98,8 @@ class KohonenGrid(ABC):
                 self.update_near_neurons_weights(self._get_near_neurons_indexes(index, self.radius), initial_values[current_value])
                 self.grid[index.x][index.y].training_winning_count += 1
 
-            self.learning_rate = 1 / (epoch + 1)
-
-    #     TODO(tobi): Donde se actualiza el radio y el learning rate??
-    #         radio PUEDE ser constante, pero l_rate debe tender a 0
+            self.learning_rate = (epochs - epoch) * self.init_learning_rate / epochs
+            self.radius = 1 + (epochs - epoch) * self.radius / epochs
 
     def _get_near_neurons_mean_distance(self, index: Index, near_neurons_indexes: List[Index]) -> float:
         # lista de distancias entre los pesos de la neurona 'index' y sus vecinos
