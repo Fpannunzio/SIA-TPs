@@ -7,7 +7,7 @@ from schema import And, Schema, Or, Optional
 from TP3.config import Param, Config
 from TP3.neural_network_lib.neural_network_utils import NeuralNetworkFactory
 
-from neural_network_lib.neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
+from TP3.neural_network_lib.neural_network import MultilayeredNeuralNetwork, SimpleSinglePerceptronNeuralNetwork, \
     LinearSinglePerceptronNeuralNetwork, \
     NonLinearSinglePerceptronNeuralNetwork, ActivationFunction, NeuralNetwork, NeuralNetworkBaseConfiguration, \
     NeuralNetworkErrorFunction
