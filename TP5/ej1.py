@@ -1,8 +1,10 @@
+import math
 import sys
 from typing import List
 
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.interpolate import interp1d
 
 from TP3.config import Config
 from TP3.config_to_network import get_neural_network
@@ -149,7 +151,7 @@ font3: np.ndarray = np.array([
 
 
 def labeled_scatter(xValues, yValues, labels=None):
-    plt.figure(figsize=(16,10))
+    plt.figure(figsize=(16, 10))
     xs = xValues
     ys = yValues
 
@@ -163,8 +165,8 @@ def labeled_scatter(xValues, yValues, labels=None):
     # Countries labels
     for i in range(len(labels)):
         plt.text(xs[i], ys[i], s=labels[i],
-                 fontdict=dict(color='red', size=10),
-                 bbox=dict(facecolor='yellow', alpha=0.5))
+                 fontdict=dict(color='red', size=10))
+                 # bbox=dict(facecolor='yellow', alpha=0.5))
 
     plt.xlabel("X")
     plt.xlabel("Y")
@@ -173,11 +175,11 @@ def labeled_scatter(xValues, yValues, labels=None):
 
 
 def to_bits(values: np.ndarray) -> np.ndarray:
-
     new_values = np.empty((np.size(values, 0), np.size(values, 1) * 8))
 
+
     for i in range(np.size(values, 0)):
-        new_values[i] = np.array([[v >> i & 1 for i in range(7, -1, -1)] for v in values[i]]).flatten()
+        new_values[i] = np.array([[v >> i & 1 for i in range(6, -1, -1)] for v in values[i]]).flatten()
     return new_values
 
 
@@ -185,8 +187,8 @@ def main(config_file: str):
     print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)
 
-    # training_points = training_values = font1 / 128
-    training_points = training_values = to_bits(font1)
+    training_points = training_values = font1 / 128
+    # training_points = training_values = to_bits(font1)
 
     layers: List[int] = config.network['network_params']['layer_sizes']
 
@@ -206,13 +208,55 @@ def main(config_file: str):
     neural_network.train(training_points, training_values, status_callback=get_network_error)
 
     z_values: np.ndarray = np.empty((np.size(training_points, 0), 2))
+    predictions: np.ndarray = np.empty(training_points.shape)
 
     for i in range(np.size(training_points, 0)):
         neural_network.predict(training_points[i], insert_identity_column=True)
         z_values[i] = neural_network._layers[len(neural_network._layers) // 2].activation_cache[1:]
+        predictions[i] = neural_network.predict_from_layer(z_values[i], len(neural_network._layers) // 2 + 1,
+                                                           insert_identity_column=True)
+        print("input vs prediction",training_points[i], neural_network._layers[len(neural_network._layers) -1].activation_cache[1:])
+
+    labeled_scatter(z_values[:, 0], z_values[:, 1], labels=font1_lables)
+
+    fv = 18
+    sv = 31
+
+    print('Sources')
+    print(predictions[fv] * 128 // 1, training_points[fv] * 128 // 1,  predictions[fv] * 128 // 1 - training_points[fv] * 128 // 1)
+    print(predictions[sv] * 128 // 1, training_points[sv] * 128 // 1, predictions[sv] * 128 // 1 - training_points[sv] * 128 // 1)
+
+    for line in training_points[fv]:
+        line = int(line * 128 // 1)
+        print(''.join('*' if line >> i & 1 == 1 else ' ' for i in range(7, -1, -1)))
+
+    for line in training_points[sv]:
+        line = int(line * 128 // 1)
+        print(''.join('*' if line >> i & 1 == 1 else ' ' for i in range(7, -1, -1)))
+
+    generate(neural_network, z_values, fv, sv)
 
     print(neural_network.error)
-    labeled_scatter(z_values[:, 0], z_values[:, 1], labels=font1_lables)
+
+def generate(neural_network: MultilayeredNeuralNetwork, z_values: np.ndarray, fv, sv):
+
+    f = interp1d(z_values[(fv, sv), 0], z_values[(fv, sv), 1], kind='linear')
+
+    xnew = np.linspace(z_values[fv, 0], z_values[sv, 0], num=5, endpoint=True)
+
+    z_val = np.empty(2)
+
+    for x in xnew:
+
+        z_val[0] = x
+        z_val[1] = f(x)
+        print(z_val)
+        predicttion = neural_network.predict_from_layer(z_val, len(neural_network._layers) // 2 + 1, insert_identity_column=True)
+
+        for line in predicttion:
+            line = int(line * 128 // 1)
+            print(''.join('*' if line >> i & 1 == 1 else ' ' for i in range(7, -1, -1)))
+
 
 
 if __name__ == "__main__":

@@ -631,13 +631,18 @@ class MultilayeredNeuralNetwork(NeuralNetwork):
 
     def predict(self, point: np.ndarray, training: bool = False, insert_identity_column: bool = False) -> Union[
         float, np.ndarray]:
+
+        return self.predict_from_layer(point, 0, training, insert_identity_column)
+
+    def predict_from_layer(self, point: np.ndarray, init_layer: int, training: bool = False, insert_identity_column: bool = False) -> Union[
+        float, np.ndarray]:
         if insert_identity_column:
             point = NeuralNetwork.with_identity_dimension(point, 0)
 
         last_prediction: np.ndarray = point
 
         # Conseguir el V de la capa de salida, propagando los puntos de entrada por todas las capas
-        for m in range(len(self._layers)):
+        for m in range(init_layer, len(self._layers)):
             last_prediction = self._layers[m].predict(last_prediction, training)
 
         return last_prediction[1:]  # Viene con la identity column agregada de mas

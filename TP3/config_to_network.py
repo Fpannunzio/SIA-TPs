@@ -1,3 +1,4 @@
+from math import exp, log
 from typing import Dict, Callable, Tuple
 
 import numpy as np
@@ -164,6 +165,22 @@ def tanh(x: float, b: float) -> float:
 def tanh_derivative(x: float, b: float) -> float:
     return b * (1 - tanh(x, b) ** 2)
 
+# Sigmoid
+def sigmoid(x: float, b: float) -> float:
+    return 1 / (1 + np.exp(-x * b))
+
+
+def sigmoid_derivative(x: float, b: float) -> float:
+    return sigmoid(x, b)*(1 - sigmoid(x, b))
+
+# Sigmoid
+def softplus(x: float, b: float) -> float:
+    return np.log(1 + np.exp(x * b))
+
+
+def softplus_derivative(x: float, b: float) -> float:
+    return 1 / (1 + np.exp(-x * b))
+
 
 # Logistic Function
 def logistic(x: float, b: float) -> float:
@@ -192,4 +209,6 @@ _neural_network_error_function_map: Dict[str, NeuralNetworkErrorFunction] = {
 _sigmoid_activation_function_map: Dict[str, Tuple[SigmoidFunction, SigmoidDerivativeFunction]] = {
     'tanh': (tanh, tanh_derivative),
     'logistic': (logistic, logistic_derivative),
+    'sigmoid': (sigmoid, sigmoid_derivative),
+    'softplus': (softplus, softplus_derivative),
 }
