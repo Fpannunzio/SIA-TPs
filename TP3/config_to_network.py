@@ -57,7 +57,7 @@ def _validate_base_network_params(perceptron_params: Param) -> Param:
     }, ignore_extra_keys=True))
 
 
-def _build_base_network_config(network_params: Param, input_count: int) -> NeuralNetworkBaseConfiguration:
+def build_base_network_config(network_params: Param, input_count: int) -> NeuralNetworkBaseConfiguration:
     ret: NeuralNetworkBaseConfiguration = NeuralNetworkBaseConfiguration(input_count=input_count)
     if network_params['max_training_iterations'] is not None: ret.max_training_iterations = network_params['max_training_iterations']
     if network_params['weight_reset_threshold'] is not None: ret.soft_reset_threshold = network_params['weight_reset_threshold']
@@ -87,7 +87,7 @@ def _build_base_network_config(network_params: Param, input_count: int) -> Neura
 def get_neural_network_factory(base_network_params: Param, input_count: int) -> NeuralNetworkFactory:
     base_network_params = _validate_base_network_params(base_network_params)
 
-    base_network_config: NeuralNetworkBaseConfiguration = _build_base_network_config(base_network_params, input_count)
+    base_network_config: NeuralNetworkBaseConfiguration = build_base_network_config(base_network_params, input_count)
 
     factory_builder: _NeuralNetworkFactoryBuilder = _neural_network_factory_builder_map[base_network_params['type']]
 
