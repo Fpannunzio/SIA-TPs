@@ -60,7 +60,7 @@ class NeuralNetworkErrorFunction(Enum):
     )
 
     QUADRATIC = _ErrorFunctionContainer(
-        lambda values, activations: sum((values - activations) ** 2) / 2,
+        lambda values, activations: sum((values - activations) ** 2) / 35,
         lambda value, activation: value - activation
     )
 

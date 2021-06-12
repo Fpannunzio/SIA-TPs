@@ -114,6 +114,41 @@ font2: np.ndarray = np.array([
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1f]  # 0x5f, _
 ])
 
+font2_lables = [
+    '@',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
+    '[',
+    '\\',
+    ']',
+    '^',
+    '_',
+]
+
 font3: np.ndarray = np.array([
     [0x04, 0x04, 0x02, 0x00, 0x00, 0x00, 0x00],  # 0x60, `
     [0x00, 0x0e, 0x01, 0x0d, 0x13, 0x13, 0x0d],  # 0x61, a
@@ -166,7 +201,7 @@ def labeled_scatter(xValues, yValues, labels=None):
     for i in range(len(labels)):
         plt.text(xs[i], ys[i], s=labels[i],
                  fontdict=dict(color='red', size=10))
-                 # bbox=dict(facecolor='yellow', alpha=0.5))
+        # bbox=dict(facecolor='yellow', alpha=0.5))
 
     plt.xlabel("X")
     plt.xlabel("Y")
@@ -175,20 +210,40 @@ def labeled_scatter(xValues, yValues, labels=None):
 
 
 def to_bits(values: np.ndarray) -> np.ndarray:
-    new_values = np.empty((np.size(values, 0), np.size(values, 1) * 8))
-
+    new_values = np.empty((np.size(values, 0), np.size(values, 1) * 5))
 
     for i in range(np.size(values, 0)):
-        new_values[i] = np.array([[v >> i & 1 for i in range(6, -1, -1)] for v in values[i]]).flatten()
+        new_values[i] = np.array(
+            [[(0.7 if (v >> i & 1) == 1 else -0.7) for i in range(4, -1, -1)] for v in values[i]]).flatten() # dos veces i?
+
     return new_values
 
+def add_noise(values: np.ndarray) -> np.ndarray:
+    new_values = np.empty((np.size(values, 0), np.size(values, 1)))
 
-def main(config_file: str):
+    for i in range(np.size(values, 0)):
+        new_values[i] = np.array(
+            [values[i][j] if np.random.uniform(0,1) < 0.85 else -values[i][j] for j in range(np.size(values[i]))])
+
+    return new_values
+
+def print_bit_array(bit_array: List[float]):
+    number: str = ''
+    for i, bit in enumerate(bit_array):
+        if i != 0 and i % 5 == 0:
+            number += '\n'
+        if bit == 0.7:
+            number += '*'
+        else:
+            number += ' '
+    print(number)
+
+
+def ej1(config_file: str):
     print(f'Loading config file {config_file}...')
     config: Config = Config(config_file)
 
-    training_points = training_values = font1 / 128
-    # training_points = training_values = to_bits(font1)
+    training_points = training_values = to_bits(font2)
 
     layers: List[int] = config.network['network_params']['layer_sizes']
 
@@ -215,31 +270,67 @@ def main(config_file: str):
         z_values[i] = neural_network._layers[len(neural_network._layers) // 2].activation_cache[1:]
         predictions[i] = neural_network.predict_from_layer(z_values[i], len(neural_network._layers) // 2 + 1,
                                                            insert_identity_column=True)
-        print("input vs prediction",training_points[i], neural_network._layers[len(neural_network._layers) -1].activation_cache[1:])
+        predictions[i] = [0.7 if predictions[i][j] > 0 else -0.7 for j in range(np.size(predictions[i]))]
 
-    labeled_scatter(z_values[:, 0], z_values[:, 1], labels=font1_lables)
+    labeled_scatter(z_values[:, 0], z_values[:, 1], labels=font2_lables)
 
-    fv = 18
-    sv = 31
-
-    print('Sources')
-    print(predictions[fv] * 128 // 1, training_points[fv] * 128 // 1,  predictions[fv] * 128 // 1 - training_points[fv] * 128 // 1)
-    print(predictions[sv] * 128 // 1, training_points[sv] * 128 // 1, predictions[sv] * 128 // 1 - training_points[sv] * 128 // 1)
-
-    for line in training_points[fv]:
-        line = int(line * 128 // 1)
-        print(''.join('*' if line >> i & 1 == 1 else ' ' for i in range(7, -1, -1)))
-
-    for line in training_points[sv]:
-        line = int(line * 128 // 1)
-        print(''.join('*' if line >> i & 1 == 1 else ' ' for i in range(7, -1, -1)))
+    fv = 15
+    sv = 17
+    print_bit_array(training_values[fv])
+    print_bit_array(training_values[sv])
 
     generate(neural_network, z_values, fv, sv)
 
-    print(neural_network.error)
+    print("Network error:", neural_network.error)
+
+
+def ej2(config_file: str):
+    print(f'Loading config file {config_file}...')
+    config: Config = Config(config_file)
+
+    training_points = training_values = to_bits(font2)
+    training_points = add_noise(training_points)
+
+    layers: List[int] = config.network['network_params']['layer_sizes']
+
+    layers.append(np.size(training_points, axis=1))
+
+    layers.insert(0, np.size(training_points, axis=1))
+
+    config.network['network_params']['layer_sizes'] = layers
+
+    neural_network: MultilayeredNeuralNetwork = get_neural_network(config.network, len(training_points[0]))
+
+    network_error_by_iteration: List[float] = []
+
+    def get_network_error(network: NeuralNetwork, selected_training_point: int) -> None:
+        network_error_by_iteration.append(network.error)
+
+    neural_network.train(training_points, training_values, status_callback=get_network_error)
+
+    z_values: np.ndarray = np.empty((np.size(training_points, 0), 2))
+    predictions: np.ndarray = np.empty(training_points.shape)
+
+    for i in range(np.size(training_points, 0)):
+        neural_network.predict(training_points[i], insert_identity_column=True)
+        z_values[i] = neural_network._layers[len(neural_network._layers) // 2].activation_cache[1:]
+        predictions[i] = neural_network.predict_from_layer(z_values[i], len(neural_network._layers) // 2 + 1,
+                                                           insert_identity_column=True)
+        predictions[i] = [0.7 if predictions[i][j] > 0 else -0.7 for j in range(np.size(predictions[i]))]
+
+    labeled_scatter(z_values[:, 0], z_values[:, 1], labels=font2_lables)
+
+    fv = 15
+    sv = 17
+    print_bit_array(training_values[fv])
+    print_bit_array(training_values[sv])
+
+    generate(neural_network, z_values, fv, sv)
+
+    print("Network error:", neural_network.error)
+
 
 def generate(neural_network: MultilayeredNeuralNetwork, z_values: np.ndarray, fv, sv):
-
     f = interp1d(z_values[(fv, sv), 0], z_values[(fv, sv), 1], kind='linear')
 
     xnew = np.linspace(z_values[fv, 0], z_values[sv, 0], num=5, endpoint=True)
@@ -251,19 +342,16 @@ def generate(neural_network: MultilayeredNeuralNetwork, z_values: np.ndarray, fv
         z_val[0] = x
         z_val[1] = f(x)
         print(z_val)
-        predicttion = neural_network.predict_from_layer(z_val, len(neural_network._layers) // 2 + 1, insert_identity_column=True)
-
-        for line in predicttion:
-            line = int(line * 128 // 1)
-            print(''.join('*' if line >> i & 1 == 1 else ' ' for i in range(7, -1, -1)))
-
+        prediction = neural_network.predict_from_layer(z_val, len(neural_network._layers) // 2 + 1,
+                                                       insert_identity_column=True)
+        print_bit_array([0.7 if prediction[i] > 0 else -0.7 for i in range(np.size(prediction))])
 
 
 if __name__ == "__main__":
     argv = sys.argv
 
     config_file: str = 'config.yaml'
-    main(config_file)
+    ej2(config_file)
     # if len(argv) > 1:
     #     config_file = argv[1]
     #
