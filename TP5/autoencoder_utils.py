@@ -1,6 +1,8 @@
 from typing import List, Tuple
-
+import os
 import numpy as np
+from skimage import color, io
+from skimage.transform import resize
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
 
@@ -81,3 +83,22 @@ def generate(neural_network: Network, z_values: np.ndarray, fv, sv, n):
         print(z_val)
         prediction, w = neural_network.predict_from_layer(z_val, len(neural_network.hidden_layers) // 2 + 1)
         print_bit_array(prediction)
+
+def create_greyscale_dataset_with_repetition(img_folder:str, digit_size:int, multiple_images: int):
+    img_data_array = []
+    for file in os.listdir(img_folder):
+        image_path = img_folder + '/' + file
+        image = io.imread(image_path)
+        image = color.rgb2gray(image)
+        image = resize(image, (digit_size, digit_size), anti_aliasing=True)
+        for _ in range(multiple_images):
+            img_data_array.append(np.array(image))
+    return img_data_array
+
+def add_noise(images: np.ndarray, noise: float):
+    images_with_noise = []
+    for image in images:
+        images_with_noise.append(np.array([image[i] + np.random.uniform(0.05, 0.1) if image[i] > 0 and np.random.random() < noise else image[i] for i in range(np.size(image))]))
+
+    return np.array(images_with_noise)
+
