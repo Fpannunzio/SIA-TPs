@@ -95,7 +95,7 @@ def create_greyscale_dataset_with_repetition(img_folder:str, digit_size:int, mul
             img_data_array.append(np.array(image))
     return img_data_array
 
-def add_noise(images: np.ndarray, noise: float):
+def add_noise2(images: np.ndarray, noise: float):
     images_with_noise = []
     for image in images:
         images_with_noise.append(np.array([image[i] + np.random.uniform(0.05, 0.1) if image[i] > 0 and np.random.random() < noise else image[i] for i in range(np.size(image))]))
